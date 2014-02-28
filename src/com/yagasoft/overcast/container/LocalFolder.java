@@ -10,9 +10,15 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 
+import com.yagasoft.overcast.CSP;
 
-public class LocalFolder extends Folder<Path>
+
+public class LocalFolder extends Folder<Path> implements ILocal
 {
+	
+	protected RemoteFolder<?>	remoteMapping;
+	@SuppressWarnings("unused")
+	private CSP					csp	= null;
 	
 	public LocalFolder()
 	{}
@@ -25,19 +31,27 @@ public class LocalFolder extends Folder<Path>
 	
 	public LocalFolder(String path)
 	{
-		sourceObject = Paths.get(path);
-		updateFromSource(false, false);
+		this(Paths.get(path));
 	}
 	
 	/**
-	 * @see com.yagasoft.overcast.container.Folder#create()
+	 * @see com.yagasoft.overcast.container.Folder#create(Folder<?>)
 	 */
 	@Override
-	public void create()
+	public void create(Folder<?> parent)
+	{
+		create(parent.path);
+	}
+	
+	/**
+	 * @see com.yagasoft.overcast.container.Folder#create(java.lang.String)
+	 */
+	@Override
+	public void create(String parentPath)
 	{
 		try
 		{
-			Files.createDirectories(sourceObject);
+			Files.createDirectories(Paths.get(parentPath, name));
 		}
 		catch (IOException e)
 		{
@@ -49,18 +63,11 @@ public class LocalFolder extends Folder<Path>
 	 * @see com.yagasoft.overcast.container.Container#isExist()
 	 */
 	@Override
-	public boolean isExist()
+	public boolean isExist() throws Exception
 	{
 		if ( !Files.exists(sourceObject) && Files.notExists(sourceObject))
 		{
-			try
-			{
-				throw new Exception("Can't determine if folder exists or not.");
-			}
-			catch (Exception e)
-			{
-				e.printStackTrace();
-			}
+			throw new Exception("Can't determine if folder exists or not.");
 		}
 		
 		return Files.exists(sourceObject);
@@ -133,6 +140,11 @@ public class LocalFolder extends Folder<Path>
 //		
 //		folders = newFolders;
 //		files = newFiles;
+		
+		for (Container<?> container : getChildrenArray())
+		{
+			System.out.println(container.path);
+		}
 	}
 	
 	/**
@@ -175,7 +187,19 @@ public class LocalFolder extends Folder<Path>
 		
 		name = sourceObject.getFileName().toString();
 		path = sourceObject.toAbsolutePath().toString();
-		parent = new LocalFolder(sourceObject.getParent().toString());
+		
+		String parentString = sourceObject.getParent().toString();
+		
+		if (parentString.equals(sourceObject.getRoot().toString()))
+		{
+			parent = new LocalFolder();
+			parent.setName("root");
+		}
+		else
+		{
+			parent = new LocalFolder(parentString);
+		}
+		
 		generateId();
 	}
 	
@@ -263,6 +287,25 @@ public class LocalFolder extends Folder<Path>
 	}
 	
 	/**
+	 * @return the csp
+	 */
+	@Override
+	public CSP getCsp()
+	{
+		throw new UnsupportedOperationException();
+	}
+	
+	/**
+	 * @param csp
+	 *            the csp to set
+	 */
+	@Override
+	public void setCsp(CSP csp)
+	{
+		throw new UnsupportedOperationException();
+	}
+	
+	/**
 	 * @see com.yagasoft.overcast.container.Container#updateInfo()
 	 */
 	@Override
@@ -279,5 +322,22 @@ public class LocalFolder extends Folder<Path>
 	{
 		throw new UnsupportedOperationException();
 	}
+
 	
+	/**
+	 * @return the remoteMapping
+	 */
+	public RemoteFolder<?> getRemoteMapping()
+	{
+		return remoteMapping;
+	}
+
+	
+	/**
+	 * @param remoteMapping the remoteMapping to set
+	 */
+	public void setRemoteMapping(RemoteFolder<?> remoteMapping)
+	{
+		this.remoteMapping = remoteMapping;
+	}
 }

@@ -1,4 +1,5 @@
-import com.yagasoft.overcast.google.Google;
+import java.util.ArrayList;
+import java.util.Arrays;
 
 
 public class _Test
@@ -6,8 +7,36 @@ public class _Test
 
 	public static void main(String[] args)
 	{
-		Google google = new Google();
-		google.buildFileTree(true);
+		ArrayList<String> splitPath = new ArrayList<String>(Arrays.asList(new String("/test1/test2/").split("/")));
+
+		if (splitPath.get(0).equals(""))
+		{
+			splitPath.remove(0);
+		}
+
+		for (String part : splitPath)
+		{
+			System.out.println("=> " + part);
+		}
+//		Google google = new Google();
+////		google.buildFileTree(false);
+//
+//		try
+//		{
+//			RemoteFile remote = new RemoteFile(Google.getDriveService().files().get("0ByO8YVIZubxxWXl4ODRYRVBjWDQ").execute());
+//			remote.updateInfo();
+//			LocalFolder folder = new LocalFolder("G:\\Downloads");
+//			folder.buildTree(false);
+//			remote.download(folder, true);
+//		}
+//		catch (Exception e)
+//		{
+//			e.printStackTrace();
+//		}
+
+//		LocalFile file = new LocalFile("G:\\Downloads\\test.txt");
+//		file.updateInfo();
+//		file.upload(google.getRemoteFileTree(), true);
 
 //		FileMapping mapping = new FileMapping(google.getDriveService());
 //		mapping.setLocal(new LocalFile(new File("G:\\Downloads\\test.png")));

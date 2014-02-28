@@ -17,8 +17,11 @@ public abstract class Folder<T> extends Container<T>
 	
 	/**
 	 * Creates the folder at the source with the info set (class attributes).
+	 * @throws Exception 
 	 */
-	public abstract void create();
+	public abstract void create(Folder<?> parent) throws Exception;
+	
+	public abstract void create(String parentPath) throws Exception;
 
 	public void add(Folder<?> folder)
 	{
@@ -155,6 +158,32 @@ public abstract class Folder<T> extends Container<T>
 			for (Folder<?> folder : folders.values())
 			{
 				Container<?> container = folder.contains(id, recursively);
+				
+				if (container != null)
+				{
+					return (S) container;
+				}
+			}
+		}
+		
+		return null;
+	}
+	
+	public <S extends Container<?>> S searchByName(String name, boolean recursively)
+	{
+		for (Container<?> container : getChildrenArray())
+		{
+			if (name.equals(container.name))
+			{
+				return (S) container;
+			}
+		}
+		
+		if (recursively)
+		{
+			for (Folder<?> folder : folders.values())
+			{
+				Container<?> container = folder.searchByName(name, recursively);
 				
 				if (container != null)
 				{

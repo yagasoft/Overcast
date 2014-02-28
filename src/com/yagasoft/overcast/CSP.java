@@ -2,21 +2,34 @@
 package com.yagasoft.overcast;
 
 
+import java.util.LinkedList;
+import java.util.Queue;
+
 import com.yagasoft.overcast.authorisation.Authorisation;
+import com.yagasoft.overcast.container.ITransferProgressListener;
+import com.yagasoft.overcast.container.LocalFile;
 import com.yagasoft.overcast.container.LocalFolder;
 import com.yagasoft.overcast.container.RemoteFolder;
+import com.yagasoft.overcast.google.RemoteFactory;
 
 
 public abstract class CSP
 {
 	
-	protected Authorisation		authorisation;
-	protected LocalFolder		localFileTree;
-	protected RemoteFolder<?>	remoteFileTree;
-	protected boolean			fullLocalTreeLoaded;
-	protected boolean			fullRemoteTreeLoaded;
-	protected long				localFreeSpace;
-	protected long				remoteFreeSpace;
+	protected Authorisation			authorisation;
+	protected LocalFolder			localFileTree;
+	protected RemoteFolder<?>		remoteFileTree;
+	protected boolean				fullLocalTreeLoaded;
+	protected boolean				fullRemoteTreeLoaded;
+	protected long					localFreeSpace;
+	protected long					remoteFreeSpace;
+	protected RemoteFactory			factory;
+	protected Queue<UploadJob<?>>	uploadQueue	= new LinkedList<UploadJob<?>>();
+	protected UploadJob<?>			currentUploadJob;
+	
+	public abstract void initTree();
+	
+	public abstract void buildFileTree(boolean recursively);
 	
 	public long calculateLocalFreeSpace()
 	{
@@ -27,6 +40,13 @@ public abstract class CSP
 	{
 		return remoteFileTree.calculateSize();
 	}
+	
+	public abstract void upload(LocalFile file, RemoteFolder<?> parent, boolean overwrite, ITransferProgressListener listener, Object object)
+			throws Exception;
+	
+	public abstract void upload(LocalFolder folder, RemoteFolder<?> parent, boolean overwrite, ITransferProgressListener listener, Object object);
+	
+	public abstract void nextUploadJob();
 	
 	// //////////////////////////////////////////////////////////////////////////////////////
 	// #region Getters and setters.
@@ -49,7 +69,7 @@ public abstract class CSP
 	{
 		return localFileTree;
 	}
-
+	
 	/**
 	 * @param localFileTree
 	 *            the localFileTree to set
@@ -58,7 +78,7 @@ public abstract class CSP
 	{
 		this.localFileTree = localFileTree;
 	}
-
+	
 	public RemoteFolder<?> getRemoteFileTree()
 	{
 		return this.remoteFileTree;
@@ -135,6 +155,23 @@ public abstract class CSP
 	public void setRemoteFreeSpace(long remoteFreeSpace)
 	{
 		this.remoteFreeSpace = remoteFreeSpace;
+	}
+	
+	/**
+	 * @return the factory
+	 */
+	public RemoteFactory getFactory()
+	{
+		return factory;
+	}
+	
+	/**
+	 * @param factory
+	 *            the factory to set
+	 */
+	public void setFactory(RemoteFactory factory)
+	{
+		this.factory = factory;
 	}
 	
 	// ======================================================================================

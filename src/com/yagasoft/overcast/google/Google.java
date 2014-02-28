@@ -6,16 +6,29 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Paths;
 import java.security.GeneralSecurityException;
+import java.util.Arrays;
 
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
+import com.google.api.client.googleapis.media.MediaHttpUploader;
+import com.google.api.client.googleapis.media.MediaHttpUploaderProgressListener;
+import com.google.api.client.http.FileContent;
 import com.google.api.client.http.HttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.services.drive.Drive;
+import com.google.api.services.drive.model.File;
+import com.google.api.services.drive.model.ParentReference;
 import com.yagasoft.overcast.CSP;
+import com.yagasoft.overcast.UploadJob;
+import com.yagasoft.overcast.container.Container;
+import com.yagasoft.overcast.container.Folder;
+import com.yagasoft.overcast.container.ITransferProgressListener;
+import com.yagasoft.overcast.container.LocalFolder;
+import com.yagasoft.overcast.container.ITransferProgressListener.TransferState;
+import com.yagasoft.overcast.container.LocalFile;
 
 
-public class Google extends CSP
+public class Google extends CSP implements MediaHttpUploaderProgressListener
 {
 
 	/**
@@ -50,6 +63,8 @@ public class Google extends CSP
 			// set up the global Drive instance
 			driveService = new Drive.Builder(httpTransport, JSON_FACTORY, authorisation.credential).setApplicationName(
 					APPLICATION_NAME).build();
+
+			factory = new RemoteFactory(this);
 		}
 		catch (IOException | GeneralSecurityException | URISyntaxException e)
 		{
@@ -57,11 +72,22 @@ public class Google extends CSP
 		}
 	}
 
-	public void buildFileTree(boolean recursive)
+	/**
+	 * @see com.yagasoft.overcast.CSP#initTree()
+	 */
+	@Override
+	public void initTree()
+	{}
+
+	/**
+	 * @see com.yagasoft.overcast.CSP#buildFileTree(boolean)
+	 */
+	@Override
+	public void buildFileTree(boolean recursively)
 	{
-		RemoteFolder root = new RemoteFolder();
-		root.setId("0ByO8YVIZubxxdTZUNUhHYTB5bFE");
-		root.buildTree(1);
+		remoteFileTree = new RemoteFolder();
+		remoteFileTree.setId("root");
+		remoteFileTree.buildTree(recursively ? Integer.MAX_VALUE : 0);
 
 //		for (Container<?> container : root.getChildrenList())
 //		{
@@ -96,6 +122,10 @@ public class Google extends CSP
 //		}
 	}
 
+	// //////////////////////////////////////////////////////////////////////////////////////
+	// #region Getters and setters.
+	// ======================================================================================
+
 	/**
 	 * @see com.yagasoft.overcast.CSP#calculateLocalFreeSpace()
 	 */
@@ -112,6 +142,161 @@ public class Google extends CSP
 	public long calculateRemoteFreeSpace()
 	{
 		return 0;
+	}
+
+	/**
+	 * @see com.yagasoft.overcast.CSP#upload(com.yagasoft.overcast.container.LocalFile,
+	 *      com.yagasoft.overcast.container.RemoteFolder, boolean,
+	 *      com.yagasoft.overcast.container.ITransferProgressListener,
+	 *      java.lang.Object)
+	 */
+	@Override
+	public void upload(LocalFile file, com.yagasoft.overcast.container.RemoteFolder<?> parent, boolean overwrite, ITransferProgressListener listener,
+			Object object) throws Exception
+	{
+		for (com.yagasoft.overcast.container.File<?> child : parent.getFilesArray())
+		{
+			if (child.getName().equals(file.getName()))
+			{
+				if (overwrite)
+				{
+					child.delete();
+				}
+				else
+				{
+					throw new Exception("File exists!");
+				}
+			}
+		}
+
+		File metadata = new File();
+		metadata.setTitle(file.getName());
+		metadata.setMimeType(file.getType());
+		metadata.setParents(Arrays.asList(new ParentReference().setId(parent.getId())));
+
+		FileContent content = new FileContent(file.getType(), file.getSourceObject().toFile());
+
+		try
+		{
+			Drive.Files.Insert insert = Google.driveService.files().insert(metadata, content);
+
+			MediaHttpUploader uploader = insert.getMediaHttpUploader();
+			uploader.setDirectUploadEnabled(false);
+			uploader.setProgressListener(this);
+			uploader.setChunkSize(MediaHttpUploader.MINIMUM_CHUNK_SIZE);
+
+			file.addProgressListener(listener, object);
+
+			UploadJob<Drive.Files.Insert> uploadJob = new UploadJob<Drive.Files.Insert>(file, parent, overwrite, insert);
+			uploadQueue.add(uploadJob);
+
+			nextUploadJob();
+		}
+		catch (IOException e)
+		{
+			e.printStackTrace();
+		}
+	}
+
+	/**
+	 * @see com.yagasoft.overcast.CSP#upload(com.yagasoft.overcast.container.LocalFolder, com.yagasoft.overcast.container.RemoteFolder, boolean, com.yagasoft.overcast.container.ITransferProgressListener, java.lang.Object)
+	 */
+	@Override
+	public void upload(LocalFolder folder, com.yagasoft.overcast.container.RemoteFolder<?> parent, boolean overwrite,
+			ITransferProgressListener listener, Object object)
+	{
+		Container<?> result = parent.searchByName(folder.getName(), false);
+		RemoteFolder remoteFolder = null;
+
+		if (result == null || !result.isFolder())
+		{
+			try
+			{
+				remoteFolder = factory.createObject(RemoteFolder.class);
+				remoteFolder.create(parent);
+				remoteFolder.updateFromSource(true, false);
+			}
+			catch (Exception e)
+			{
+				e.printStackTrace();
+			}
+		}
+		else
+		{
+			remoteFolder = (RemoteFolder) result;
+		}
+
+		remoteFolder.setLocalMapping(folder);
+		folder.setRemoteMapping(remoteFolder);
+
+		for (com.yagasoft.overcast.container.File<?> file : folder.getFilesArray())
+		{
+			try
+			{
+				upload((LocalFile) file, parent, overwrite, listener, object);
+			}
+			catch (Exception e)
+			{
+				e.printStackTrace();
+			}
+		}
+
+		for (Folder<?> childFolder : folder.getFoldersArray())
+		{
+			upload((LocalFolder) childFolder, remoteFolder, overwrite, listener, object);
+		}
+	}
+
+	/**
+	 * @see com.yagasoft.overcast.CSP#nextUploadJob()
+	 */
+	@Override
+	public void nextUploadJob()
+	{
+		if (currentUploadJob == null)
+		{
+			currentUploadJob = uploadQueue.remove();
+
+			try
+			{
+				currentUploadJob.getParent().add(factory.createObject(RemoteFile.class, ((Drive.Files.Insert) currentUploadJob.getCspUploader()).execute()));
+			}
+			catch (IOException e)
+			{
+				e.printStackTrace();
+				currentUploadJob.getFile().notifyListeners(TransferState.FAILED, 0f);
+				nextUploadJob();
+			}
+		}
+	}
+
+	/**
+	 * @see com.google.api.client.googleapis.media.MediaHttpUploaderProgressListener#progressChanged(com.google.api.client.googleapis.media.MediaHttpUploader)
+	 */
+	@Override
+	public void progressChanged(MediaHttpUploader uploader) throws IOException
+	{
+		switch (uploader.getUploadState())
+		{
+			case INITIATION_COMPLETE:
+				currentUploadJob.getFile().notifyListeners(TransferState.INITIALISED, (float) uploader.getProgress());
+
+			case MEDIA_IN_PROGRESS:
+				// System.out.println("Progress: " +
+				// NumberFormat.getPercentInstance().format(uploader.getProgress()));
+				currentUploadJob.getFile().notifyListeners(TransferState.IN_PROGRESS, (float) uploader.getProgress());
+				break;
+
+			case MEDIA_COMPLETE:
+				currentUploadJob.getFile().notifyListeners(TransferState.COMPLETED, (float) uploader.getProgress());
+				currentUploadJob = null;
+				nextUploadJob();
+				break;
+
+			default:
+				System.out.println(uploader.getUploadState());
+				break;
+		}
 	}
 
 	// //////////////////////////////////////////////////////////////////////////////////////

@@ -22,19 +22,19 @@ import com.yagasoft.overcast.authorisation.OAuth;
 
 public class Authorisation extends OAuth
 {
-
+	
 	/** Directory to store user credentials. */
 	protected Path							DATA_STORE_DIR;
-
+	
 	/**
 	 * Global instance of the {@link DataStoreFactory}. The best practice is to
 	 * make it a single globally shared instance across your application.
 	 */
 	protected FileDataStoreFactory			dataStoreFactory;
-
+	
 	protected Credential					credential;
 	protected GoogleAuthorizationCodeFlow	flow;
-
+	
 	/**
 	 * @see com.yagasoft.overcast.authorisation.Authorisation#authorise()
 	 */
@@ -44,16 +44,16 @@ public class Authorisation extends OAuth
 		try
 		{
 			DATA_STORE_DIR = Paths.get(Authorisation.class.getResource("/").toURI());
-
+			
 			dataStoreFactory = new FileDataStoreFactory(DATA_STORE_DIR.toFile());
-
+			
 			GoogleClientSecrets clientSecrets =
 					GoogleClientSecrets.load(Google.JSON_FACTORY,
 							new InputStreamReader(Authorisation.class.getResourceAsStream("/" + info.getFileName())));
-
+			
 			String clientId = clientSecrets.getDetails().getClientId();
 			String clientSecret = clientSecrets.getDetails().getClientSecret();
-
+			
 			if (clientId.startsWith("Enter") || clientSecret.startsWith("Enter "))
 			{
 				System.out
@@ -61,12 +61,12 @@ public class Authorisation extends OAuth
 								+ "into ./client_secrets.json");
 				System.exit(1);
 			}
-
+			
 			// set up authorisation code flow
 			flow = new GoogleAuthorizationCodeFlow.Builder(Google.httpTransport, Google.JSON_FACTORY, clientSecrets,
 					Collections.singleton(DriveScopes.DRIVE))
 					.setDataStoreFactory(dataStoreFactory).build();
-
+			
 			acquirePermission();
 		}
 		catch (IOException | URISyntaxException e)
@@ -74,7 +74,7 @@ public class Authorisation extends OAuth
 			e.printStackTrace();
 		}
 	}
-
+	
 	/**
 	 * @see com.yagasoft.overcast.authorisation.OAuth#acquirePermission()
 	 */
@@ -90,9 +90,9 @@ public class Authorisation extends OAuth
 		{
 			e.printStackTrace();
 		}
-
+		
 	}
-
+	
 	/**
 	 * @see com.yagasoft.overcast.authorisation.OAuth#reacquirePermission()
 	 */
@@ -101,16 +101,16 @@ public class Authorisation extends OAuth
 	{
 		acquirePermission();
 	}
-
+	
 	/**
 	 * @see com.yagasoft.overcast.authorisation.OAuth#saveToken()
 	 */
 	@Override
 	public void saveToken()
-	{
-
+	{	
+		
 	}
-
+	
 	/**
 	 * @return the credential
 	 */
@@ -118,7 +118,7 @@ public class Authorisation extends OAuth
 	{
 		return credential;
 	}
-
+	
 	/**
 	 * @param credential
 	 *            the credential to set
@@ -127,5 +127,5 @@ public class Authorisation extends OAuth
 	{
 		this.credential = credential;
 	}
-
+	
 }
