@@ -10,7 +10,6 @@ import com.yagasoft.overcast.container.ITransferProgressListener;
 import com.yagasoft.overcast.container.LocalFile;
 import com.yagasoft.overcast.container.LocalFolder;
 import com.yagasoft.overcast.container.RemoteFolder;
-import com.yagasoft.overcast.google.RemoteFactory;
 
 
 public abstract class CSP
@@ -23,9 +22,10 @@ public abstract class CSP
 	protected boolean				fullRemoteTreeLoaded;
 	protected long					localFreeSpace;
 	protected long					remoteFreeSpace;
-	protected RemoteFactory			factory;
 	protected Queue<UploadJob<?>>	uploadQueue	= new LinkedList<UploadJob<?>>();
 	protected UploadJob<?>			currentUploadJob;
+	
+	// add a RemoteFactory object in the subclass.
 	
 	public abstract void initTree();
 	
@@ -41,10 +41,12 @@ public abstract class CSP
 		return remoteFileTree.calculateSize();
 	}
 	
-	public abstract void upload(LocalFile file, RemoteFolder<?> parent, boolean overwrite, ITransferProgressListener listener, Object object)
+	public abstract void upload(LocalFile file, RemoteFolder<?> parent, boolean overwrite, ITransferProgressListener listener,
+			Object object)
 			throws Exception;
 	
-	public abstract void upload(LocalFolder folder, RemoteFolder<?> parent, boolean overwrite, ITransferProgressListener listener, Object object);
+	public abstract void upload(LocalFolder folder, RemoteFolder<?> parent, boolean overwrite,
+			ITransferProgressListener listener, Object object);
 	
 	public abstract void nextUploadJob();
 	
@@ -54,12 +56,12 @@ public abstract class CSP
 	
 	public Authorisation getAuthorisation()
 	{
-		return this.authorisation;
+		return authorisation;
 	}
 	
 	public void setAuthorisation(Authorisation value)
 	{
-		this.authorisation = value;
+		authorisation = value;
 	}
 	
 	/**
@@ -81,12 +83,12 @@ public abstract class CSP
 	
 	public RemoteFolder<?> getRemoteFileTree()
 	{
-		return this.remoteFileTree;
+		return remoteFileTree;
 	}
 	
 	public void setRemoteFileTree(RemoteFolder<?> value)
 	{
-		this.remoteFileTree = value;
+		remoteFileTree = value;
 	}
 	
 	/**
@@ -155,23 +157,6 @@ public abstract class CSP
 	public void setRemoteFreeSpace(long remoteFreeSpace)
 	{
 		this.remoteFreeSpace = remoteFreeSpace;
-	}
-	
-	/**
-	 * @return the factory
-	 */
-	public RemoteFactory getFactory()
-	{
-		return factory;
-	}
-	
-	/**
-	 * @param factory
-	 *            the factory to set
-	 */
-	public void setFactory(RemoteFactory factory)
-	{
-		this.factory = factory;
 	}
 	
 	// ======================================================================================

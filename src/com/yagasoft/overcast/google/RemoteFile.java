@@ -23,7 +23,10 @@ import com.yagasoft.overcast.container.ITransferProgressListener.TransferState;
 public class RemoteFile extends com.yagasoft.overcast.container.RemoteFile<File> implements IRemote, MediaHttpDownloaderProgressListener
 {
 	
-	RemoteFile()
+	/**
+	 * Better use the factory in Google class.
+	 */
+	public RemoteFile()
 	{}
 	
 	/**

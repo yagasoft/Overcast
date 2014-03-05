@@ -1,23 +1,22 @@
 import java.util.ArrayList;
 import java.util.Arrays;
 
+import com.yagasoft.overcast.google.Google;
+import com.yagasoft.overcast.google.RemoteFolder;
+import com.yagasoft.overcast.ubuntu.Ubuntu;
+
 
 public class _Test
 {
 
 	public static void main(String[] args)
 	{
-		ArrayList<String> splitPath = new ArrayList<String>(Arrays.asList(new String("/test1/test2/").split("/")));
-
-		if (splitPath.get(0).equals(""))
-		{
-			splitPath.remove(0);
-		}
-
-		for (String part : splitPath)
-		{
-			System.out.println("=> " + part);
-		}
+//		Google google = new Google();
+//		google.buildFileTree(false);
+		
+		Ubuntu ubuntu = new Ubuntu();
+		ubuntu.buildFileTree(true);
+		
 //		Google google = new Google();
 ////		google.buildFileTree(false);
 //

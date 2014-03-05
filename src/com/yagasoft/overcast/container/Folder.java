@@ -17,12 +17,13 @@ public abstract class Folder<T> extends Container<T>
 	
 	/**
 	 * Creates the folder at the source with the info set (class attributes).
-	 * @throws Exception 
+	 * 
+	 * @throws Exception
 	 */
 	public abstract void create(Folder<?> parent) throws Exception;
 	
 	public abstract void create(String parentPath) throws Exception;
-
+	
 	public void add(Folder<?> folder)
 	{
 		folders.put(folder.id, folder);
@@ -60,7 +61,7 @@ public abstract class Folder<T> extends Container<T>
 	 *            contents only.
 	 */
 	public abstract void buildTree(int numberOfLevels);
-
+	
 	/**
 	 * Equivalent to {@link Folder#buildTree(int)} with Integer.MAX_VALUE
 	 * passed if recursive, or passing zero if not.
@@ -79,13 +80,13 @@ public abstract class Folder<T> extends Container<T>
 			buildTree(0);
 		}
 	}
-
+	
 	/**
 	 * I chose not to add it here and not in updateFromSource because it's an
 	 * intensive operation that should be done manually only.
 	 */
 	public abstract long calculateSize();
-
+	
 	/**
 	 * @see com.yagasoft.overcast.container.Container#isFolder()
 	 */
@@ -94,7 +95,7 @@ public abstract class Folder<T> extends Container<T>
 	{
 		return true;
 	}
-
+	
 	/**
 	 * Update the fields (class attributes) in this folder object from the
 	 * in-memory info (nothing is done outside the program). Can update the
@@ -106,7 +107,7 @@ public abstract class Folder<T> extends Container<T>
 	 *            Recursively or not.
 	 */
 	public abstract void updateInfo(boolean folderContents, boolean recursively);
-
+	
 	/**
 	 * Update from where the folder resides. It updates the contents (meta only)
 	 * of the folder, and can be done recursively (tree).
@@ -117,7 +118,7 @@ public abstract class Folder<T> extends Container<T>
 	 *            Recursively or not.
 	 */
 	public abstract void updateFromSource(boolean folderContents, boolean recursively);
-
+	
 	/**
 	 * Checks if this file/folder exists in this folder, and whether to do it
 	 * recursively.
@@ -128,14 +129,13 @@ public abstract class Folder<T> extends Container<T>
 	 *            Recursively or not.
 	 * @return true if it exists, and false otherwise.
 	 */
-	public <S extends Container<?>> S contains(S container, boolean recursively)
+	public <S extends Container<?>> S searchById(S container, boolean recursively)
 	{
-		return (S) contains(container.id, recursively);
+		return (S) searchById(container.id, recursively);
 	}
 	
 	/**
-	 * Checks if this file/folder exists in this folder (searches by ID --
-	 * overloaded), and whether to do it recursively.
+	 * Checks if this file/folder exists in this folder (searches by ID), and whether to do it recursively.
 	 * 
 	 * @param id
 	 *            The ID of the file to look for.
@@ -143,7 +143,7 @@ public abstract class Folder<T> extends Container<T>
 	 *            Recursively or not.
 	 * @return true if it exists, and false otherwise.
 	 */
-	public <S extends Container<?>> S contains(String id, boolean recursively)
+	public <S extends Container<?>> S searchById(String id, boolean recursively)
 	{
 		if (folders.containsKey(id))
 		{
@@ -157,7 +157,7 @@ public abstract class Folder<T> extends Container<T>
 		{
 			for (Folder<?> folder : folders.values())
 			{
-				Container<?> container = folder.contains(id, recursively);
+				Container<?> container = folder.searchById(id, recursively);
 				
 				if (container != null)
 				{
@@ -167,6 +167,21 @@ public abstract class Folder<T> extends Container<T>
 		}
 		
 		return null;
+	}
+	
+	/**
+	 * Checks if this file/folder exists in this folder, and whether to do it
+	 * recursively.
+	 * 
+	 * @param container
+	 *            File/folder to look for.
+	 * @param recursively
+	 *            Recursively or not.
+	 * @return true if it exists, and false otherwise.
+	 */
+	public <S extends Container<?>> S searchByName(S container, boolean recursively)
+	{
+		return (S) searchByName(container.name, recursively);
 	}
 	
 	public <S extends Container<?>> S searchByName(String name, boolean recursively)
@@ -205,14 +220,14 @@ public abstract class Folder<T> extends Container<T>
 	 *            Filter the sent list from already existing members in this folder (to allow faster parsing of new ones).
 	 */
 	public void removeObsolete(ArrayList<String> ids, boolean filter)
-	{	
+	{
 		ArrayList<String> containers = new ArrayList<String>();
 		containers.addAll(folders.keySet());
 		containers.addAll(files.keySet());
 		
 		for (String container : containers)
 		{
-			if (!ids.contains(container))
+			if ( !ids.contains(container))
 			{
 				folders.remove(id);
 				files.remove(id);
@@ -239,13 +254,13 @@ public abstract class Folder<T> extends Container<T>
 	 *            parsing of new folders).
 	 */
 	public void removeObsoleteFolders(ArrayList<String> folderIds, boolean filter)
-	{	
+	{
 		ArrayList<String> foldersList = new ArrayList<String>();
 		foldersList.addAll(folders.keySet());
 		
 		for (String folder : foldersList)
 		{
-			if (!folderIds.contains(folder))
+			if ( !folderIds.contains(folder))
 			{
 				folders.remove(id);
 				files.remove(id);
@@ -272,13 +287,13 @@ public abstract class Folder<T> extends Container<T>
 	 *            parsing of new files).
 	 */
 	public void removeObsoleteFiles(ArrayList<String> fileIds, boolean filter)
-	{	
+	{
 		ArrayList<String> filesList = new ArrayList<String>();
 		filesList.addAll(folders.keySet());
 		
 		for (String file : filesList)
 		{
-			if (!fileIds.contains(file))
+			if ( !fileIds.contains(file))
 			{
 				folders.remove(id);
 				files.remove(id);
@@ -293,8 +308,6 @@ public abstract class Folder<T> extends Container<T>
 			}
 		}
 	}
-	
-	
 	
 	// --------------------------------------------------------------------------------------
 	// #region children.

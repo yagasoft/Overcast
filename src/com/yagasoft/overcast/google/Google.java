@@ -23,9 +23,9 @@ import com.yagasoft.overcast.UploadJob;
 import com.yagasoft.overcast.container.Container;
 import com.yagasoft.overcast.container.Folder;
 import com.yagasoft.overcast.container.ITransferProgressListener;
-import com.yagasoft.overcast.container.LocalFolder;
 import com.yagasoft.overcast.container.ITransferProgressListener.TransferState;
 import com.yagasoft.overcast.container.LocalFile;
+import com.yagasoft.overcast.container.LocalFolder;
 
 
 public class Google extends CSP implements MediaHttpUploaderProgressListener
@@ -49,6 +49,8 @@ public class Google extends CSP implements MediaHttpUploaderProgressListener
 	static final JsonFactory	JSON_FACTORY		= JacksonFactory.getDefaultInstance();
 
 	Authorisation				authorisation;
+
+	static RemoteFactory		factory;
 
 	public Google()
 	{
@@ -85,9 +87,10 @@ public class Google extends CSP implements MediaHttpUploaderProgressListener
 	@Override
 	public void buildFileTree(boolean recursively)
 	{
-		remoteFileTree = new RemoteFolder();
+		remoteFileTree = factory.createFolder();
 		remoteFileTree.setId("root");
-		remoteFileTree.buildTree(recursively ? Integer.MAX_VALUE : 0);
+		remoteFileTree.updateFromSource(false, false);
+		remoteFileTree.buildTree(recursively ? Integer.MAX_VALUE : 1);
 
 //		for (Container<?> container : root.getChildrenList())
 //		{
@@ -146,12 +149,12 @@ public class Google extends CSP implements MediaHttpUploaderProgressListener
 
 	/**
 	 * @see com.yagasoft.overcast.CSP#upload(com.yagasoft.overcast.container.LocalFile,
-	 *      com.yagasoft.overcast.container.RemoteFolder, boolean,
-	 *      com.yagasoft.overcast.container.ITransferProgressListener,
+	 *      com.yagasoft.overcast.container.RemoteFolder, boolean, com.yagasoft.overcast.container.ITransferProgressListener,
 	 *      java.lang.Object)
 	 */
 	@Override
-	public void upload(LocalFile file, com.yagasoft.overcast.container.RemoteFolder<?> parent, boolean overwrite, ITransferProgressListener listener,
+	public void upload(LocalFile file, com.yagasoft.overcast.container.RemoteFolder<?> parent, boolean overwrite,
+			ITransferProgressListener listener,
 			Object object) throws Exception
 	{
 		for (com.yagasoft.overcast.container.File<?> child : parent.getFilesArray())
@@ -199,7 +202,9 @@ public class Google extends CSP implements MediaHttpUploaderProgressListener
 	}
 
 	/**
-	 * @see com.yagasoft.overcast.CSP#upload(com.yagasoft.overcast.container.LocalFolder, com.yagasoft.overcast.container.RemoteFolder, boolean, com.yagasoft.overcast.container.ITransferProgressListener, java.lang.Object)
+	 * @see com.yagasoft.overcast.CSP#upload(com.yagasoft.overcast.container.LocalFolder,
+	 *      com.yagasoft.overcast.container.RemoteFolder, boolean, com.yagasoft.overcast.container.ITransferProgressListener,
+	 *      java.lang.Object)
 	 */
 	@Override
 	public void upload(LocalFolder folder, com.yagasoft.overcast.container.RemoteFolder<?> parent, boolean overwrite,
@@ -208,11 +213,12 @@ public class Google extends CSP implements MediaHttpUploaderProgressListener
 		Container<?> result = parent.searchByName(folder.getName(), false);
 		RemoteFolder remoteFolder = null;
 
-		if (result == null || !result.isFolder())
+		if ((result == null) || !result.isFolder())
 		{
 			try
 			{
-				remoteFolder = factory.createObject(RemoteFolder.class);
+				remoteFolder = factory.createFolder();
+				remoteFolder.setName(folder.getName());
 				remoteFolder.create(parent);
 				remoteFolder.updateFromSource(true, false);
 			}
@@ -259,7 +265,8 @@ public class Google extends CSP implements MediaHttpUploaderProgressListener
 
 			try
 			{
-				currentUploadJob.getParent().add(factory.createObject(RemoteFile.class, ((Drive.Files.Insert) currentUploadJob.getCspUploader()).execute()));
+				currentUploadJob.getParent().add(
+						factory.createFile(((Drive.Files.Insert) currentUploadJob.getCspUploader()).execute(), false));
 			}
 			catch (IOException e)
 			{
@@ -343,6 +350,24 @@ public class Google extends CSP implements MediaHttpUploaderProgressListener
 	public static JsonFactory getJsonFactory()
 	{
 		return JSON_FACTORY;
+	}
+
+
+	/**
+	 * @return the factory
+	 */
+	public static RemoteFactory getFactory()
+	{
+		return factory;
+	}
+
+
+	/**
+	 * @param factory the factory to set
+	 */
+	public static void setFactory(RemoteFactory factory)
+	{
+		Google.factory = factory;
 	}
 
 	// ======================================================================================
