@@ -2,45 +2,76 @@
 package com.yagasoft.overcast.container.transfer;
 
 
-import com.yagasoft.overcast.container.remote.RemoteFile;
+import java.nio.file.Paths;
+
+import com.yagasoft.overcast.container.local.LocalFile;
 import com.yagasoft.overcast.container.local.LocalFolder;
+import com.yagasoft.overcast.container.remote.RemoteFile;
+import com.yagasoft.overcast.container.transfer.ITransferProgressListener.TransferState;
 
 
-public final class DownloadJob<T>
+public final class DownloadJob<T> extends TransferJob<T>
 {
 
-	RemoteFile<?>		file;
-	LocalFolder	parent;
-	boolean			overwrite;
-	T				cspDownloader;
+	protected LocalFolder	parent;
+	protected RemoteFile<?>	remoteFile;
 
-	public DownloadJob(RemoteFile<?> file, LocalFolder parent, boolean overwrite, T cspUploader)
+	public DownloadJob(RemoteFile<?> remoteFile, LocalFolder parent, boolean overwrite, T cspTransferer)
 	{
-		this.file = file;
+		super(new LocalFile(), overwrite, cspTransferer);
 		this.parent = parent;
-		this.overwrite = overwrite;
-		this.cspDownloader = cspUploader;
+		this.remoteFile = remoteFile;
+
+		localFile.setSourceObject(Paths.get(parent.getPath(), remoteFile.getName()));
+		localFile.setPath(localFile.getSourceObject().toString());
+	}
+
+	/**
+	 * @see com.yagasoft.overcast.container.transfer.TransferJob#success()
+	 */
+	@Override
+	public void success()
+	{
+		localFile.updateInfo();
+		localFile.setRemoteMapping(remoteFile);
+		remoteFile.setLocalMapping(localFile);
+		parent.add(localFile);
+	}
+
+	public void success(String path)
+	{
+
+	}
+
+	/**
+	 * @see com.yagasoft.overcast.container.transfer.TransferJob#notifyListeners(com.yagasoft.overcast.container.transfer.ITransferProgressListener.TransferState, float)
+	 */
+	@Override
+	public void notifyListeners(TransferState state, float progress)
+	{
+		remoteFile.notifyListeners(state, progress);
 	}
 
 	// --------------------------------------------------------------------------------------
 	// #region Getters and setters.
 
 	/**
-	 * @return the file
+	 * @return the remoteFile
 	 */
-	public RemoteFile<?> getFile()
+	public RemoteFile<?> getRemoteFile()
 	{
-		return file;
+		return remoteFile;
 	}
 
+
 	/**
-	 * @param file
-	 *            the file to set
+	 * @param remoteFile the remoteFile to set
 	 */
-	public void setFile(RemoteFile<?> file)
+	public void setRemoteFile(RemoteFile<?> remoteFile)
 	{
-		this.file = file;
+		this.remoteFile = remoteFile;
 	}
+
 
 	/**
 	 * @return the parent
@@ -50,47 +81,13 @@ public final class DownloadJob<T>
 		return parent;
 	}
 
+
 	/**
-	 * @param parent
-	 *            the parent to set
+	 * @param parent the parent to set
 	 */
 	public void setParent(LocalFolder parent)
 	{
 		this.parent = parent;
-	}
-
-	/**
-	 * @return the overwrite
-	 */
-	public boolean isOverwrite()
-	{
-		return overwrite;
-	}
-
-	/**
-	 * @param overwrite
-	 *            the overwrite to set
-	 */
-	public void setOverwrite(boolean overwrite)
-	{
-		this.overwrite = overwrite;
-	}
-
-	/**
-	 * @return the cspUploader
-	 */
-	public T getCspDownloader()
-	{
-		return cspDownloader;
-	}
-
-	/**
-	 * @param cspUploader
-	 *            the cspUploader to set
-	 */
-	public void setCspDownloader(T cspDownloader)
-	{
-		this.cspDownloader = cspDownloader;
 	}
 
 	// #endregion Getters and setters.

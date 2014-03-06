@@ -38,9 +38,10 @@ import com.yagasoft.overcast.exception.CreationException;
 import com.yagasoft.overcast.exception.TransferException;
 
 
-public class Google extends CSP implements MediaHttpDownloaderProgressListener, MediaHttpUploaderProgressListener
+public class Google extends CSP<File, MediaHttpDownloader, Drive.Files.Insert> implements MediaHttpDownloaderProgressListener,
+		MediaHttpUploaderProgressListener
 {
-
+	
 	/**
 	 * Be sure to specify the name of your application. If the application name
 	 * is {@code null} or
@@ -48,34 +49,34 @@ public class Google extends CSP implements MediaHttpDownloaderProgressListener, 
 	 * "MyCompany-ProductName/1.0".
 	 */
 	static final String			APPLICATION_NAME	= "Overcast";
-
+	
 	/** Global instance of the HTTP transport. */
 	static HttpTransport		httpTransport;
-
+	
 	/** Global Drive API client. */
 	static Drive				driveService;
-
+	
 	/** Global instance of the JSON factory. */
 	static final JsonFactory	JSON_FACTORY		= JacksonFactory.getDefaultInstance();
-
+	
 	Authorisation				authorisation;
-
+	
 	static RemoteFactory		factory;
-
+	
 	public Google()
 	{
 		try
 		{
 			httpTransport = GoogleNetHttpTransport.newTrustedTransport();
-
+			
 			authorisation = new Authorisation();
 			authorisation.setInfo(Paths.get(Authorisation.class.getResource("/client_secrets.json").toURI()));
 			authorisation.authorise();
-
+			
 			// set up the global Drive instance
-			driveService = new Drive.Builder(httpTransport, JSON_FACTORY, authorisation.credential).setApplicationName(
-					APPLICATION_NAME).build();
-
+			driveService = new Drive.Builder(httpTransport, JSON_FACTORY, authorisation.credential)
+					.setApplicationName(APPLICATION_NAME).build();
+			
 			factory = new RemoteFactory(this);
 		}
 		catch (IOException | GeneralSecurityException | URISyntaxException e)
@@ -83,14 +84,14 @@ public class Google extends CSP implements MediaHttpDownloaderProgressListener, 
 			e.printStackTrace();
 		}
 	}
-
+	
 	/**
 	 * @see com.yagasoft.overcast.CSP#initTree()
 	 */
 	@Override
 	public void initTree()
 	{}
-
+	
 	/**
 	 * @see com.yagasoft.overcast.CSP#buildFileTree(boolean)
 	 */
@@ -101,12 +102,12 @@ public class Google extends CSP implements MediaHttpDownloaderProgressListener, 
 		remoteFileTree.setId("root");
 		remoteFileTree.updateFromSource(false, false);
 		remoteFileTree.buildTree(recursively ? Integer.MAX_VALUE : 1);
-
+		
 //		for (Container<?> container : root.getChildrenList())
 //		{
 //			System.out.println(container.getName());
 //		}
-
+		
 //		try
 //		{
 //		RemoteFolder root = new RemoteFolder(getDriveService());
@@ -117,7 +118,7 @@ public class Google extends CSP implements MediaHttpDownloaderProgressListener, 
 //		setFullTreeLoaded(recursive);
 //
 //		setRemoteFileTree(root);
-
+		
 //			Iterator<TreeNode> iterator = getRemoteFileTree().preorderIterator();
 //
 //			while (iterator.hasNext())
@@ -134,11 +135,11 @@ public class Google extends CSP implements MediaHttpDownloaderProgressListener, 
 //			e.printStackTrace();
 //		}
 	}
-
+	
 	// //////////////////////////////////////////////////////////////////////////////////////
 	// #region Getters and setters.
 	// ======================================================================================
-
+	
 	/**
 	 * @see com.yagasoft.overcast.CSP#calculateLocalFreeSpace()
 	 */
@@ -147,7 +148,7 @@ public class Google extends CSP implements MediaHttpDownloaderProgressListener, 
 	{
 		return 0;
 	}
-
+	
 	/**
 	 * @see com.yagasoft.overcast.CSP#calculateRemoteFreeSpace()
 	 */
@@ -156,7 +157,7 @@ public class Google extends CSP implements MediaHttpDownloaderProgressListener, 
 	{
 		return 0;
 	}
-
+	
 	/**
 	 * @see com.yagasoft.overcast.CSP#download(com.yagasoft.overcast.container.remote.RemoteFolder,
 	 *      com.yagasoft.overcast.container.local.LocalFolder, boolean,
@@ -168,7 +169,7 @@ public class Google extends CSP implements MediaHttpDownloaderProgressListener, 
 	{
 		Container<?> result = parent.searchByName(folder.getName(), false);
 		LocalFolder localFolder = null;
-
+		
 		if ((result == null) || !result.isFolder())
 		{
 			localFolder = new LocalFolder();
@@ -179,10 +180,10 @@ public class Google extends CSP implements MediaHttpDownloaderProgressListener, 
 		{
 			localFolder = (LocalFolder) result;
 		}
-
+		
 		localFolder.setRemoteMapping(folder);
 		folder.setLocalMapping(localFolder);
-
+		
 		for (com.yagasoft.overcast.container.File<?> file : folder.getFilesArray())
 		{
 			try
@@ -194,7 +195,7 @@ public class Google extends CSP implements MediaHttpDownloaderProgressListener, 
 				e.printStackTrace();
 			}
 		}
-
+		
 		for (Folder<?> childFolder : folder.getFoldersArray())
 		{
 			try
@@ -206,16 +207,16 @@ public class Google extends CSP implements MediaHttpDownloaderProgressListener, 
 				e.printStackTrace();
 			}
 		}
-
+		
 	}
-
+	
 	/**
 	 * @see com.yagasoft.overcast.CSP#download(com.yagasoft.overcast.container.remote.RemoteFile,
 	 *      com.yagasoft.overcast.container.local.LocalFolder, boolean,
 	 *      com.yagasoft.overcast.container.transfer.ITransferProgressListener, java.lang.Object)
 	 */
 	@Override
-	public void download(RemoteFile<?> file, LocalFolder parent, boolean overwrite, ITransferProgressListener listener,
+	public void download(RemoteFile<File> file, LocalFolder parent, boolean overwrite, ITransferProgressListener listener,
 			Object object) throws TransferException
 	{
 		for (com.yagasoft.overcast.container.File<?> child : parent.getFilesArray())
@@ -232,42 +233,49 @@ public class Google extends CSP implements MediaHttpDownloaderProgressListener, 
 				}
 			}
 		}
-
+		
 		MediaHttpDownloader downloader = new MediaHttpDownloader(Google.getHttpTransport()
 				, Google.driveService.getRequestFactory().getInitializer());
 		downloader.setDirectDownloadEnabled(false);
 		downloader.setProgressListener(this);
 		downloader.setChunkSize(MediaHttpUploader.MINIMUM_CHUNK_SIZE);
-
+		
 		file.addProgressListener(listener, object);
-
-		DownloadJob<MediaHttpDownloader> downloadJob = new DownloadJob<MediaHttpDownloader>(file, parent, overwrite, downloader);
+		
+		DownloadJob<MediaHttpDownloader> downloadJob = new DownloadJob<MediaHttpDownloader>(file, parent, overwrite
+				, downloader);
 		downloadQueue.add(downloadJob);
-
+		
 		nextDownloadJob();
 	}
-
+	
 	/**
 	 * @see com.yagasoft.overcast.CSP#nextDownloadJob()
 	 */
 	@Override
 	public void nextDownloadJob()
 	{
-		try
+		if ((currentDownloadJob == null) && !downloadQueue.isEmpty())
 		{
-			OutputStream out = new FileOutputStream(new java.io.File(currentDownloadJob.getParent().getPath()
-					, currentDownloadJob.getFile().getName()));
-
-			((MediaHttpDownloader) currentDownloadJob.getCspDownloader()).download(
-					new GenericUrl(currentDownloadJob.getFile().getLink()), out);
+			currentDownloadJob = downloadQueue.remove();
+			
+			try
+			{
+				OutputStream out = new FileOutputStream(currentDownloadJob.getLocalFile().getSourceObject().toFile());
+				currentDownloadJob.getCspTransferer().download(new GenericUrl(currentDownloadJob.getRemoteFile().getLink()), out);
+				out.close();
+				
+				currentDownloadJob.success();
+			}
+			catch (IOException e)
+			{
+				e.printStackTrace();
+				currentDownloadJob.notifyListeners(TransferState.FAILED, 0.0f);
+				nextDownloadJob();
+			}
 		}
-		catch (IOException e)
-		{
-			e.printStackTrace();
-		}
-
 	}
-
+	
 	/**
 	 * @see com.google.api.client.googleapis.media.MediaHttpDownloaderProgressListener#progressChanged(com.google.api.client.googleapis.media.MediaHttpDownloader)
 	 */
@@ -279,22 +287,22 @@ public class Google extends CSP implements MediaHttpDownloaderProgressListener, 
 			case MEDIA_IN_PROGRESS:
 				// System.out.println("Progress: " +
 				// NumberFormat.getPercentInstance().format(downloader.getProgress()));
-				currentDownloadJob.getFile().notifyListeners(TransferState.IN_PROGRESS, (float) downloader.getProgress());
+				currentDownloadJob.notifyListeners(TransferState.IN_PROGRESS, (float) downloader.getProgress());
 				break;
-
+			
 			case MEDIA_COMPLETE:
-				currentDownloadJob.getFile().notifyListeners(TransferState.COMPLETED, (float) downloader.getProgress());
+				currentDownloadJob.notifyListeners(TransferState.COMPLETED, (float) downloader.getProgress());
 				currentDownloadJob = null;
 				nextDownloadJob();
 				break;
-
+			
 			default:
 				System.out.println(downloader.getDownloadState());
 				break;
 		}
-
+		
 	}
-
+	
 	/**
 	 * @see com.yagasoft.overcast.CSP#upload(com.yagasoft.overcast.container.local.LocalFolder,
 	 *      com.yagasoft.overcast.container.remote.RemoteFolder, boolean,
@@ -306,7 +314,7 @@ public class Google extends CSP implements MediaHttpDownloaderProgressListener, 
 	{
 		Container<?> result = parent.searchByName(folder.getName(), false);
 		RemoteFolder remoteFolder = null;
-
+		
 		if ((result == null) || !result.isFolder())
 		{
 			try
@@ -325,10 +333,10 @@ public class Google extends CSP implements MediaHttpDownloaderProgressListener, 
 		{
 			remoteFolder = (RemoteFolder) result;
 		}
-
+		
 		remoteFolder.setLocalMapping(folder);
 		folder.setRemoteMapping(remoteFolder);
-
+		
 		for (com.yagasoft.overcast.container.File<?> file : folder.getFilesArray())
 		{
 			try
@@ -340,13 +348,13 @@ public class Google extends CSP implements MediaHttpDownloaderProgressListener, 
 				e.printStackTrace();
 			}
 		}
-
+		
 		for (Folder<?> childFolder : folder.getFoldersArray())
 		{
 			upload((LocalFolder) childFolder, remoteFolder, overwrite, listener, object);
 		}
 	}
-
+	
 	/**
 	 * @see com.yagasoft.overcast.CSP#upload(com.yagasoft.overcast.container.local.LocalFile,
 	 *      com.yagasoft.overcast.container.remote.RemoteFolder, boolean,
@@ -371,28 +379,31 @@ public class Google extends CSP implements MediaHttpDownloaderProgressListener, 
 				}
 			}
 		}
-
+		
 		File metadata = new File();
 		metadata.setTitle(file.getName());
 		metadata.setMimeType(file.getType());
 		metadata.setParents(Arrays.asList(new ParentReference().setId(parent.getId())));
-
+		
 		FileContent content = new FileContent(file.getType(), file.getSourceObject().toFile());
-
+		
 		try
 		{
 			Drive.Files.Insert insert = Google.driveService.files().insert(metadata, content);
-
+			
 			MediaHttpUploader uploader = insert.getMediaHttpUploader();
 			uploader.setDirectUploadEnabled(false);
 			uploader.setProgressListener(this);
 			uploader.setChunkSize(MediaHttpUploader.MINIMUM_CHUNK_SIZE);
-
+			
 			file.addProgressListener(listener, object);
-
-			UploadJob<Drive.Files.Insert> uploadJob = new UploadJob<Drive.Files.Insert>(file, parent, overwrite, insert);
+			
+			RemoteFile<File> remoteFile = factory.createFile();
+			
+			UploadJob<Drive.Files.Insert, File> uploadJob = new UploadJob<Drive.Files.Insert, File>(file, remoteFile, parent
+					, overwrite, insert);
 			uploadQueue.add(uploadJob);
-
+			
 			nextUploadJob();
 		}
 		catch (IOException e)
@@ -400,31 +411,30 @@ public class Google extends CSP implements MediaHttpDownloaderProgressListener, 
 			e.printStackTrace();
 		}
 	}
-
+	
 	/**
 	 * @see com.yagasoft.overcast.CSP#nextUploadJob()
 	 */
 	@Override
 	public void nextUploadJob()
 	{
-		if (currentUploadJob == null)
+		if ((currentUploadJob == null) && !uploadQueue.isEmpty())
 		{
 			currentUploadJob = uploadQueue.remove();
-
+			
 			try
 			{
-				currentUploadJob.getParent().add(
-						factory.createFile(((Drive.Files.Insert) currentUploadJob.getCspUploader()).execute(), false));
+				currentUploadJob.success(currentUploadJob.getCspTransferer().execute());
 			}
 			catch (IOException e)
 			{
 				e.printStackTrace();
-				currentUploadJob.getFile().notifyListeners(TransferState.FAILED, 0.0f);
+				currentUploadJob.notifyListeners(TransferState.FAILED, 0.0f);
 				nextUploadJob();
 			}
 		}
 	}
-
+	
 	/**
 	 * @see com.google.api.client.googleapis.media.MediaHttpUploaderProgressListener#progressChanged(com.google.api.client.googleapis.media.MediaHttpUploader)
 	 */
@@ -434,30 +444,30 @@ public class Google extends CSP implements MediaHttpDownloaderProgressListener, 
 		switch (uploader.getUploadState())
 		{
 			case INITIATION_COMPLETE:
-				currentUploadJob.getFile().notifyListeners(TransferState.INITIALISED, 0.0f);
-
+				currentUploadJob.notifyListeners(TransferState.INITIALISED, 0.0f);
+				
 			case MEDIA_IN_PROGRESS:
 				// System.out.println("Progress: " +
 				// NumberFormat.getPercentInstance().format(uploader.getProgress()));
-				currentUploadJob.getFile().notifyListeners(TransferState.IN_PROGRESS, (float) uploader.getProgress());
+				currentUploadJob.notifyListeners(TransferState.IN_PROGRESS, (float) uploader.getProgress());
 				break;
-
+			
 			case MEDIA_COMPLETE:
-				currentUploadJob.getFile().notifyListeners(TransferState.COMPLETED, 1.0f);
+				currentUploadJob.notifyListeners(TransferState.COMPLETED, 1.0f);
 				currentUploadJob = null;
 				nextUploadJob();
 				break;
-
+			
 			default:
 				System.out.println(uploader.getUploadState());
 				break;
 		}
 	}
-
+	
 	// //////////////////////////////////////////////////////////////////////////////////////
 	// #region Getters and setters.
 	// ======================================================================================
-
+	
 	/**
 	 * @return the httpTransport
 	 */
@@ -465,7 +475,7 @@ public class Google extends CSP implements MediaHttpDownloaderProgressListener, 
 	{
 		return httpTransport;
 	}
-
+	
 	/**
 	 * @param httpTransport
 	 *            the httpTransport to set
@@ -474,7 +484,7 @@ public class Google extends CSP implements MediaHttpDownloaderProgressListener, 
 	{
 		Google.httpTransport = httpTransport;
 	}
-
+	
 	/**
 	 * @return the driveService
 	 */
@@ -482,7 +492,7 @@ public class Google extends CSP implements MediaHttpDownloaderProgressListener, 
 	{
 		return driveService;
 	}
-
+	
 	/**
 	 * @param driveService
 	 *            the driveService to set
@@ -491,7 +501,7 @@ public class Google extends CSP implements MediaHttpDownloaderProgressListener, 
 	{
 		Google.driveService = driveService;
 	}
-
+	
 	/**
 	 * @return the jsonFactory
 	 */
@@ -499,7 +509,7 @@ public class Google extends CSP implements MediaHttpDownloaderProgressListener, 
 	{
 		return JSON_FACTORY;
 	}
-
+	
 	/**
 	 * @return the factory
 	 */
@@ -507,7 +517,7 @@ public class Google extends CSP implements MediaHttpDownloaderProgressListener, 
 	{
 		return factory;
 	}
-
+	
 	/**
 	 * @param factory
 	 *            the factory to set
@@ -516,9 +526,9 @@ public class Google extends CSP implements MediaHttpDownloaderProgressListener, 
 	{
 		Google.factory = factory;
 	}
-
+	
 	// ======================================================================================
 	// #endregion Getters and setters.
 	// //////////////////////////////////////////////////////////////////////////////////////
-
+	
 }

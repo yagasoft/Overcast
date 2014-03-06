@@ -23,18 +23,18 @@ import com.yagasoft.overcast.exception.TransferException;
 
 public class LocalFile extends File<Path> implements ILocal
 {
-	
+
 	protected RemoteFile<?>	remoteMapping;
-	
+
 	/**
 	 * Instantiates a new local file.
 	 */
 	public LocalFile()
 	{}
-	
+
 	/**
 	 * Instantiates a new local file.
-	 * 
+	 *
 	 * @param file
 	 *            Java library File object.
 	 */
@@ -43,10 +43,10 @@ public class LocalFile extends File<Path> implements ILocal
 		sourceObject = file;
 		updateInfo();
 	}
-	
+
 	/**
 	 * Instantiates a new local file.
-	 * 
+	 *
 	 * @param path
 	 *            Path to the file.
 	 */
@@ -54,7 +54,7 @@ public class LocalFile extends File<Path> implements ILocal
 	{
 		this(Paths.get(path));
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.container.Container#isExist()
 	 */
@@ -65,10 +65,10 @@ public class LocalFile extends File<Path> implements ILocal
 		{
 			throw new AccessException("Can't determine if file exists or not.");
 		}
-		
+
 		return Files.exists(sourceObject);
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.container.Container#updateInfo()
 	 */
@@ -77,7 +77,7 @@ public class LocalFile extends File<Path> implements ILocal
 	{
 		updateFromSource();
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.container.Container#updateFromSource()
 	 */
@@ -87,7 +87,7 @@ public class LocalFile extends File<Path> implements ILocal
 		name = sourceObject.getFileName().toString();
 		path = sourceObject.toAbsolutePath().toString();
 		type = URLConnection.guessContentTypeFromName(path);
-		
+
 		try
 		{
 			size = Files.size(sourceObject);
@@ -97,10 +97,10 @@ public class LocalFile extends File<Path> implements ILocal
 			size = 0;
 			e.printStackTrace();
 		}
-		
+
 		generateId();
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.container.Container#copy(com.yagasoft.overcast.container.Folder, boolean)
 	 */
@@ -115,16 +115,16 @@ public class LocalFile extends File<Path> implements ILocal
 							new CopyOption[] { REPLACE_EXISTING, COPY_ATTRIBUTES }
 							:
 							new CopyOption[] { COPY_ATTRIBUTES }));
-			
+
 		}
 		catch (IOException e)
 		{
 			e.printStackTrace();
 		}
-		
+
 		return null;
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.container.Container#move(com.yagasoft.overcast.container.Folder, boolean)
 	 */
@@ -138,7 +138,7 @@ public class LocalFile extends File<Path> implements ILocal
 							new CopyOption[] { REPLACE_EXISTING }
 							:
 							new CopyOption[0]);
-			
+
 			updateFromSource();
 		}
 		catch (IOException e)
@@ -146,7 +146,7 @@ public class LocalFile extends File<Path> implements ILocal
 			e.printStackTrace();
 		}
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.container.Container#rename(java.lang.String)
 	 */
@@ -163,7 +163,7 @@ public class LocalFile extends File<Path> implements ILocal
 			e.printStackTrace();
 		}
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.container.Container#delete()
 	 */
@@ -173,7 +173,7 @@ public class LocalFile extends File<Path> implements ILocal
 		try
 		{
 			Files.deleteIfExists(sourceObject);
-			
+
 			if (parent != null)
 			{
 				parent.remove(this);
@@ -184,7 +184,7 @@ public class LocalFile extends File<Path> implements ILocal
 			e.printStackTrace();
 		}
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.container.local.ILocal#upload(com.yagasoft.overcast.container.remote.RemoteFolder, boolean,
 	 *      com.yagasoft.overcast.container.transfer.ITransferProgressListener, java.lang.Object)
@@ -195,7 +195,7 @@ public class LocalFile extends File<Path> implements ILocal
 	{
 		parent.getCsp().upload(this, parent, overwrite, listener, object);
 	}
-	
+
 	/**
 	 * @return the remoteMapping
 	 */
@@ -203,7 +203,7 @@ public class LocalFile extends File<Path> implements ILocal
 	{
 		return remoteMapping;
 	}
-	
+
 	/**
 	 * @param remoteMapping
 	 *            the remoteMapping to set
@@ -212,5 +212,5 @@ public class LocalFile extends File<Path> implements ILocal
 	{
 		this.remoteMapping = remoteMapping;
 	}
-	
+
 }

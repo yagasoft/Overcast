@@ -16,9 +16,10 @@ import com.yagasoft.overcast.container.transfer.UploadJob;
 import com.yagasoft.overcast.exception.TransferException;
 
 
-public abstract class CSP
+public abstract class CSP<T, S, U>
 {
 
+	protected String 	name;
 	protected Authorisation			authorisation;
 	protected LocalFolder			localFileTree;
 	protected RemoteFolder<?>		remoteFileTree;
@@ -26,10 +27,10 @@ public abstract class CSP
 	protected boolean				fullRemoteTreeLoaded;
 	protected long					localFreeSpace;
 	protected long					remoteFreeSpace;
-	protected Queue<DownloadJob<?>>	downloadQueue	= new LinkedList<DownloadJob<?>>();
-	protected DownloadJob<?>		currentDownloadJob;
-	protected Queue<UploadJob<?>>	uploadQueue		= new LinkedList<UploadJob<?>>();
-	protected UploadJob<?>			currentUploadJob;
+	protected Queue<DownloadJob<S>>	downloadQueue	= new LinkedList<DownloadJob<S>>();
+	protected DownloadJob<S>		currentDownloadJob;
+	protected Queue<UploadJob<U, T>>	uploadQueue		= new LinkedList<UploadJob<U, T>>();
+	protected UploadJob<U, T>			currentUploadJob;
 
 	// add a RemoteFactory object in the subclass.
 
@@ -47,20 +48,20 @@ public abstract class CSP
 		return remoteFileTree.calculateSize();
 	}
 
-	public abstract void download(RemoteFolder<?> folder, LocalFolder parent, boolean overwrite,
-	ITransferProgressListener listener, Object object);
+	public abstract void download(RemoteFolder<?> folder, LocalFolder parent, boolean overwrite
+			, ITransferProgressListener listener, Object object);
 
-	public abstract void download(RemoteFile<?> file, LocalFolder parent, boolean overwrite, ITransferProgressListener listener,
-			Object object)
+	public abstract void download(RemoteFile<T> file, LocalFolder parent, boolean overwrite, ITransferProgressListener listener
+			, Object object)
 			throws TransferException;
 
 	public abstract void nextDownloadJob();
 
-	public abstract void upload(LocalFolder folder, RemoteFolder<?> parent, boolean overwrite,
-	ITransferProgressListener listener, Object object);
+	public abstract void upload(LocalFolder folder, RemoteFolder<?> parent, boolean overwrite
+			, ITransferProgressListener listener, Object object);
 
-	public abstract void upload(LocalFile file, RemoteFolder<?> parent, boolean overwrite, ITransferProgressListener listener,
-			Object object)
+	public abstract void upload(LocalFile file, RemoteFolder<?> parent, boolean overwrite, ITransferProgressListener listener
+			, Object object)
 			throws TransferException;
 
 	public abstract void nextUploadJob();
@@ -69,11 +70,28 @@ public abstract class CSP
 	// #region Getters and setters.
 	// ======================================================================================
 
+	/**
+	 * @return the name
+	 */
+	public String getName()
+	{
+		return name;
+	}
+
+	/**
+	 * @param name the name to set
+	 */
+	public void setName(String name)
+	{
+		this.name = name;
+	}
+
 	public Authorisation getAuthorisation()
 	{
 		return authorisation;
 	}
 
+	
 	public void setAuthorisation(Authorisation value)
 	{
 		authorisation = value;

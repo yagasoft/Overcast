@@ -9,6 +9,7 @@ import com.yagasoft.overcast.CSP;
 import com.yagasoft.overcast.container.Container;
 
 
+@SuppressWarnings("rawtypes")
 public abstract class RemoteFactory<FolderSourceType, FolderType extends RemoteFolder<FolderSourceType>, FileSourceType, FileType extends RemoteFile<FileSourceType>>
 {
 
@@ -60,6 +61,7 @@ public abstract class RemoteFactory<FolderSourceType, FolderType extends RemoteF
 		return null;
 	}
 
+	@SuppressWarnings("unchecked")
 	protected void postObjectCreation(Container<?> container)
 	{
 		container.setCsp(csp);

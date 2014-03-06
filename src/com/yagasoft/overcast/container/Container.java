@@ -6,8 +6,8 @@ import java.util.HashMap;
 
 import com.yagasoft.overcast.CSP;
 import com.yagasoft.overcast.container.transfer.ITransferProgressListener;
-import com.yagasoft.overcast.container.transfer.ITransferrable;
 import com.yagasoft.overcast.container.transfer.ITransferProgressListener.TransferState;
+import com.yagasoft.overcast.container.transfer.ITransferrable;
 import com.yagasoft.overcast.exception.AccessException;
 
 
@@ -21,7 +21,7 @@ public abstract class Container<T> implements ITransferrable
 	protected T												sourceObject;
 	protected Folder<?>										parent;
 	protected HashMap<ITransferProgressListener, Object>	progressListeners	= new HashMap<ITransferProgressListener, Object>();
-	protected CSP											csp;
+	protected CSP<T, ?, ?>									csp;
 
 	public void generateId()
 	{
@@ -209,7 +209,7 @@ public abstract class Container<T> implements ITransferrable
 	/**
 	 * @return the csp
 	 */
-	public CSP getCsp()
+	public CSP<T, ?, ?> getCsp()
 	{
 		return csp;
 	}
@@ -218,7 +218,7 @@ public abstract class Container<T> implements ITransferrable
 	 * @param csp
 	 *            the csp to set
 	 */
-	public void setCsp(CSP csp)
+	public void setCsp(CSP<T, ? ,?> csp)
 	{
 		this.csp = csp;
 	}
