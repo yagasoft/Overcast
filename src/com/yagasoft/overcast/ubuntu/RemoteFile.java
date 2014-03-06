@@ -2,16 +2,19 @@
 package com.yagasoft.overcast.ubuntu;
 
 
+import java.net.MalformedURLException;
+import java.net.URL;
+
 import com.ubuntuone.api.files.model.U1File;
 import com.ubuntuone.api.files.model.U1Node;
 import com.ubuntuone.api.files.request.U1NodeListener;
 import com.ubuntuone.api.files.util.U1Failure;
 import com.yagasoft.overcast.container.Container;
 import com.yagasoft.overcast.container.Folder;
-import com.yagasoft.overcast.container.ITransferProgressListener;
+import com.yagasoft.overcast.exception.AccessException;
 
 
-public class RemoteFile extends com.yagasoft.overcast.container.RemoteFile<U1File>
+public class RemoteFile extends com.yagasoft.overcast.container.remote.RemoteFile<U1File>
 {
 	
 	/**
@@ -24,7 +27,7 @@ public class RemoteFile extends com.yagasoft.overcast.container.RemoteFile<U1Fil
 	 * @see com.yagasoft.overcast.container.Container#isExist()
 	 */
 	@Override
-	public boolean isExist() throws Exception
+	public boolean isExist() throws AccessException
 	{
 		return false;
 	}
@@ -39,6 +42,15 @@ public class RemoteFile extends com.yagasoft.overcast.container.RemoteFile<U1Fil
 		name = sourceObject.getName();
 		path = sourceObject.getResourcePath();
 		type = sourceObject.getKind().toString();
+		
+		try
+		{
+			link = new URL("https://files.one.ubuntu.com/" + sourceObject.getKey());
+		}
+		catch (MalformedURLException e)
+		{
+			link = null;
+		}
 	}
 	
 	/**
@@ -100,14 +112,6 @@ public class RemoteFile extends com.yagasoft.overcast.container.RemoteFile<U1Fil
 	 */
 	@Override
 	public void delete()
-	{}
-	
-	/**
-	 * @see com.yagasoft.overcast.container.IRemote#download(com.yagasoft.overcast.container.Folder, boolean,
-	 *      com.yagasoft.overcast.container.ITransferProgressListener, java.lang.Object)
-	 */
-	@Override
-	public void download(Folder<?> parent, boolean overwrite, ITransferProgressListener listener, Object object) throws Exception
 	{}
 	
 }

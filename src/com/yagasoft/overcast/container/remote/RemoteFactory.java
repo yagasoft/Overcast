@@ -1,11 +1,12 @@
 
-package com.yagasoft.overcast.container;
+package com.yagasoft.overcast.container.remote;
 
 
 import java.util.ArrayList;
 import java.util.Arrays;
 
 import com.yagasoft.overcast.CSP;
+import com.yagasoft.overcast.container.Container;
 
 
 public abstract class RemoteFactory<FolderSourceType, FolderType extends RemoteFolder<FolderSourceType>, FileSourceType, FileType extends RemoteFile<FileSourceType>>

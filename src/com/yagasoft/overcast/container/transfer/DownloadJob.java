@@ -1,64 +1,64 @@
 
-package com.yagasoft.overcast;
+package com.yagasoft.overcast.container.transfer;
 
 
-import com.yagasoft.overcast.container.LocalFile;
-import com.yagasoft.overcast.container.RemoteFolder;
+import com.yagasoft.overcast.container.remote.RemoteFile;
+import com.yagasoft.overcast.container.local.LocalFolder;
 
 
-public final class UploadJob<T>
+public final class DownloadJob<T>
 {
-	
-	LocalFile		file;
-	RemoteFolder<?>	parent;
+
+	RemoteFile<?>		file;
+	LocalFolder	parent;
 	boolean			overwrite;
-	T				cspUploader;
-	
-	public UploadJob(LocalFile file, RemoteFolder<?> parent, boolean overwrite, T cspUploader)
+	T				cspDownloader;
+
+	public DownloadJob(RemoteFile<?> file, LocalFolder parent, boolean overwrite, T cspUploader)
 	{
 		this.file = file;
 		this.parent = parent;
 		this.overwrite = overwrite;
-		this.cspUploader = cspUploader;
+		this.cspDownloader = cspUploader;
 	}
-	
+
 	// --------------------------------------------------------------------------------------
 	// #region Getters and setters.
-	
+
 	/**
 	 * @return the file
 	 */
-	public LocalFile getFile()
+	public RemoteFile<?> getFile()
 	{
 		return file;
 	}
-	
+
 	/**
 	 * @param file
 	 *            the file to set
 	 */
-	public void setFile(LocalFile file)
+	public void setFile(RemoteFile<?> file)
 	{
 		this.file = file;
 	}
-	
+
 	/**
 	 * @return the parent
 	 */
-	public RemoteFolder<?> getParent()
+	public LocalFolder getParent()
 	{
 		return parent;
 	}
-	
+
 	/**
 	 * @param parent
 	 *            the parent to set
 	 */
-	public void setParent(RemoteFolder<?> parent)
+	public void setParent(LocalFolder parent)
 	{
 		this.parent = parent;
 	}
-	
+
 	/**
 	 * @return the overwrite
 	 */
@@ -66,7 +66,7 @@ public final class UploadJob<T>
 	{
 		return overwrite;
 	}
-	
+
 	/**
 	 * @param overwrite
 	 *            the overwrite to set
@@ -75,25 +75,25 @@ public final class UploadJob<T>
 	{
 		this.overwrite = overwrite;
 	}
-	
+
 	/**
 	 * @return the cspUploader
 	 */
-	public T getCspUploader()
+	public T getCspDownloader()
 	{
-		return cspUploader;
+		return cspDownloader;
 	}
-	
+
 	/**
 	 * @param cspUploader
 	 *            the cspUploader to set
 	 */
-	public void setCspUploader(T cspUploader)
+	public void setCspDownloader(T cspDownloader)
 	{
-		this.cspUploader = cspUploader;
+		this.cspDownloader = cspDownloader;
 	}
-	
+
 	// #endregion Getters and setters.
 	// --------------------------------------------------------------------------------------
-	
+
 }

@@ -12,10 +12,11 @@ import com.ubuntuone.api.files.request.U1NodeListener;
 import com.ubuntuone.api.files.util.U1Failure;
 import com.yagasoft.overcast.container.Container;
 import com.yagasoft.overcast.container.Folder;
-import com.yagasoft.overcast.container.ITransferProgressListener;
+import com.yagasoft.overcast.exception.AccessException;
+import com.yagasoft.overcast.exception.CreationException;
 
 
-public class RemoteFolder extends com.yagasoft.overcast.container.RemoteFolder<U1Directory>
+public class RemoteFolder extends com.yagasoft.overcast.container.remote.RemoteFolder<U1Directory>
 {
 	
 	/**
@@ -28,21 +29,21 @@ public class RemoteFolder extends com.yagasoft.overcast.container.RemoteFolder<U
 	 * @see com.yagasoft.overcast.container.Folder#create(com.yagasoft.overcast.container.Folder)
 	 */
 	@Override
-	public void create(Folder<?> parent) throws Exception
+	public void create(Folder<?> parent) throws CreationException
 	{}
 	
 	/**
 	 * @see com.yagasoft.overcast.container.Folder#create(java.lang.String)
 	 */
 	@Override
-	public void create(String parentPath) throws Exception
+	public void create(String parentPath) throws CreationException
 	{}
 	
 	/**
 	 * @see com.yagasoft.overcast.container.Container#isExist()
 	 */
 	@Override
-	public boolean isExist() throws Exception
+	public boolean isExist() throws AccessException
 	{
 		return false;
 	}
@@ -212,14 +213,6 @@ public class RemoteFolder extends com.yagasoft.overcast.container.RemoteFolder<U
 	 */
 	@Override
 	public void delete()
-	{}
-	
-	/**
-	 * @see com.yagasoft.overcast.container.IRemote#download(com.yagasoft.overcast.container.Folder, boolean,
-	 *      com.yagasoft.overcast.container.ITransferProgressListener, java.lang.Object)
-	 */
-	@Override
-	public void download(Folder<?> parent, boolean overwrite, ITransferProgressListener listener, Object object) throws Exception
 	{}
 	
 }

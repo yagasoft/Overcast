@@ -1,5 +1,5 @@
 
-package com.yagasoft.overcast.container;
+package com.yagasoft.overcast.container.local;
 
 
 import java.io.IOException;
@@ -10,15 +10,22 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 
-import com.yagasoft.overcast.CSP;
+import com.yagasoft.overcast.container.Container;
+import com.yagasoft.overcast.container.Folder;
+import com.yagasoft.overcast.container.FolderHelper;
+import com.yagasoft.overcast.container.FolderHelper.TreeCopier;
+import com.yagasoft.overcast.container.FolderHelper.TreeDeleter;
+import com.yagasoft.overcast.container.FolderHelper.TreeMover;
+import com.yagasoft.overcast.container.remote.RemoteFolder;
+import com.yagasoft.overcast.container.transfer.ITransferProgressListener;
+import com.yagasoft.overcast.exception.AccessException;
+import com.yagasoft.overcast.exception.TransferException;
 
 
 public class LocalFolder extends Folder<Path> implements ILocal
 {
 	
 	protected RemoteFolder<?>	remoteMapping;
-	@SuppressWarnings("unused")
-	private CSP					csp	= null;
 	
 	public LocalFolder()
 	{}
@@ -40,7 +47,7 @@ public class LocalFolder extends Folder<Path> implements ILocal
 	@Override
 	public void create(Folder<?> parent)
 	{
-		create(parent.path);
+		create(parent.getPath());
 	}
 	
 	/**
@@ -63,11 +70,11 @@ public class LocalFolder extends Folder<Path> implements ILocal
 	 * @see com.yagasoft.overcast.container.Container#isExist()
 	 */
 	@Override
-	public boolean isExist() throws Exception
+	public boolean isExist() throws AccessException
 	{
 		if ( !Files.exists(sourceObject) && Files.notExists(sourceObject))
 		{
-			throw new Exception("Can't determine if folder exists or not.");
+			throw new AccessException("Can't determine if folder exists or not.");
 		}
 		
 		return Files.exists(sourceObject);
@@ -121,8 +128,8 @@ public class LocalFolder extends Folder<Path> implements ILocal
 			else
 			{
 				LocalFile file = new LocalFile(path);
-				files.put(file.id, file);
-				file.parent = this;
+				files.put(file.getId(), file);
+				file.setParent(this);
 			}
 //				}
 //				else
@@ -137,13 +144,13 @@ public class LocalFolder extends Folder<Path> implements ILocal
 //				newFolders.put(folder.id, folder);
 //			}
 		}
-//		
+//
 //		folders = newFolders;
 //		files = newFiles;
 		
 		for (Container<?> container : getChildrenArray())
 		{
-			System.out.println(container.path);
+			System.out.println(container.getPath());
 		}
 	}
 	
@@ -155,7 +162,7 @@ public class LocalFolder extends Folder<Path> implements ILocal
 	{
 		try
 		{
-			this.size = FolderHelper.getSize(path);
+			size = FolderHelper.getSize(path);
 		}
 		catch (IOException e)
 		{
@@ -174,8 +181,7 @@ public class LocalFolder extends Folder<Path> implements ILocal
 	{}
 	
 	/**
-	 * @see com.yagasoft.overcast.container.Folder#updateFromSource(boolean,
-	 *      boolean)
+	 * @see com.yagasoft.overcast.container.Folder#updateFromSource(boolean, boolean)
 	 */
 	@Override
 	public void updateFromSource(boolean folderContents, boolean recursively)
@@ -204,18 +210,17 @@ public class LocalFolder extends Folder<Path> implements ILocal
 	}
 	
 	/**
-	 * @see com.yagasoft.overcast.container.Container#copy(com.yagasoft.overcast.container.Folder,
-	 *      boolean)
+	 * @see com.yagasoft.overcast.container.Container#copy(com.yagasoft.overcast.container.Folder, boolean)
 	 */
 	@Override
 	public LocalFolder copy(Folder<?> destination, boolean overwrite)
 	{
-		FolderHelper.TreeCopier treeCopier = new FolderHelper.TreeCopier(sourceObject, (Path) destination.sourceObject, !overwrite, true);
+		TreeCopier treeCopier = new TreeCopier(sourceObject, (Path) destination.getSourceObject(), !overwrite, true);
 		
 		try
 		{
 			Files.walkFileTree(sourceObject, treeCopier);
-			return new LocalFolder(((Path) destination.sourceObject).resolve(sourceObject.getFileName()));
+			return new LocalFolder(((Path) destination.getSourceObject()).resolve(sourceObject.getFileName()));
 		}
 		catch (IOException e)
 		{
@@ -226,18 +231,17 @@ public class LocalFolder extends Folder<Path> implements ILocal
 	}
 	
 	/**
-	 * @see com.yagasoft.overcast.container.Container#move(com.yagasoft.overcast.container.Folder,
-	 *      boolean)
+	 * @see com.yagasoft.overcast.container.Container#move(com.yagasoft.overcast.container.Folder, boolean)
 	 */
 	@Override
 	public void move(Folder<?> destination, boolean overwrite)
 	{
-		FolderHelper.TreeMover treeMover = new FolderHelper.TreeMover(sourceObject, (Path) destination.sourceObject, !overwrite);
+		TreeMover treeMover = new TreeMover(sourceObject, (Path) destination.getSourceObject(), !overwrite);
 		
 		try
 		{
 			Files.walkFileTree(sourceObject, treeMover);
-			sourceObject = ((Path) destination.sourceObject).resolve(sourceObject.getFileName());
+			sourceObject = ((Path) destination.getSourceObject()).resolve(sourceObject.getFileName());
 			updateFromSource();
 		}
 		catch (IOException e)
@@ -269,7 +273,7 @@ public class LocalFolder extends Folder<Path> implements ILocal
 	@Override
 	public void delete()
 	{
-		FolderHelper.TreeDeleter treeDeleter = new FolderHelper.TreeDeleter();
+		TreeDeleter treeDeleter = new TreeDeleter();
 		
 		try
 		{
@@ -284,25 +288,6 @@ public class LocalFolder extends Folder<Path> implements ILocal
 		{
 			e.printStackTrace();
 		}
-	}
-	
-	/**
-	 * @return the csp
-	 */
-	@Override
-	public CSP getCsp()
-	{
-		throw new UnsupportedOperationException();
-	}
-	
-	/**
-	 * @param csp
-	 *            the csp to set
-	 */
-	@Override
-	public void setCsp(CSP csp)
-	{
-		throw new UnsupportedOperationException();
 	}
 	
 	/**
@@ -322,7 +307,6 @@ public class LocalFolder extends Folder<Path> implements ILocal
 	{
 		throw new UnsupportedOperationException();
 	}
-
 	
 	/**
 	 * @return the remoteMapping
@@ -331,13 +315,24 @@ public class LocalFolder extends Folder<Path> implements ILocal
 	{
 		return remoteMapping;
 	}
-
 	
 	/**
-	 * @param remoteMapping the remoteMapping to set
+	 * @param remoteMapping
+	 *            the remoteMapping to set
 	 */
 	public void setRemoteMapping(RemoteFolder<?> remoteMapping)
 	{
 		this.remoteMapping = remoteMapping;
+	}
+	
+	/**
+	 * @see com.yagasoft.overcast.container.local.ILocal#upload(com.yagasoft.overcast.container.remote.RemoteFolder, boolean,
+	 *      com.yagasoft.overcast.container.transfer.ITransferProgressListener, java.lang.Object)
+	 */
+	@Override
+	public void upload(RemoteFolder<?> parent, boolean overwrite, ITransferProgressListener listener, Object object)
+			throws TransferException
+	{
+		parent.getCsp().upload(this, parent, overwrite, listener, object);
 	}
 }

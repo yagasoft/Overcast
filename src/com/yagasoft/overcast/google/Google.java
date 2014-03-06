@@ -2,16 +2,21 @@
 package com.yagasoft.overcast.google;
 
 
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.URISyntaxException;
 import java.nio.file.Paths;
 import java.security.GeneralSecurityException;
 import java.util.Arrays;
 
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
+import com.google.api.client.googleapis.media.MediaHttpDownloader;
+import com.google.api.client.googleapis.media.MediaHttpDownloaderProgressListener;
 import com.google.api.client.googleapis.media.MediaHttpUploader;
 import com.google.api.client.googleapis.media.MediaHttpUploaderProgressListener;
 import com.google.api.client.http.FileContent;
+import com.google.api.client.http.GenericUrl;
 import com.google.api.client.http.HttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.jackson2.JacksonFactory;
@@ -19,16 +24,21 @@ import com.google.api.services.drive.Drive;
 import com.google.api.services.drive.model.File;
 import com.google.api.services.drive.model.ParentReference;
 import com.yagasoft.overcast.CSP;
-import com.yagasoft.overcast.UploadJob;
 import com.yagasoft.overcast.container.Container;
 import com.yagasoft.overcast.container.Folder;
-import com.yagasoft.overcast.container.ITransferProgressListener;
-import com.yagasoft.overcast.container.ITransferProgressListener.TransferState;
-import com.yagasoft.overcast.container.LocalFile;
-import com.yagasoft.overcast.container.LocalFolder;
+import com.yagasoft.overcast.container.local.LocalFile;
+import com.yagasoft.overcast.container.local.LocalFolder;
+import com.yagasoft.overcast.container.remote.IRemote;
+import com.yagasoft.overcast.container.remote.RemoteFile;
+import com.yagasoft.overcast.container.transfer.DownloadJob;
+import com.yagasoft.overcast.container.transfer.ITransferProgressListener;
+import com.yagasoft.overcast.container.transfer.ITransferProgressListener.TransferState;
+import com.yagasoft.overcast.container.transfer.UploadJob;
+import com.yagasoft.overcast.exception.CreationException;
+import com.yagasoft.overcast.exception.TransferException;
 
 
-public class Google extends CSP implements MediaHttpUploaderProgressListener
+public class Google extends CSP implements MediaHttpDownloaderProgressListener, MediaHttpUploaderProgressListener
 {
 
 	/**
@@ -148,14 +158,204 @@ public class Google extends CSP implements MediaHttpUploaderProgressListener
 	}
 
 	/**
-	 * @see com.yagasoft.overcast.CSP#upload(com.yagasoft.overcast.container.LocalFile,
-	 *      com.yagasoft.overcast.container.RemoteFolder, boolean, com.yagasoft.overcast.container.ITransferProgressListener,
-	 *      java.lang.Object)
+	 * @see com.yagasoft.overcast.CSP#download(com.yagasoft.overcast.container.remote.RemoteFolder,
+	 *      com.yagasoft.overcast.container.local.LocalFolder, boolean,
+	 *      com.yagasoft.overcast.container.transfer.ITransferProgressListener, java.lang.Object)
 	 */
 	@Override
-	public void upload(LocalFile file, com.yagasoft.overcast.container.RemoteFolder<?> parent, boolean overwrite,
+	public void download(com.yagasoft.overcast.container.remote.RemoteFolder<?> folder, LocalFolder parent, boolean overwrite,
+			ITransferProgressListener listener, Object object)
+	{
+		Container<?> result = parent.searchByName(folder.getName(), false);
+		LocalFolder localFolder = null;
+
+		if ((result == null) || !result.isFolder())
+		{
+			localFolder = new LocalFolder();
+			localFolder.create(parent);
+			localFolder.updateFromSource(true, false);
+		}
+		else
+		{
+			localFolder = (LocalFolder) result;
+		}
+
+		localFolder.setRemoteMapping(folder);
+		folder.setLocalMapping(localFolder);
+
+		for (com.yagasoft.overcast.container.File<?> file : folder.getFilesArray())
+		{
+			try
+			{
+				((IRemote) file).download(parent, overwrite, listener, object);
+			}
+			catch (TransferException e)
+			{
+				e.printStackTrace();
+			}
+		}
+
+		for (Folder<?> childFolder : folder.getFoldersArray())
+		{
+			try
+			{
+				((IRemote) childFolder).download(localFolder, overwrite, listener, object);
+			}
+			catch (TransferException e)
+			{
+				e.printStackTrace();
+			}
+		}
+
+	}
+
+	/**
+	 * @see com.yagasoft.overcast.CSP#download(com.yagasoft.overcast.container.remote.RemoteFile,
+	 *      com.yagasoft.overcast.container.local.LocalFolder, boolean,
+	 *      com.yagasoft.overcast.container.transfer.ITransferProgressListener, java.lang.Object)
+	 */
+	@Override
+	public void download(RemoteFile<?> file, LocalFolder parent, boolean overwrite, ITransferProgressListener listener,
+			Object object) throws TransferException
+	{
+		for (com.yagasoft.overcast.container.File<?> child : parent.getFilesArray())
+		{
+			if (child.getName().equals(child.getName()))
+			{
+				if (overwrite)
+				{
+					child.delete();
+				}
+				else
+				{
+					throw new TransferException("File exists!");
+				}
+			}
+		}
+
+		MediaHttpDownloader downloader = new MediaHttpDownloader(Google.getHttpTransport()
+				, Google.driveService.getRequestFactory().getInitializer());
+		downloader.setDirectDownloadEnabled(false);
+		downloader.setProgressListener(this);
+		downloader.setChunkSize(MediaHttpUploader.MINIMUM_CHUNK_SIZE);
+
+		file.addProgressListener(listener, object);
+
+		DownloadJob<MediaHttpDownloader> downloadJob = new DownloadJob<MediaHttpDownloader>(file, parent, overwrite, downloader);
+		downloadQueue.add(downloadJob);
+
+		nextDownloadJob();
+	}
+
+	/**
+	 * @see com.yagasoft.overcast.CSP#nextDownloadJob()
+	 */
+	@Override
+	public void nextDownloadJob()
+	{
+		try
+		{
+			OutputStream out = new FileOutputStream(new java.io.File(currentDownloadJob.getParent().getPath()
+					, currentDownloadJob.getFile().getName()));
+
+			((MediaHttpDownloader) currentDownloadJob.getCspDownloader()).download(
+					new GenericUrl(currentDownloadJob.getFile().getLink()), out);
+		}
+		catch (IOException e)
+		{
+			e.printStackTrace();
+		}
+
+	}
+
+	/**
+	 * @see com.google.api.client.googleapis.media.MediaHttpDownloaderProgressListener#progressChanged(com.google.api.client.googleapis.media.MediaHttpDownloader)
+	 */
+	@Override
+	public void progressChanged(MediaHttpDownloader downloader) throws IOException
+	{
+		switch (downloader.getDownloadState())
+		{
+			case MEDIA_IN_PROGRESS:
+				// System.out.println("Progress: " +
+				// NumberFormat.getPercentInstance().format(downloader.getProgress()));
+				currentDownloadJob.getFile().notifyListeners(TransferState.IN_PROGRESS, (float) downloader.getProgress());
+				break;
+
+			case MEDIA_COMPLETE:
+				currentDownloadJob.getFile().notifyListeners(TransferState.COMPLETED, (float) downloader.getProgress());
+				currentDownloadJob = null;
+				nextDownloadJob();
+				break;
+
+			default:
+				System.out.println(downloader.getDownloadState());
+				break;
+		}
+
+	}
+
+	/**
+	 * @see com.yagasoft.overcast.CSP#upload(com.yagasoft.overcast.container.local.LocalFolder,
+	 *      com.yagasoft.overcast.container.remote.RemoteFolder, boolean,
+	 *      com.yagasoft.overcast.container.transfer.ITransferProgressListener, java.lang.Object)
+	 */
+	@Override
+	public void upload(LocalFolder folder, com.yagasoft.overcast.container.remote.RemoteFolder<?> parent, boolean overwrite,
+			ITransferProgressListener listener, Object object)
+	{
+		Container<?> result = parent.searchByName(folder.getName(), false);
+		RemoteFolder remoteFolder = null;
+
+		if ((result == null) || !result.isFolder())
+		{
+			try
+			{
+				remoteFolder = factory.createFolder();
+				remoteFolder.setName(folder.getName());
+				remoteFolder.create(parent);
+				remoteFolder.updateFromSource(true, false);
+			}
+			catch (CreationException e)
+			{
+				e.printStackTrace();
+			}
+		}
+		else
+		{
+			remoteFolder = (RemoteFolder) result;
+		}
+
+		remoteFolder.setLocalMapping(folder);
+		folder.setRemoteMapping(remoteFolder);
+
+		for (com.yagasoft.overcast.container.File<?> file : folder.getFilesArray())
+		{
+			try
+			{
+				upload((LocalFile) file, parent, overwrite, listener, object);
+			}
+			catch (TransferException e)
+			{
+				e.printStackTrace();
+			}
+		}
+
+		for (Folder<?> childFolder : folder.getFoldersArray())
+		{
+			upload((LocalFolder) childFolder, remoteFolder, overwrite, listener, object);
+		}
+	}
+
+	/**
+	 * @see com.yagasoft.overcast.CSP#upload(com.yagasoft.overcast.container.local.LocalFile,
+	 *      com.yagasoft.overcast.container.remote.RemoteFolder, boolean,
+	 *      com.yagasoft.overcast.container.transfer.ITransferProgressListener, java.lang.Object)
+	 */
+	@Override
+	public void upload(LocalFile file, com.yagasoft.overcast.container.remote.RemoteFolder<?> parent, boolean overwrite,
 			ITransferProgressListener listener,
-			Object object) throws Exception
+			Object object) throws TransferException
 	{
 		for (com.yagasoft.overcast.container.File<?> child : parent.getFilesArray())
 		{
@@ -167,7 +367,7 @@ public class Google extends CSP implements MediaHttpUploaderProgressListener
 				}
 				else
 				{
-					throw new Exception("File exists!");
+					throw new TransferException("File exists!");
 				}
 			}
 		}
@@ -202,58 +402,6 @@ public class Google extends CSP implements MediaHttpUploaderProgressListener
 	}
 
 	/**
-	 * @see com.yagasoft.overcast.CSP#upload(com.yagasoft.overcast.container.LocalFolder,
-	 *      com.yagasoft.overcast.container.RemoteFolder, boolean, com.yagasoft.overcast.container.ITransferProgressListener,
-	 *      java.lang.Object)
-	 */
-	@Override
-	public void upload(LocalFolder folder, com.yagasoft.overcast.container.RemoteFolder<?> parent, boolean overwrite,
-			ITransferProgressListener listener, Object object)
-	{
-		Container<?> result = parent.searchByName(folder.getName(), false);
-		RemoteFolder remoteFolder = null;
-
-		if ((result == null) || !result.isFolder())
-		{
-			try
-			{
-				remoteFolder = factory.createFolder();
-				remoteFolder.setName(folder.getName());
-				remoteFolder.create(parent);
-				remoteFolder.updateFromSource(true, false);
-			}
-			catch (Exception e)
-			{
-				e.printStackTrace();
-			}
-		}
-		else
-		{
-			remoteFolder = (RemoteFolder) result;
-		}
-
-		remoteFolder.setLocalMapping(folder);
-		folder.setRemoteMapping(remoteFolder);
-
-		for (com.yagasoft.overcast.container.File<?> file : folder.getFilesArray())
-		{
-			try
-			{
-				upload((LocalFile) file, parent, overwrite, listener, object);
-			}
-			catch (Exception e)
-			{
-				e.printStackTrace();
-			}
-		}
-
-		for (Folder<?> childFolder : folder.getFoldersArray())
-		{
-			upload((LocalFolder) childFolder, remoteFolder, overwrite, listener, object);
-		}
-	}
-
-	/**
 	 * @see com.yagasoft.overcast.CSP#nextUploadJob()
 	 */
 	@Override
@@ -271,7 +419,7 @@ public class Google extends CSP implements MediaHttpUploaderProgressListener
 			catch (IOException e)
 			{
 				e.printStackTrace();
-				currentUploadJob.getFile().notifyListeners(TransferState.FAILED, 0f);
+				currentUploadJob.getFile().notifyListeners(TransferState.FAILED, 0.0f);
 				nextUploadJob();
 			}
 		}
@@ -286,7 +434,7 @@ public class Google extends CSP implements MediaHttpUploaderProgressListener
 		switch (uploader.getUploadState())
 		{
 			case INITIATION_COMPLETE:
-				currentUploadJob.getFile().notifyListeners(TransferState.INITIALISED, (float) uploader.getProgress());
+				currentUploadJob.getFile().notifyListeners(TransferState.INITIALISED, 0.0f);
 
 			case MEDIA_IN_PROGRESS:
 				// System.out.println("Progress: " +
@@ -295,7 +443,7 @@ public class Google extends CSP implements MediaHttpUploaderProgressListener
 				break;
 
 			case MEDIA_COMPLETE:
-				currentUploadJob.getFile().notifyListeners(TransferState.COMPLETED, (float) uploader.getProgress());
+				currentUploadJob.getFile().notifyListeners(TransferState.COMPLETED, 1.0f);
 				currentUploadJob = null;
 				nextUploadJob();
 				break;
@@ -352,7 +500,6 @@ public class Google extends CSP implements MediaHttpUploaderProgressListener
 		return JSON_FACTORY;
 	}
 
-
 	/**
 	 * @return the factory
 	 */
@@ -361,9 +508,9 @@ public class Google extends CSP implements MediaHttpUploaderProgressListener
 		return factory;
 	}
 
-
 	/**
-	 * @param factory the factory to set
+	 * @param factory
+	 *            the factory to set
 	 */
 	public static void setFactory(RemoteFactory factory)
 	{

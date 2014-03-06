@@ -1,5 +1,5 @@
 
-package com.yagasoft.overcast.container;
+package com.yagasoft.overcast.container.local;
 
 
 import static java.nio.file.StandardCopyOption.COPY_ATTRIBUTES;
@@ -12,15 +12,19 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-import com.yagasoft.overcast.CSP;
+import com.yagasoft.overcast.container.File;
+import com.yagasoft.overcast.container.Folder;
+import com.yagasoft.overcast.container.remote.RemoteFile;
+import com.yagasoft.overcast.container.remote.RemoteFolder;
+import com.yagasoft.overcast.container.transfer.ITransferProgressListener;
+import com.yagasoft.overcast.exception.AccessException;
+import com.yagasoft.overcast.exception.TransferException;
 
 
 public class LocalFile extends File<Path> implements ILocal
 {
 	
 	protected RemoteFile<?>	remoteMapping;
-	@SuppressWarnings("unused")
-	private CSP				csp	= null;
 	
 	/**
 	 * Instantiates a new local file.
@@ -55,11 +59,11 @@ public class LocalFile extends File<Path> implements ILocal
 	 * @see com.yagasoft.overcast.container.Container#isExist()
 	 */
 	@Override
-	public boolean isExist() throws Exception
+	public boolean isExist() throws AccessException
 	{
 		if ( !Files.exists(sourceObject) && Files.notExists(sourceObject))
 		{
-			throw new Exception("Can't determine if file exists or not.");
+			throw new AccessException("Can't determine if file exists or not.");
 		}
 		
 		return Files.exists(sourceObject);
@@ -98,15 +102,15 @@ public class LocalFile extends File<Path> implements ILocal
 	}
 	
 	/**
-	 * @see com.yagasoft.overcast.container.Container#copy(com.yagasoft.overcast.container.Folder,
-	 *      boolean)
+	 * @see com.yagasoft.overcast.container.Container#copy(com.yagasoft.overcast.container.Folder, boolean)
 	 */
 	@Override
 	public LocalFile copy(Folder<?> destination, boolean overwrite)
 	{
 		try
 		{
-			return new LocalFile(Files.copy(sourceObject, ((Path) destination.sourceObject).resolve(sourceObject.getFileName())
+			return new LocalFile(Files.copy(sourceObject,
+					((Path) destination.getSourceObject()).resolve(sourceObject.getFileName())
 					, overwrite ?
 							new CopyOption[] { REPLACE_EXISTING, COPY_ATTRIBUTES }
 							:
@@ -122,15 +126,14 @@ public class LocalFile extends File<Path> implements ILocal
 	}
 	
 	/**
-	 * @see com.yagasoft.overcast.container.Container#move(com.yagasoft.overcast.container.Folder,
-	 *      boolean)
+	 * @see com.yagasoft.overcast.container.Container#move(com.yagasoft.overcast.container.Folder, boolean)
 	 */
 	@Override
 	public void move(Folder<?> destination, boolean overwrite)
 	{
 		try
 		{
-			sourceObject = Files.move(sourceObject, ((Path) destination.sourceObject).resolve(sourceObject.getFileName())
+			sourceObject = Files.move(sourceObject, ((Path) destination.getSourceObject()).resolve(sourceObject.getFileName())
 					, overwrite ?
 							new CopyOption[] { REPLACE_EXISTING }
 							:
@@ -183,6 +186,17 @@ public class LocalFile extends File<Path> implements ILocal
 	}
 	
 	/**
+	 * @see com.yagasoft.overcast.container.local.ILocal#upload(com.yagasoft.overcast.container.remote.RemoteFolder, boolean,
+	 *      com.yagasoft.overcast.container.transfer.ITransferProgressListener, java.lang.Object)
+	 */
+	@Override
+	public void upload(RemoteFolder<?> parent, boolean overwrite, ITransferProgressListener listener, Object object)
+			throws TransferException
+	{
+		parent.getCsp().upload(this, parent, overwrite, listener, object);
+	}
+	
+	/**
 	 * @return the remoteMapping
 	 */
 	public RemoteFile<?> getRemoteMapping()
@@ -197,25 +211,6 @@ public class LocalFile extends File<Path> implements ILocal
 	public void setRemoteMapping(RemoteFile<?> remoteMapping)
 	{
 		this.remoteMapping = remoteMapping;
-	}
-	
-	/**
-	 * @return the csp
-	 */
-	@Override
-	public CSP getCsp()
-	{
-		throw new UnsupportedOperationException();
-	}
-	
-	/**
-	 * @param csp
-	 *            the csp to set
-	 */
-	@Override
-	public void setCsp(CSP csp)
-	{
-		throw new UnsupportedOperationException();
 	}
 	
 }

@@ -7,6 +7,8 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 
+import com.yagasoft.overcast.exception.CreationException;
+
 
 @SuppressWarnings("unchecked")
 public abstract class Folder<T> extends Container<T>
@@ -18,11 +20,11 @@ public abstract class Folder<T> extends Container<T>
 	/**
 	 * Creates the folder at the source with the info set (class attributes).
 	 * 
-	 * @throws Exception
+	 * @throws CreationException
 	 */
-	public abstract void create(Folder<?> parent) throws Exception;
+	public abstract void create(Folder<?> parent) throws CreationException;
 	
-	public abstract void create(String parentPath) throws Exception;
+	public abstract void create(String parentPath) throws CreationException;
 	
 	public void add(Folder<?> folder)
 	{

@@ -8,7 +8,7 @@ import java.util.Arrays;
 import com.google.api.services.drive.model.File;
 
 
-public class RemoteFactory extends com.yagasoft.overcast.container.RemoteFactory<File, RemoteFolder, File, RemoteFile>
+public class RemoteFactory extends com.yagasoft.overcast.container.remote.RemoteFactory<File, RemoteFolder, File, RemoteFile>
 {
 
 	public RemoteFactory(Google google)
@@ -18,7 +18,7 @@ public class RemoteFactory extends com.yagasoft.overcast.container.RemoteFactory
 	}
 
 	/**
-	 * @see com.yagasoft.overcast.container.RemoteFactory#splitPath(java.lang.String)
+	 * @see com.yagasoft.overcast.container.remote.RemoteFactory#splitPath(java.lang.String)
 	 */
 	@Override
 	protected ArrayList<String> splitPath(String path)

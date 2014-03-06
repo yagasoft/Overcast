@@ -55,7 +55,7 @@ import java.nio.file.attribute.FileTime;
 import java.util.concurrent.atomic.AtomicLong;
 
 
-class FolderHelper
+public class FolderHelper
 {
 
 	// --------------------------------------------------------------------------------------
@@ -87,7 +87,7 @@ class FolderHelper
 	/**
 	 * A {@code FileVisitor} that copies a file-tree ("cp -r")
 	 */
-	static class TreeCopier implements FileVisitor<Path>
+	public static class TreeCopier implements FileVisitor<Path>
 	{
 
 		private final Path		source;
@@ -95,7 +95,7 @@ class FolderHelper
 		private final boolean	prompt;
 		private final boolean	preserve;
 
-		TreeCopier(Path source, Path target, boolean prompt, boolean preserve)
+		public TreeCopier(Path source, Path target, boolean prompt, boolean preserve)
 		{
 			this.source = source;
 			this.target = target;
@@ -194,14 +194,14 @@ class FolderHelper
 		}
 	}
 
-	static class TreeMover implements FileVisitor<Path>
+	public static class TreeMover implements FileVisitor<Path>
 	{
 
 		private final Path		source;
 		private final Path		target;
 		private final boolean	prompt;
 
-		TreeMover(Path source, Path target, boolean prompt)
+		public TreeMover(Path source, Path target, boolean prompt)
 		{
 			this.source = source;
 			this.target = target;
@@ -299,7 +299,7 @@ class FolderHelper
 		}
 	}
 
-	static class TreeDeleter implements FileVisitor<Path>
+	public static class TreeDeleter implements FileVisitor<Path>
 	{
 
 		@Override
@@ -364,7 +364,7 @@ class FolderHelper
 	 * @throws IOException
 	 *             Signals that an I/O exception has occurred.
 	 */
-	static long getSize(String startPath) throws IOException
+	public static long getSize(String startPath) throws IOException
 	{
 		final AtomicLong size = new AtomicLong(0);
 		Path path = Paths.get(startPath);

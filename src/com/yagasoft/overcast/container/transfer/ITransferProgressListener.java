@@ -1,5 +1,7 @@
 
-package com.yagasoft.overcast.container;
+package com.yagasoft.overcast.container.transfer;
+
+import com.yagasoft.overcast.container.Container;
 
 
 
@@ -13,7 +15,7 @@ public interface ITransferProgressListener
 		FAILED,
 		COMPLETED
 	}
-	
+
 	public void progressChanged(Container<?> container, TransferState state, float progress, Object object);
 }
 
