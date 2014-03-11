@@ -1,14 +1,25 @@
+/*
+ * Copyright (C) 2011-2014 by Ahmed Osama el-Sawalhy
+ *
+ *		Modified MIT License (GPL v3 compatible)
+ * 			License terms are in a separate file (license.txt)
+ *
+ */
 
 package com.yagasoft.overcast.exception;
 
 
+/**
+ * Fired when there's a problem accessing a file.
+ */
 public class AccessException extends Exception
 {
 	
+	/** The Constant serialVersionUID. */
 	private static final long	serialVersionUID	= 7410482488933705949L;
 	
 	/**
-	 *
+	 * Instantiates a new access exception.
 	 */
 	public AccessException()
 	{
@@ -16,7 +27,10 @@ public class AccessException extends Exception
 	}
 	
 	/**
+	 * Instantiates a new access exception.
+	 * 
 	 * @param message
+	 *            the message
 	 */
 	public AccessException(String message)
 	{
@@ -24,7 +38,10 @@ public class AccessException extends Exception
 	}
 	
 	/**
+	 * Instantiates a new access exception.
+	 * 
 	 * @param cause
+	 *            the cause
 	 */
 	public AccessException(Throwable cause)
 	{
@@ -32,8 +49,12 @@ public class AccessException extends Exception
 	}
 	
 	/**
+	 * Instantiates a new access exception.
+	 * 
 	 * @param message
+	 *            the message
 	 * @param cause
+	 *            the cause
 	 */
 	public AccessException(String message, Throwable cause)
 	{
@@ -41,10 +62,16 @@ public class AccessException extends Exception
 	}
 	
 	/**
+	 * Instantiates a new access exception.
+	 * 
 	 * @param message
+	 *            the message
 	 * @param cause
+	 *            the cause
 	 * @param enableSuppression
+	 *            the enable suppression
 	 * @param writableStackTrace
+	 *            the writable stack trace
 	 */
 	public AccessException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace)
 	{

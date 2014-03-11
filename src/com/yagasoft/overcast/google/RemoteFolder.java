@@ -31,6 +31,15 @@ public class RemoteFolder extends com.yagasoft.overcast.container.remote.RemoteF
 	{}
 	
 	/**
+	 * @see com.yagasoft.overcast.container.Container#generateId()
+	 */
+	@Override
+	public void generateId()
+	{
+		
+	}
+	
+	/**
 	 * @see com.yagasoft.overcast.container.Folder#create(com.yagasoft.overcast.container.Folder)
 	 */
 	@Override

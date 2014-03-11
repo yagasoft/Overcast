@@ -1,3 +1,10 @@
+/*
+ * Copyright (C) 2011-2014 by Ahmed Osama el-Sawalhy
+ *
+ *		Modified MIT License (GPL v3 compatible)
+ * 			License terms are in a separate file (license.txt)
+ *
+ */
 
 package com.yagasoft.overcast.container.local;
 
@@ -21,9 +28,13 @@ import com.yagasoft.overcast.exception.AccessException;
 import com.yagasoft.overcast.exception.TransferException;
 
 
+/**
+ * A class representing files stored locally.
+ */
 public class LocalFile extends File<Path> implements ILocal
 {
 
+	/** The {@link RemoteFile} corresponding to this local file if applicable. */
 	protected RemoteFile<?>	remoteMapping;
 
 	/**
@@ -41,7 +52,7 @@ public class LocalFile extends File<Path> implements ILocal
 	public LocalFile(Path file)
 	{
 		sourceObject = file;
-		updateInfo();
+		updateInfo();		// updating the info locally costs nothing, so do it automatically.
 	}
 
 	/**
@@ -52,8 +63,15 @@ public class LocalFile extends File<Path> implements ILocal
 	 */
 	public LocalFile(String path)
 	{
-		this(Paths.get(path));
+		this(Paths.get(path));		// get the file object and pass it to the other constructor.
 	}
+
+	/**
+	 * @see com.yagasoft.overcast.container.Container#generateId()
+	 */
+	@Override
+	public void generateId()
+	{}
 
 	/**
 	 * @see com.yagasoft.overcast.container.Container#isExist()
@@ -61,7 +79,9 @@ public class LocalFile extends File<Path> implements ILocal
 	@Override
 	public boolean isExist() throws AccessException
 	{
-		if ( !Files.exists(sourceObject) && Files.notExists(sourceObject))
+		// if the Java library says the file doesn't exist, and at same time it says the file doesn't 'not exist', then ...
+		// obviously a problem.
+		if ( !Files.exists(sourceObject) && !Files.notExists(sourceObject))
 		{
 			throw new AccessException("Can't determine if file exists or not.");
 		}
@@ -75,7 +95,7 @@ public class LocalFile extends File<Path> implements ILocal
 	@Override
 	public void updateInfo()
 	{
-		updateFromSource();
+		updateFromSource();		// updating the info locally costs nothing, so do it automatically.
 	}
 
 	/**
@@ -86,7 +106,7 @@ public class LocalFile extends File<Path> implements ILocal
 	{
 		name = sourceObject.getFileName().toString();
 		path = sourceObject.toAbsolutePath().toString();
-		type = URLConnection.guessContentTypeFromName(path);
+		type = URLConnection.guessContentTypeFromName(path);		// guess type of file (MIME)
 
 		try
 		{
@@ -109,8 +129,10 @@ public class LocalFile extends File<Path> implements ILocal
 	{
 		try
 		{
-			return new LocalFile(Files.copy(sourceObject,
-					((Path) destination.getSourceObject()).resolve(sourceObject.getFileName())
+			return new LocalFile(Files.copy(
+					sourceObject
+					// get destination path, and add to it this file's name to form complete path.
+					, ((Path) destination.getSourceObject()).resolve(sourceObject.getFileName())
 					, overwrite ?
 							new CopyOption[] { REPLACE_EXISTING, COPY_ATTRIBUTES }
 							:
@@ -133,13 +155,15 @@ public class LocalFile extends File<Path> implements ILocal
 	{
 		try
 		{
-			sourceObject = Files.move(sourceObject, ((Path) destination.getSourceObject()).resolve(sourceObject.getFileName())
+			sourceObject = Files.move(
+					sourceObject
+					, ((Path) destination.getSourceObject()).resolve(sourceObject.getFileName())
 					, overwrite ?
 							new CopyOption[] { REPLACE_EXISTING }
 							:
 							new CopyOption[0]);
 
-			updateFromSource();
+			updateFromSource();		// need to update new path.
 		}
 		catch (IOException e)
 		{
@@ -155,6 +179,7 @@ public class LocalFile extends File<Path> implements ILocal
 	{
 		try
 		{
+			// renaming is effectively moving under a new name.
 			sourceObject = Files.move(sourceObject, sourceObject.resolveSibling(newName));
 			updateFromSource();
 		}
@@ -174,6 +199,7 @@ public class LocalFile extends File<Path> implements ILocal
 		{
 			Files.deleteIfExists(sourceObject);
 
+			// file is obsolete after delete, so remove from parent.
 			if (parent != null)
 			{
 				parent.remove(this);

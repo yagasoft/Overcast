@@ -1,3 +1,10 @@
+/* 
+ * Copyright (C) 2011-2014 by Ahmed Osama el-Sawalhy
+ * 
+ *		Modified MIT License (GPL v3 compatible)
+ * 			License terms are in a separate file (license.txt)
+ * 
+ */
 
 package com.yagasoft.overcast.container.remote;
 
@@ -11,14 +18,24 @@ import com.yagasoft.overcast.container.transfer.ITransferProgressListener;
 import com.yagasoft.overcast.exception.TransferException;
 
 
+/**
+ * A class representing the files on the server.
+ * 
+ * @param <T>
+ *            The source file type (file type from the original CSP API) must be passed to this class.
+ */
 public abstract class RemoteFile<T> extends File<T> implements IRemote
 {
 	
-	protected URL			link;
+	/** The direct link to the file (can be used to download the file). */
+	protected URL		link;
+	
+	/** The {@link LocalFile} corresponding to this remote file if applicable. */
 	protected LocalFile	localMapping;
 	
 	/**
-	 * @see com.yagasoft.overcast.container.remote.IRemote#download(com.yagasoft.overcast.container.local.LocalFolder, boolean, com.yagasoft.overcast.container.transfer.ITransferProgressListener, java.lang.Object)
+	 * @see com.yagasoft.overcast.container.remote.IRemote#download(com.yagasoft.overcast.container.local.LocalFolder, boolean,
+	 *      com.yagasoft.overcast.container.transfer.ITransferProgressListener, java.lang.Object)
 	 */
 	@Override
 	public void download(LocalFolder parent, boolean overwrite, ITransferProgressListener listener, Object object)

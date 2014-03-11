@@ -1,3 +1,10 @@
+/*
+ * Copyright (C) 2011-2014 by Ahmed Osama el-Sawalhy
+ *
+ *		Modified MIT License (GPL v3 compatible)
+ * 			License terms are in a separate file (license.txt)
+ *
+ */
 
 package com.yagasoft.overcast.google;
 
@@ -17,22 +24,28 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleClientSecrets;
 import com.google.api.client.util.store.DataStoreFactory;
 import com.google.api.client.util.store.FileDataStoreFactory;
 import com.google.api.services.drive.DriveScopes;
+import com.yagasoft.logger.Logger;
 import com.yagasoft.overcast.authorisation.OAuth;
 
 
+/**
+ * A class to handle OAuth operations with Google.
+ */
 public class Authorisation extends OAuth
 {
 	
 	/** Directory to store user credentials. */
-	protected Path							DATA_STORE_DIR;
+	protected Path							dataStoreFolder;
 	
 	/**
-	 * Global instance of the {@link DataStoreFactory}. The best practice is to
-	 * make it a single globally shared instance across your application.
+	 * Global instance of the {@link DataStoreFactory}.
 	 */
 	protected FileDataStoreFactory			dataStoreFactory;
 	
+	/** The credential. */
 	protected Credential					credential;
+	
+	/** The flow. */
 	protected GoogleAuthorizationCodeFlow	flow;
 	
 	/**
@@ -43,21 +56,23 @@ public class Authorisation extends OAuth
 	{
 		try
 		{
-			DATA_STORE_DIR = Paths.get(Authorisation.class.getResource("/").toURI());
+			// the folder where Google API stores creds.
+			dataStoreFolder = Paths.get(Authorisation.class.getResource("/").toURI());
+			dataStoreFactory = new FileDataStoreFactory(dataStoreFolder.toFile());
 			
-			dataStoreFactory = new FileDataStoreFactory(DATA_STORE_DIR.toFile());
-			
+			// load the JSON containing info required for identifying the dev account.
 			GoogleClientSecrets clientSecrets =
 					GoogleClientSecrets.load(Google.JSON_FACTORY,
 							new InputStreamReader(Authorisation.class.getResourceAsStream("/" + info.getFileName())));
 			
+			// dev info contained in the JSON.
 			String clientId = clientSecrets.getDetails().getClientId();
 			String clientSecret = clientSecrets.getDetails().getClientSecret();
 			
+			// problem!
 			if (clientId.startsWith("Enter") || clientSecret.startsWith("Enter "))
 			{
-				System.out
-						.println("Enter Client ID and Secret from https://code.google.com/apis/console/?api=drive "
+				Logger.post("Enter Client ID and Secret from https://code.google.com/apis/console/?api=drive "
 								+ "into ./client_secrets.json");
 				System.exit(1);
 			}
@@ -67,6 +82,7 @@ public class Authorisation extends OAuth
 					Collections.singleton(DriveScopes.DRIVE))
 					.setDataStoreFactory(dataStoreFactory).build();
 			
+			// go online and get the token.
 			acquirePermission();
 		}
 		catch (IOException | URISyntaxException e)

@@ -1,3 +1,10 @@
+/*
+ * Copyright (C) 2011-2014 by Ahmed Osama el-Sawalhy
+ *
+ *		Modified MIT License (GPL v3 compatible)
+ * 			License terms are in a separate file (license.txt)
+ *
+ */
 
 package com.yagasoft.overcast.container.local;
 
@@ -22,24 +29,49 @@ import com.yagasoft.overcast.exception.AccessException;
 import com.yagasoft.overcast.exception.TransferException;
 
 
+/**
+ * A class representing folders stored locally.
+ */
 public class LocalFolder extends Folder<Path> implements ILocal
 {
 	
+	/** The {@link RemoteFolder} corresponding to this local folder if applicable. */
 	protected RemoteFolder<?>	remoteMapping;
 	
+	/**
+	 * Instantiates a new local folder.
+	 */
 	public LocalFolder()
 	{}
 	
+	/**
+	 * Instantiates a new local folder.
+	 * 
+	 * @param file
+	 *            Java library File object.
+	 */
 	public LocalFolder(Path file)
 	{
 		sourceObject = file;
-		updateFromSource(false, false);
+		updateFromSource(false, false);		// updating the info locally costs nothing, so do it automatically.
 	}
 	
+	/**
+	 * Instantiates a new local folder.
+	 *
+	 * @param path Path to the folder.
+	 */
 	public LocalFolder(String path)
 	{
-		this(Paths.get(path));
+		this(Paths.get(path));		// get the folder object and pass it to the other constructor.
 	}
+	
+	/**
+	 * @see com.yagasoft.overcast.container.Container#generateId()
+	 */
+	@Override
+	public void generateId()
+	{}
 	
 	/**
 	 * @see com.yagasoft.overcast.container.Folder#create(Folder<?>)
@@ -47,7 +79,7 @@ public class LocalFolder extends Folder<Path> implements ILocal
 	@Override
 	public void create(Folder<?> parent)
 	{
-		create(parent.getPath());
+		create(parent.getPath());		// extract path and call overloaded string function.
 	}
 	
 	/**
@@ -72,7 +104,9 @@ public class LocalFolder extends Folder<Path> implements ILocal
 	@Override
 	public boolean isExist() throws AccessException
 	{
-		if ( !Files.exists(sourceObject) && Files.notExists(sourceObject))
+		// if the Java library says the folder doesn't exist, and at same time it says the folder doesn't 'not exist', then ...
+		// obviously a problem.
+		if ( !Files.exists(sourceObject) && !Files.notExists(sourceObject))
 		{
 			throw new AccessException("Can't determine if folder exists or not.");
 		}
@@ -86,14 +120,16 @@ public class LocalFolder extends Folder<Path> implements ILocal
 	@Override
 	public void buildTree(int numberOfLevels)
 	{
+		// stop at the required depth.
 		if (numberOfLevels < 0)
 		{
 			return;
 		}
 		
-		ArrayList<Path> paths = new ArrayList<Path>();
-		ArrayList<String> pathsString = new ArrayList<String>();
+		ArrayList<Path> paths = new ArrayList<Path>();		// will be used to store children read from disk.
+		ArrayList<String> pathsString = new ArrayList<String>();	// will be used to filter children.
 		
+		// read children of the folder from the disk.
 		try (DirectoryStream<Path> stream = Files.newDirectoryStream(sourceObject))
 		{
 			for (Path file : stream)
@@ -107,11 +143,13 @@ public class LocalFolder extends Folder<Path> implements ILocal
 			e.printStackTrace();
 		}
 		
+		// filter!
 		removeObsolete(pathsString, true);
 		
 //		HashMap<String, Folder<?>> newFolders = new HashMap<String, Folder<?>>();
 //		HashMap<String, File<?>> newFiles = new HashMap<String, File<?>>();
-//
+		
+		// add new files and folders to this folder's list, and build recursively if required.
 		for (Path path : paths)
 		{
 //			if ( !folders.containsKey(path.toString()))
@@ -121,7 +159,7 @@ public class LocalFolder extends Folder<Path> implements ILocal
 			if (Files.isDirectory(path))
 			{
 				LocalFolder folder = new LocalFolder(path);
-				folder.buildTree(numberOfLevels - 1);
+				folder.buildTree(numberOfLevels - 1);		// build recursively.
 				folders.put(folder.id, folder);
 				folder.parent = this;
 			}
@@ -162,7 +200,7 @@ public class LocalFolder extends Folder<Path> implements ILocal
 	{
 		try
 		{
-			size = FolderHelper.getSize(path);
+			size = FolderHelper.getSize(path);		// this will calculate the whole folder size, including sub-folders.
 		}
 		catch (IOException e)
 		{
@@ -178,7 +216,9 @@ public class LocalFolder extends Folder<Path> implements ILocal
 	 */
 	@Override
 	public void updateInfo(boolean folderContents, boolean recursively)
-	{}
+	{
+		updateFromSource(folderContents, recursively);		// updating the info locally costs nothing, so do it automatically.
+	}
 	
 	/**
 	 * @see com.yagasoft.overcast.container.Folder#updateFromSource(boolean, boolean)
@@ -186,6 +226,8 @@ public class LocalFolder extends Folder<Path> implements ILocal
 	@Override
 	public void updateFromSource(boolean folderContents, boolean recursively)
 	{
+		// NOTE: re-write this method!!! <<<<<<<<<<<<<<<<<<<<<<<<<<
+		
 		if (folderContents)
 		{
 			buildTree(recursively);
@@ -215,6 +257,7 @@ public class LocalFolder extends Folder<Path> implements ILocal
 	@Override
 	public LocalFolder copy(Folder<?> destination, boolean overwrite)
 	{
+		// call Oracle's copier.
 		TreeCopier treeCopier = new TreeCopier(sourceObject, (Path) destination.getSourceObject(), !overwrite, true);
 		
 		try
@@ -236,6 +279,7 @@ public class LocalFolder extends Folder<Path> implements ILocal
 	@Override
 	public void move(Folder<?> destination, boolean overwrite)
 	{
+		// call my modification to Oracle's copier.
 		TreeMover treeMover = new TreeMover(sourceObject, (Path) destination.getSourceObject(), !overwrite);
 		
 		try
@@ -258,6 +302,7 @@ public class LocalFolder extends Folder<Path> implements ILocal
 	{
 		try
 		{
+			// renaming is effectively moving under a new name.
 			sourceObject = Files.move(sourceObject, sourceObject.resolveSibling(newName));
 			updateFromSource();
 		}
@@ -277,8 +322,9 @@ public class LocalFolder extends Folder<Path> implements ILocal
 		
 		try
 		{
-			Files.walkFileTree(sourceObject, treeDeleter);
+			Files.walkFileTree(sourceObject, treeDeleter);		// delete the content first recursively (must!).
 			
+			// folder is obsolete after delete, so remove from parent.
 			if (parent != null)
 			{
 				parent.remove(this);
@@ -291,7 +337,19 @@ public class LocalFolder extends Folder<Path> implements ILocal
 	}
 	
 	/**
-	 * @see com.yagasoft.overcast.container.Container#updateInfo()
+	 * @see com.yagasoft.overcast.container.local.ILocal#upload(com.yagasoft.overcast.container.remote.RemoteFolder, boolean,
+	 *      com.yagasoft.overcast.container.transfer.ITransferProgressListener, java.lang.Object)
+	 */
+	@Override
+	public void upload(RemoteFolder<?> parent, boolean overwrite, ITransferProgressListener listener, Object object)
+			throws TransferException
+	{
+		parent.getCsp().upload(this, parent, overwrite, listener, object);
+	}
+	
+	/**
+	 * Not supported; DO NOT use!<br />
+	 * Use {@link #updateInfo(boolean, boolean)} instead.
 	 */
 	@Override
 	public void updateInfo()
@@ -300,7 +358,8 @@ public class LocalFolder extends Folder<Path> implements ILocal
 	}
 	
 	/**
-	 * @see com.yagasoft.overcast.container.Container#updateFromSource()
+	 * Not supported; DO NOT use!<br />
+	 * Use {@link #updateFromSource(boolean, boolean)} instead.
 	 */
 	@Override
 	public void updateFromSource()
@@ -325,14 +384,4 @@ public class LocalFolder extends Folder<Path> implements ILocal
 		this.remoteMapping = remoteMapping;
 	}
 	
-	/**
-	 * @see com.yagasoft.overcast.container.local.ILocal#upload(com.yagasoft.overcast.container.remote.RemoteFolder, boolean,
-	 *      com.yagasoft.overcast.container.transfer.ITransferProgressListener, java.lang.Object)
-	 */
-	@Override
-	public void upload(RemoteFolder<?> parent, boolean overwrite, ITransferProgressListener listener, Object object)
-			throws TransferException
-	{
-		parent.getCsp().upload(this, parent, overwrite, listener, object);
-	}
 }

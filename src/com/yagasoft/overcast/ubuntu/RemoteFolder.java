@@ -18,12 +18,21 @@ import com.yagasoft.overcast.exception.CreationException;
 
 public class RemoteFolder extends com.yagasoft.overcast.container.remote.RemoteFolder<U1Directory>
 {
-	
+
 	/**
 	 * Better use the factory in Ubuntu class.
 	 */
 	public RemoteFolder()
 	{}
+
+	/**
+	 * @see com.yagasoft.overcast.container.Container#generateId()
+	 */
+	@Override
+	public void generateId()
+	{
+		
+	}
 	
 	/**
 	 * @see com.yagasoft.overcast.container.Folder#create(com.yagasoft.overcast.container.Folder)
@@ -31,14 +40,14 @@ public class RemoteFolder extends com.yagasoft.overcast.container.remote.RemoteF
 	@Override
 	public void create(Folder<?> parent) throws CreationException
 	{}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.container.Folder#create(java.lang.String)
 	 */
 	@Override
 	public void create(String parentPath) throws CreationException
 	{}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.container.Container#isExist()
 	 */
@@ -47,7 +56,7 @@ public class RemoteFolder extends com.yagasoft.overcast.container.remote.RemoteF
 	{
 		return false;
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.container.Folder#buildTree(int)
 	 */
@@ -58,59 +67,59 @@ public class RemoteFolder extends com.yagasoft.overcast.container.remote.RemoteF
 		{
 			return;
 		}
-		
+
 		final HashMap<String, U1Node> childrenAsU1Node = new HashMap<String, U1Node>();
-		
+
 		Ubuntu.ubuntuService.listDirectory(path, new U1NodeListener()
 		{
-			
+
 			@Override
 			public void onSuccess(U1Node result)
 			{
 				childrenAsU1Node.put(result.getKey(), result);
 			}
-			
+
 			@Override
 			public void onUbuntuOneFailure(U1Failure failure)
 			{
 				System.err.println("Ubuntu One failure: " + failure);
 			}
-			
+
 			@Override
 			public void onFailure(U1Failure failure)
 			{
 				System.err.println("General failure: " + failure);
 			}
 		});
-		
+
 		ArrayList<String> childrenIds = new ArrayList<String>(childrenAsU1Node.keySet());
-		
+
 		removeObsolete(childrenIds, true);
-		
+
 		for (String child : childrenIds)
 		{
 			U1Node childAsU1Node = childrenAsU1Node.get(child);
-			
+
 			if (childAsU1Node.getKind().toString().equals("directory"))
 			{
-				RemoteFolder folder = Ubuntu.factory.createFolder((U1Directory) childAsU1Node, true);
+				RemoteFolder folder = Ubuntu.factory.createFolder((U1Directory) childAsU1Node, false);
 				add(folder);
-				
+
 				System.out.println("Folder: " + folder.parent.getName() + "\\" + folder.name + " => " + folder.id);
-				
+
 				folder.buildTree(numberOfLevels - 1);
 			}
 			else
 			{
-				RemoteFile file = Ubuntu.factory.createFile((U1File) childAsU1Node, true);
+				RemoteFile file = Ubuntu.factory.createFile((U1File) childAsU1Node, false);
 				add(file);
-				
+
 				System.out.println("File: " + name + "\\" + file.getName() + " => " + file.getId());
 				System.out.println(file.getSourceObject().getPath());
 			}
 		}
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.container.Folder#calculateSize()
 	 */
@@ -119,7 +128,7 @@ public class RemoteFolder extends com.yagasoft.overcast.container.remote.RemoteF
 	{
 		return 0;
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.container.Folder#updateInfo(boolean, boolean)
 	 */
@@ -130,7 +139,7 @@ public class RemoteFolder extends com.yagasoft.overcast.container.remote.RemoteF
 		name = sourceObject.getName();
 		path = sourceObject.getResourcePath();
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.container.Folder#updateFromSource(boolean, boolean)
 	 */
@@ -141,32 +150,32 @@ public class RemoteFolder extends com.yagasoft.overcast.container.remote.RemoteF
 		{
 			buildTree(recursively);
 		}
-		
+
 		Ubuntu.ubuntuService.getNode((sourceObject == null) ? path : sourceObject.getResourcePath(), new U1NodeListener()
 		{
-			
+
 			@Override
 			public void onSuccess(U1Node node)
 			{
 				sourceObject = (U1Directory) node;
 			}
-			
+
 			@Override
 			public void onUbuntuOneFailure(U1Failure failure)
 			{
 				System.err.println("Ubuntu One error: " + failure.getMessage());
 			}
-			
+
 			@Override
 			public void onFailure(U1Failure failure)
 			{
 				System.err.println("General error: " + failure.getMessage());
 			}
 		});
-		
+
 		updateInfo();
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.container.Container#updateInfo()
 	 */
@@ -175,7 +184,7 @@ public class RemoteFolder extends com.yagasoft.overcast.container.remote.RemoteF
 	{
 		updateInfo(false, false);
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.container.Container#updateFromSource()
 	 */
@@ -184,7 +193,7 @@ public class RemoteFolder extends com.yagasoft.overcast.container.remote.RemoteF
 	{
 		updateFromSource(false, false);
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.container.Container#copy(com.yagasoft.overcast.container.Folder, boolean)
 	 */
@@ -193,26 +202,26 @@ public class RemoteFolder extends com.yagasoft.overcast.container.remote.RemoteF
 	{
 		return null;
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.container.Container#move(com.yagasoft.overcast.container.Folder, boolean)
 	 */
 	@Override
 	public void move(Folder<?> destination, boolean overwrite)
 	{}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.container.Container#rename(java.lang.String)
 	 */
 	@Override
 	public void rename(String newName)
 	{}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.container.Container#delete()
 	 */
 	@Override
 	public void delete()
 	{}
-	
+
 }

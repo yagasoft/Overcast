@@ -24,6 +24,15 @@ public class RemoteFile extends com.yagasoft.overcast.container.remote.RemoteFil
 	{}
 	
 	/**
+	 * @see com.yagasoft.overcast.container.Container#generateId()
+	 */
+	@Override
+	public void generateId()
+	{
+		
+	}
+	
+	/**
 	 * @see com.yagasoft.overcast.container.Container#isExist()
 	 */
 	@Override
