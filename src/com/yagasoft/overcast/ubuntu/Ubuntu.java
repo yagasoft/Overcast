@@ -117,6 +117,8 @@ public class Ubuntu extends CSP<U1File, U1DownloadListener, U1UploadListener>
 
 		// create the factory.
 		factory = new RemoteFactory(this);
+		
+		name = "Ubuntu One";
 	}
 
 	@Override
@@ -128,11 +130,11 @@ public class Ubuntu extends CSP<U1File, U1DownloadListener, U1UploadListener>
 		buildFileTree(false);
 	}
 
-	@Override
-	public void buildFileTree(boolean recursively)
-	{
-		remoteFileTree.buildTree(recursively);
-	}
+//	@Override
+//	public void buildFileTree(boolean recursively)
+//	{
+//		remoteFileTree.buildTree(recursively);
+//	}
 
 	/**
 	 * @see com.yagasoft.overcast.CSP#download(com.yagasoft.overcast.container.remote.RemoteFolder,

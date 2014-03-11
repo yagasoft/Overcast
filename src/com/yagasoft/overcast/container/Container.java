@@ -1,9 +1,13 @@
-/*
+/* 
  * Copyright (C) 2011-2014 by Ahmed Osama el-Sawalhy
- *
+ * 
  *		Modified MIT License (GPL v3 compatible)
  * 			License terms are in a separate file (license.txt)
- *
+ * 
+ *		Project/File: Overcast/com.yagasoft.overcast.container/Container.java
+ * 
+ *			Modified: 11-Mar-2014 (16:17:55)
+ *			   Using: Eclipse J-EE / JDK 7 / Windows 8.1 x64
  */
 
 package com.yagasoft.overcast.container;
@@ -25,7 +29,7 @@ import com.yagasoft.overcast.exception.AccessException;
  * @param <T>
  *            the type of the file or folder in the original API of the CSP.
  */
-public abstract class Container<T> implements ITransferrable
+public abstract class Container<T> implements ITransferrable, Comparable<Container<T>>
 {
 
 	/** Unique identifier for the container -- implementation specific. */
@@ -182,6 +186,26 @@ public abstract class Container<T> implements ITransferrable
 		return ((object instanceof Container) && (((Container<?>) object).id.equalsIgnoreCase(getId())));
 	}
 
+	/**
+	 * @see java.lang.Comparable#compareTo(Object)
+	 */
+	@Override
+	public int compareTo(Container<T> container)
+	{
+		return name.compareTo(container.name);
+	}
+	
+	/**
+	 * Returns the name of the container.
+	 * 
+	 * @see java.lang.Object#toString()
+	 */
+	@Override
+	public String toString()
+	{
+		return name;
+	}
+	
 	// //////////////////////////////////////////////////////////////////////////////////////
 	// #region Getters and setters.
 	// ======================================================================================

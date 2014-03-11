@@ -50,6 +50,15 @@ public class RemoteFile extends com.yagasoft.overcast.container.remote.RemoteFil
 		
 		try
 		{
+			size = sourceObject.getFileSize();
+		}
+		catch (Exception e)
+		{
+			size = 0;
+		}
+		
+		try
+		{
 			link = new URL(sourceObject.getDownloadUrl());
 		}
 		catch (MalformedURLException e)

@@ -467,7 +467,7 @@ public abstract class Folder<T> extends Container<T>
 		children.addAll(folders.values());
 		children.addAll(files.values());
 		
-		return children.toArray(new Container<?>[0]);		// convert to array before returning.
+		return children.toArray(new Container<?>[children.size()]);		// convert to array before returning.
 	}
 	
 	/**
@@ -480,7 +480,7 @@ public abstract class Folder<T> extends Container<T>
 		ArrayList<Folder<?>> foldersList = new ArrayList<Folder<?>>();
 		foldersList.addAll(folders.values());
 		
-		return foldersList.toArray(new Folder<?>[0]);
+		return foldersList.toArray(new Folder<?>[foldersList.size()]);
 	}
 	
 	/**
@@ -493,7 +493,7 @@ public abstract class Folder<T> extends Container<T>
 		ArrayList<File<?>> filesList = new ArrayList<File<?>>();
 		filesList.addAll(files.values());
 		
-		return filesList.toArray(new File<?>[0]);
+		return filesList.toArray(new File<?>[filesList.size()]);
 	}
 	
 	/**

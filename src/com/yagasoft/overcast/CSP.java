@@ -87,7 +87,21 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 	 * @param recursively
 	 *            If true, then build all the levels possible under the root.
 	 */
-	public abstract void buildFileTree(boolean recursively);
+	public void buildFileTree(boolean recursively)
+	{
+		remoteFileTree.buildTree(recursively);
+	}
+
+	/**
+	 * Builds the file tree by starting from the root and going down.
+	 *
+	 * @param numberOfLevels
+	 *            How many levels to fetch -- 0 is root level only.
+	 */
+	public void buildFileTree(int numberOfLevels)
+	{
+		remoteFileTree.buildTree(numberOfLevels);
+	}
 
 	/**
 	 * Calculate local free space available on the local disk (the one the root resides on).

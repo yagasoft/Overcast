@@ -51,6 +51,7 @@ public class RemoteFile extends com.yagasoft.overcast.container.remote.RemoteFil
 		name = sourceObject.getName();
 		path = sourceObject.getResourcePath();
 		type = sourceObject.getKind().toString();
+		size = sourceObject.size;
 		
 		try
 		{

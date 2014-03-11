@@ -16,6 +16,7 @@ import com.google.api.services.drive.model.ChildList;
 import com.google.api.services.drive.model.ChildReference;
 import com.google.api.services.drive.model.File;
 import com.google.api.services.drive.model.ParentReference;
+import com.yagasoft.logger.Logger;
 import com.yagasoft.overcast.container.Container;
 import com.yagasoft.overcast.container.Folder;
 import com.yagasoft.overcast.exception.CreationException;
@@ -189,16 +190,14 @@ public class RemoteFolder extends com.yagasoft.overcast.container.remote.RemoteF
 							RemoteFolder folder = Google.factory.createFolder(remote, true);
 							add(folder);
 							
-							System.out.println("Folder: " + folder.parent.getName() + "\\" + folder.name + " => " + folder.id);
-							
-							folder.buildTree(numberOfLevels - 1);
+							Logger.post("Folder: " + folder.parent.getName() + "\\" + folder.name + " => " + folder.id);
 						}
 						else
 						{
 							RemoteFile file = Google.factory.createFile(remote, true);
 							add(file);
 							
-							System.out.println("File: " + name + "\\" + file.getName() + " => " + file.getId());
+							Logger.post("File: " + name + "\\" + file.getName() + " => " + file.getId());
 						}
 					}
 					
@@ -215,11 +214,37 @@ public class RemoteFolder extends com.yagasoft.overcast.container.remote.RemoteF
 				}
 				
 				batch.execute();
+				
+//				for (String childId : childrenIds)
+//				{
+//					File remote = Google.driveService.files().get(childId).execute();
+//					
+//					if (remote.getMimeType().indexOf("folder") >= 0)
+//					{
+//						RemoteFolder folder = Google.factory.createFolder(remote, true);
+//						add(folder);
+//						
+//						Logger.post("Folder: " + folder.parent.getName() + "\\" + folder.name + " => " + folder.id);
+//					}
+//					else
+//					{
+//						RemoteFile file = Google.factory.createFile(remote, true);
+//						add(file);
+//						
+//						Logger.post("File: " + name + "\\" + file.getName() + " => " + file.getId());
+//					}
+//				}
+				
 			}
 		}
 		catch (IOException e)
 		{
 			e.printStackTrace();
+		}
+		
+		for (Folder<?> folder : getFoldersArray())
+		{
+			folder.buildTree(numberOfLevels - 1);
 		}
 	}
 	

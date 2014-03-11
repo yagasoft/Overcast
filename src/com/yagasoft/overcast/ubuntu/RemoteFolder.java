@@ -10,6 +10,7 @@ import com.ubuntuone.api.files.model.U1File;
 import com.ubuntuone.api.files.model.U1Node;
 import com.ubuntuone.api.files.request.U1NodeListener;
 import com.ubuntuone.api.files.util.U1Failure;
+import com.yagasoft.logger.Logger;
 import com.yagasoft.overcast.container.Container;
 import com.yagasoft.overcast.container.Folder;
 import com.yagasoft.overcast.exception.AccessException;
@@ -105,18 +106,21 @@ public class RemoteFolder extends com.yagasoft.overcast.container.remote.RemoteF
 				RemoteFolder folder = Ubuntu.factory.createFolder((U1Directory) childAsU1Node, false);
 				add(folder);
 
-				System.out.println("Folder: " + folder.parent.getName() + "\\" + folder.name + " => " + folder.id);
-
-				folder.buildTree(numberOfLevels - 1);
+				Logger.post("Folder: " + folder.parent.getName() + "\\" + folder.name + " => " + folder.id);
 			}
 			else
 			{
 				RemoteFile file = Ubuntu.factory.createFile((U1File) childAsU1Node, false);
 				add(file);
 
-				System.out.println("File: " + name + "\\" + file.getName() + " => " + file.getId());
-				System.out.println(file.getSourceObject().getPath());
+				Logger.newSection("File: " + name + "\\" + file.getName() + " => " + file.getId());
+				Logger.endSection(file.getSourceObject().getPath());
 			}
+		}
+		
+		for (Folder<?> folder : getFoldersArray())
+		{
+			folder.buildTree(numberOfLevels - 1);
 		}
 	}
 

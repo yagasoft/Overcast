@@ -93,6 +93,8 @@ public class Google extends CSP<File, MediaHttpDownloader, Drive.Files.Insert> i
 
 			// initialise the remote file factory.
 			factory = new RemoteFactory(this);
+			
+			name = "Google Drive";
 		}
 		catch (IOException | GeneralSecurityException | URISyntaxException e)
 		{
@@ -109,48 +111,49 @@ public class Google extends CSP<File, MediaHttpDownloader, Drive.Files.Insert> i
 		remoteFileTree = factory.createFolder();
 		remoteFileTree.setId("root");
 		remoteFileTree.updateFromSource(false, false);
+		buildFileTree(false);
 	}
 
-	/**
-	 * @see com.yagasoft.overcast.CSP#buildFileTree(boolean)
-	 */
-	@Override
-	public void buildFileTree(boolean recursively)
-	{
-		remoteFileTree.buildTree(recursively);
-
-//		for (Container<?> container : root.getChildrenList())
-//		{
-//			System.out.println(container.getName());
-//		}
-
-//		try
-//		{
-//		RemoteFolder root = new RemoteFolder(getDriveService());
-//		root.setApiFile(new File());
-//		root.setId("root");
-//		root.update(recursive);
+//	/**
+//	 * @see com.yagasoft.overcast.CSP#buildFileTree(boolean)
+//	 */
+//	@Override
+//	public void buildFileTree(boolean recursively)
+//	{
+//		remoteFileTree.buildTree(recursively);
 //
-//		setFullTreeLoaded(recursive);
+////		for (Container<?> container : root.getChildrenList())
+////		{
+////			System.out.println(container.getName());
+////		}
 //
-//		setRemoteFileTree(root);
-
-//			Iterator<TreeNode> iterator = getRemoteFileTree().preorderIterator();
+////		try
+////		{
+////		RemoteFolder root = new RemoteFolder(getDriveService());
+////		root.setApiFile(new File());
+////		root.setId("root");
+////		root.update(recursive);
+////
+////		setFullTreeLoaded(recursive);
+////
+////		setRemoteFileTree(root);
 //
-//			while (iterator.hasNext())
-//			{
-//				File file = driveService.files().get(((IRemote) iterator.next()).getId()).execute();
-//				System.out.println("Title: " + file.getTitle());
-//				System.out.println("Description: " + file.getDescription());
-//				System.out.println("MIME type: " + file.getMimeType());
-//				System.out.println("\n");
-//			}
-//		}
-//		catch (IOException e)
-//		{
-//			e.printStackTrace();
-//		}
-	}
+////			Iterator<TreeNode> iterator = getRemoteFileTree().preorderIterator();
+////
+////			while (iterator.hasNext())
+////			{
+////				File file = driveService.files().get(((IRemote) iterator.next()).getId()).execute();
+////				System.out.println("Title: " + file.getTitle());
+////				System.out.println("Description: " + file.getDescription());
+////				System.out.println("MIME type: " + file.getMimeType());
+////				System.out.println("\n");
+////			}
+////		}
+////		catch (IOException e)
+////		{
+////			e.printStackTrace();
+////		}
+//	}
 
 	// //////////////////////////////////////////////////////////////////////////////////////
 	// #region Getters and setters.
