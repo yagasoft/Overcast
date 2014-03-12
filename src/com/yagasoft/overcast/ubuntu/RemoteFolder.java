@@ -106,15 +106,15 @@ public class RemoteFolder extends com.yagasoft.overcast.container.remote.RemoteF
 				RemoteFolder folder = Ubuntu.factory.createFolder((U1Directory) childAsU1Node, false);
 				add(folder);
 
-				Logger.post("Folder: " + folder.parent.getName() + "\\" + folder.name + " => " + folder.id);
+				Logger.newEntry("Folder: " + folder.parent.getName() + "\\" + folder.name + " => " + folder.id);
 			}
 			else
 			{
 				RemoteFile file = Ubuntu.factory.createFile((U1File) childAsU1Node, false);
 				add(file);
 
-				Logger.newSection("File: " + name + "\\" + file.getName() + " => " + file.getId());
-				Logger.endSection(file.getSourceObject().getPath());
+				Logger.newEntry("File: " + name + "\\" + file.getName() + " => " + file.getId());
+				Logger.newEntry(file.getSourceObject().getPath());
 			}
 		}
 		

@@ -19,11 +19,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import com.yagasoft.overcast.CSP;
 import com.yagasoft.overcast.container.File;
 import com.yagasoft.overcast.container.Folder;
 import com.yagasoft.overcast.container.remote.RemoteFile;
 import com.yagasoft.overcast.container.remote.RemoteFolder;
 import com.yagasoft.overcast.container.transfer.ITransferProgressListener;
+import com.yagasoft.overcast.container.transfer.UploadJob;
 import com.yagasoft.overcast.exception.AccessException;
 import com.yagasoft.overcast.exception.TransferException;
 
@@ -31,7 +33,7 @@ import com.yagasoft.overcast.exception.TransferException;
 /**
  * A class representing files stored locally.
  */
-public class LocalFile extends File<Path> implements ILocal
+public class LocalFile extends File<Path>
 {
 
 	/** The {@link RemoteFile} corresponding to this local file if applicable. */
@@ -71,7 +73,9 @@ public class LocalFile extends File<Path> implements ILocal
 	 */
 	@Override
 	public void generateId()
-	{}
+	{
+		id = path;
+	}
 
 	/**
 	 * @see com.yagasoft.overcast.container.Container#isExist()
@@ -212,14 +216,26 @@ public class LocalFile extends File<Path> implements ILocal
 	}
 
 	/**
-	 * @see com.yagasoft.overcast.container.local.ILocal#upload(com.yagasoft.overcast.container.remote.RemoteFolder, boolean,
-	 *      com.yagasoft.overcast.container.transfer.ITransferProgressListener, java.lang.Object)
+	 * Upload the container to the server.<br />
+	 * This should just call the one in {@link CSP}.
+	 * 
+	 * @param parent
+	 *            The remote folder to upload to. Must pass a {@link RemoteFolder} with the path initialised in it.
+	 * @param overwrite
+	 *            Whether to overwrite existing container on the server or not.
+	 * @param listener
+	 *            Object listening to the changes in the transfer state.
+	 * @param object
+	 *            Object passed by the initialiser to be passed back on state change. It can be used as a kind of "call-back" or
+	 *            something; the sender of this object can cast it back and use it as seen fit.
+	 * @return the upload job
+	 * @throws TransferException
+	 *             A problem occurred during the transfer of the container.
 	 */
-	@Override
-	public void upload(RemoteFolder<?> parent, boolean overwrite, ITransferProgressListener listener, Object object)
+	public UploadJob<?, ?> upload(RemoteFolder<?> parent, boolean overwrite, ITransferProgressListener listener, Object object)
 			throws TransferException
 	{
-		parent.getCsp().upload(this, parent, overwrite, listener, object);
+		return parent.getCsp().upload(this, parent, overwrite, listener, object);
 	}
 
 	/**

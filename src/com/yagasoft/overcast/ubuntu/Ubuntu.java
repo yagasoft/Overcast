@@ -38,10 +38,10 @@ public class Ubuntu extends CSP<U1File, U1DownloadListener, U1UploadListener>
 
 	/** The authorisation. */
 	private Authorisation	authorisation;
-	
+
 	/** The http client. */
 	static HttpClient		httpClient;
-	
+
 	/** Files API instance. */
 	static U1FileAPI		ubuntuService;
 
@@ -117,7 +117,7 @@ public class Ubuntu extends CSP<U1File, U1DownloadListener, U1UploadListener>
 
 		// create the factory.
 		factory = new RemoteFactory(this);
-		
+
 		name = "Ubuntu One";
 	}
 
@@ -142,9 +142,12 @@ public class Ubuntu extends CSP<U1File, U1DownloadListener, U1UploadListener>
 	 *      com.yagasoft.overcast.container.transfer.ITransferProgressListener, java.lang.Object)
 	 */
 	@Override
-	public void download(com.yagasoft.overcast.container.remote.RemoteFolder<?> folder, LocalFolder parent, boolean overwrite,
+	public DownloadJob<?>[] download(com.yagasoft.overcast.container.remote.RemoteFolder<?> folder, LocalFolder parent,
+			boolean overwrite,
 			ITransferProgressListener listener, Object object)
-	{}
+	{
+		return null;
+	}
 
 	/**
 	 * @see com.yagasoft.overcast.CSP#download(com.yagasoft.overcast.container.remote.RemoteFile,
@@ -152,13 +155,14 @@ public class Ubuntu extends CSP<U1File, U1DownloadListener, U1UploadListener>
 	 *      com.yagasoft.overcast.container.transfer.ITransferProgressListener, java.lang.Object)
 	 */
 	@Override
-	public void download(RemoteFile<U1File> file, LocalFolder parent, boolean overwrite, ITransferProgressListener listener,
+	public DownloadJob<?> download(RemoteFile<?> file, LocalFolder parent, boolean overwrite,
+			ITransferProgressListener listener,
 			Object object) throws TransferException
 	{
 		// overwrite if required.
 		for (com.yagasoft.overcast.container.File<?> child : parent.getFilesArray())
 		{
-			if (child.getName().equals(child.getName()))
+			if (file.getName().equals(child.getName()))
 			{
 				if (overwrite)
 				{
@@ -225,6 +229,8 @@ public class Ubuntu extends CSP<U1File, U1DownloadListener, U1UploadListener>
 		downloadQueue.add(downloadJob);		// add to queue.
 
 		nextDownloadJob();		// check if immediate execution is possible.
+
+		return downloadJob;
 	}
 
 	/**
@@ -233,16 +239,24 @@ public class Ubuntu extends CSP<U1File, U1DownloadListener, U1UploadListener>
 	@Override
 	public void nextDownloadJob()
 	{
-		// if current transfer is empty and the queue is not ...
-		if ((currentDownloadJob == null) && !downloadQueue.isEmpty())
+		new Thread(new Runnable()
 		{
-			currentDownloadJob = downloadQueue.remove();
 
-			// download the file.
-			ubuntuService.downloadFile(currentDownloadJob.getRemoteFile().getPath()
-					, currentDownloadJob.getLocalFile().getPath()
-					, currentDownloadJob.getCspTransferer(), null);
-		}
+			@Override
+			public void run()
+			{
+				// if current transfer is empty and the queue is not ...
+				if ((currentDownloadJob == null) && !downloadQueue.isEmpty())
+				{
+					currentDownloadJob = downloadQueue.remove();
+
+					// download the file.
+					ubuntuService.downloadFile(currentDownloadJob.getRemoteFile().getPath()
+							, currentDownloadJob.getLocalFile().getPath()
+							, currentDownloadJob.getCspTransferer(), null);
+				}
+			}
+		}).start();
 	}
 
 	/**
@@ -251,9 +265,12 @@ public class Ubuntu extends CSP<U1File, U1DownloadListener, U1UploadListener>
 	 *      com.yagasoft.overcast.container.transfer.ITransferProgressListener, java.lang.Object)
 	 */
 	@Override
-	public void upload(LocalFolder folder, com.yagasoft.overcast.container.remote.RemoteFolder<?> parent, boolean overwrite,
+	public UploadJob<?, ?>[] upload(LocalFolder folder, com.yagasoft.overcast.container.remote.RemoteFolder<?> parent,
+			boolean overwrite,
 			ITransferProgressListener listener, Object object)
-	{}
+	{
+		return null;
+	}
 
 	/**
 	 * @see com.yagasoft.overcast.CSP#upload(com.yagasoft.overcast.container.local.LocalFile,
@@ -261,7 +278,8 @@ public class Ubuntu extends CSP<U1File, U1DownloadListener, U1UploadListener>
 	 *      com.yagasoft.overcast.container.transfer.ITransferProgressListener, java.lang.Object)
 	 */
 	@Override
-	public void upload(final LocalFile file, com.yagasoft.overcast.container.remote.RemoteFolder<?> parent, boolean overwrite,
+	public UploadJob<?, ?> upload(final LocalFile file, com.yagasoft.overcast.container.remote.RemoteFolder<?> parent,
+			boolean overwrite,
 			ITransferProgressListener listener, Object object) throws TransferException
 	{
 		// overwrite if required.
@@ -337,21 +355,32 @@ public class Ubuntu extends CSP<U1File, U1DownloadListener, U1UploadListener>
 		uploadQueue.add(uploadJob);
 
 		nextUploadJob();
+
+		return uploadJob;
 	}
 
 	@Override
 	public void nextUploadJob()
 	{
-		// if no current transfer and queue is empty ...
-		if ((currentUploadJob == null) && !uploadQueue.isEmpty())
+		new Thread(new Runnable()
 		{
-			currentUploadJob = uploadQueue.remove();
 
-			// upload the file.
-			ubuntuService.uploadFile(currentUploadJob.getLocalFile().getPath(), currentUploadJob.getLocalFile().getType()
-					, currentUploadJob.getParent().getPath() + "/" + currentUploadJob.getLocalFile().getName(), true, false
-					, currentUploadJob.getCspTransferer(), null);
-		}
+			@Override
+			public void run()
+			{
+				// if no current transfer and queue is empty ...
+				if ((currentUploadJob == null) && !uploadQueue.isEmpty())
+				{
+					currentUploadJob = uploadQueue.remove();
+
+					// upload the file.
+					ubuntuService.uploadFile(currentUploadJob.getLocalFile().getPath(), currentUploadJob.getLocalFile().getType()
+							, currentUploadJob.getParent().getPath() + "/" + currentUploadJob.getLocalFile().getName(), true,
+							false
+							, currentUploadJob.getCspTransferer(), null);
+				}
+			}
+		}).start();
 	}
 
 	// --------------------------------------------------------------------------------------

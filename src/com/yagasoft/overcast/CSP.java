@@ -12,6 +12,7 @@ package com.yagasoft.overcast;
 import java.util.LinkedList;
 import java.util.Queue;
 
+import com.yagasoft.logger.Logger;
 import com.yagasoft.overcast.authorisation.Authorisation;
 import com.yagasoft.overcast.container.local.LocalFile;
 import com.yagasoft.overcast.container.local.LocalFolder;
@@ -89,7 +90,9 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 	 */
 	public void buildFileTree(boolean recursively)
 	{
+		Logger.newSection();
 		remoteFileTree.buildTree(recursively);
+		Logger.endSection();
 	}
 
 	/**
@@ -138,8 +141,9 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 	 * @param object
 	 *            Object passed by the initialiser to be passed back on state change. It can be used as a kind of "call-back" or
 	 *            something; the sender of this object can cast it back and use it as seen fit.
+	 * @return the download jobs
 	 */
-	public abstract void download(RemoteFolder<?> folder, LocalFolder parent, boolean overwrite
+	public abstract DownloadJob<?>[] download(RemoteFolder<?> folder, LocalFolder parent, boolean overwrite
 			, ITransferProgressListener listener, Object object);
 
 	/**
@@ -156,16 +160,19 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 	 * @param object
 	 *            Object passed by the initialiser to be passed back on state change. It can be used as a kind of "call-back" or
 	 *            something; the sender of this object can cast it back and use it as seen fit.
+	 * @return the download job
 	 * @throws TransferException
 	 *             A problem occurred during the transfer of the file.
 	 */
-	public abstract void download(RemoteFile<SourceFileType> file, LocalFolder parent, boolean overwrite,
+	public abstract DownloadJob<?> download(RemoteFile<?> file, LocalFolder parent, boolean overwrite,
 			ITransferProgressListener listener
 			, Object object)
 			throws TransferException;
 
 	/**
-	 * If the queue has a job, set it as the current one after removing it from the queue, and then start the job.
+	 * If the queue has a job, set it as the current one after removing it from the queue, and then start the job.<br />
+	 * <br />
+	 * This should be called using a separate thread so as not to block the program.
 	 */
 	public abstract void nextDownloadJob();
 
@@ -184,8 +191,9 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 	 * @param object
 	 *            Object passed by the initialiser to be passed back on state change. It can be used as a kind of "call-back" or
 	 *            something; the sender of this object can cast it back and use it as seen fit.
+	 * @return the upload jobs
 	 */
-	public abstract void upload(LocalFolder folder, RemoteFolder<?> parent, boolean overwrite
+	public abstract UploadJob<?, ?>[] upload(LocalFolder folder, RemoteFolder<?> parent, boolean overwrite
 			, ITransferProgressListener listener, Object object);
 
 	/**
@@ -202,15 +210,18 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 	 * @param object
 	 *            Object passed by the initialiser to be passed back on state change. It can be used as a kind of "call-back" or
 	 *            something; the sender of this object can cast it back and use it as seen fit.
+	 * @return the upload job
 	 * @throws TransferException
 	 *             A problem occurred during the transfer of the file.
 	 */
-	public abstract void upload(LocalFile file, RemoteFolder<?> parent, boolean overwrite, ITransferProgressListener listener
+	public abstract UploadJob<?, ?> upload(LocalFile file, RemoteFolder<?> parent, boolean overwrite, ITransferProgressListener listener
 			, Object object)
 			throws TransferException;
 
 	/**
 	 * If the queue has a job, set it as the current one after removing it from the queue, and then start the job.
+	 * <br />
+	 * This should be called using a separate thread so as not to block the program.
 	 */
 	public abstract void nextUploadJob();
 

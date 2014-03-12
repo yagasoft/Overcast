@@ -18,9 +18,11 @@ import com.yagasoft.overcast.container.transfer.TransferState;
 /**
  * A class representing a job in the upload queue.<br />
  * It's needed to contain information vital to complete the upload process.
- *
+ * 
  * @param <T>
  *            the type of the object to perform the actual upload.
+ * @param <S>
+ *            the type of the file given by the CSP.
  */
 public final class UploadJob<T, S> extends TransferJob<T>
 {

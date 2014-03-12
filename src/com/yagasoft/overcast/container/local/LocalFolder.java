@@ -17,7 +17,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 
-import com.yagasoft.overcast.container.Container;
+import com.yagasoft.logger.Logger;
+import com.yagasoft.overcast.CSP;
 import com.yagasoft.overcast.container.Folder;
 import com.yagasoft.overcast.container.FolderHelper;
 import com.yagasoft.overcast.container.FolderHelper.TreeCopier;
@@ -25,6 +26,7 @@ import com.yagasoft.overcast.container.FolderHelper.TreeDeleter;
 import com.yagasoft.overcast.container.FolderHelper.TreeMover;
 import com.yagasoft.overcast.container.remote.RemoteFolder;
 import com.yagasoft.overcast.container.transfer.ITransferProgressListener;
+import com.yagasoft.overcast.container.transfer.UploadJob;
 import com.yagasoft.overcast.exception.AccessException;
 import com.yagasoft.overcast.exception.TransferException;
 
@@ -32,7 +34,7 @@ import com.yagasoft.overcast.exception.TransferException;
 /**
  * A class representing folders stored locally.
  */
-public class LocalFolder extends Folder<Path> implements ILocal
+public class LocalFolder extends Folder<Path>
 {
 	
 	/** The {@link RemoteFolder} corresponding to this local folder if applicable. */
@@ -58,8 +60,9 @@ public class LocalFolder extends Folder<Path> implements ILocal
 	
 	/**
 	 * Instantiates a new local folder.
-	 *
-	 * @param path Path to the folder.
+	 * 
+	 * @param path
+	 *            Path to the folder.
 	 */
 	public LocalFolder(String path)
 	{
@@ -71,7 +74,9 @@ public class LocalFolder extends Folder<Path> implements ILocal
 	 */
 	@Override
 	public void generateId()
-	{}
+	{
+		id = path;
+	}
 	
 	/**
 	 * @see com.yagasoft.overcast.container.Folder#create(Folder<?>)
@@ -162,12 +167,14 @@ public class LocalFolder extends Folder<Path> implements ILocal
 				folder.buildTree(numberOfLevels - 1);		// build recursively.
 				folders.put(folder.id, folder);
 				folder.parent = this;
+				Logger.newEntry("Folder: " + folder.getPath());
 			}
 			else
 			{
 				LocalFile file = new LocalFile(path);
 				files.put(file.getId(), file);
 				file.setParent(this);
+				Logger.newEntry("File: " + file.getPath());
 			}
 //				}
 //				else
@@ -186,10 +193,10 @@ public class LocalFolder extends Folder<Path> implements ILocal
 //		folders = newFolders;
 //		files = newFiles;
 		
-		for (Container<?> container : getChildrenArray())
-		{
-			System.out.println(container.getPath());
-		}
+//		for (Container<?> container : getChildrenArray())
+//		{
+//			System.out.println(container.getPath());
+//		}
 	}
 	
 	/**
@@ -337,14 +344,26 @@ public class LocalFolder extends Folder<Path> implements ILocal
 	}
 	
 	/**
-	 * @see com.yagasoft.overcast.container.local.ILocal#upload(com.yagasoft.overcast.container.remote.RemoteFolder, boolean,
-	 *      com.yagasoft.overcast.container.transfer.ITransferProgressListener, java.lang.Object)
+	 * Upload the container to the server.<br />
+	 * This should just call the one in {@link CSP}.
+	 * 
+	 * @param parent
+	 *            The remote folder to upload to. Must pass a {@link RemoteFolder} with the path initialised in it.
+	 * @param overwrite
+	 *            Whether to overwrite existing container on the server or not.
+	 * @param listener
+	 *            Object listening to the changes in the transfer state.
+	 * @param object
+	 *            Object passed by the initialiser to be passed back on state change. It can be used as a kind of "call-back" or
+	 *            something; the sender of this object can cast it back and use it as seen fit.
+	 * @return the upload jobs
+	 * @throws TransferException
+	 *             A problem occurred during the transfer of the container.
 	 */
-	@Override
-	public void upload(RemoteFolder<?> parent, boolean overwrite, ITransferProgressListener listener, Object object)
+	public UploadJob<?, ?>[] upload(RemoteFolder<?> parent, boolean overwrite, ITransferProgressListener listener, Object object)
 			throws TransferException
 	{
-		parent.getCsp().upload(this, parent, overwrite, listener, object);
+		return parent.getCsp().upload(this, parent, overwrite, listener, object);
 	}
 	
 	/**
