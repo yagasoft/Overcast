@@ -4,6 +4,10 @@
  *		Modified MIT License (GPL v3 compatible)
  * 			License terms are in a separate file (license.txt)
  *
+ *		Project/File: Overcast/com.yagasoft.overcast.ubuntu/Ubuntu.java
+ *
+ *			Modified: 13-Mar-2014 (17:51:43)
+ *			   Using: Eclipse J-EE / JDK 7 / Windows 8.1 x64
  */
 
 package com.yagasoft.overcast.ubuntu;
@@ -16,9 +20,11 @@ import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
 import com.ubuntuone.api.files.U1FileAPI;
 import com.ubuntuone.api.files.model.U1File;
 import com.ubuntuone.api.files.model.U1Node;
+import com.ubuntuone.api.files.model.U1User;
 import com.ubuntuone.api.files.request.U1DownloadListener;
 import com.ubuntuone.api.files.request.U1UploadListener;
 import com.ubuntuone.api.files.util.U1Failure;
+import com.ubuntuone.api.files.util.U1RequestListener.U1UserRequestListener;
 import com.yagasoft.overcast.CSP;
 import com.yagasoft.overcast.container.local.LocalFile;
 import com.yagasoft.overcast.container.local.LocalFolder;
@@ -27,6 +33,7 @@ import com.yagasoft.overcast.container.transfer.DownloadJob;
 import com.yagasoft.overcast.container.transfer.ITransferProgressListener;
 import com.yagasoft.overcast.container.transfer.TransferState;
 import com.yagasoft.overcast.container.transfer.UploadJob;
+import com.yagasoft.overcast.exception.OperationException;
 import com.yagasoft.overcast.exception.TransferException;
 
 
@@ -47,6 +54,8 @@ public class Ubuntu extends CSP<U1File, U1DownloadListener, U1UploadListener>
 
 	/** The remote file factory. */
 	static RemoteFactory	factory;
+
+	private boolean			operationSuccess	= false;
 
 	/**
 	 * Instantiates a new Ubuntu.
@@ -118,15 +127,24 @@ public class Ubuntu extends CSP<U1File, U1DownloadListener, U1UploadListener>
 		// create the factory.
 		factory = new RemoteFactory(this);
 
+		try
+		{
+			remoteFreeSpace = calculateRemoteFreeSpace();
+		}
+		catch (OperationException e)
+		{
+			e.printStackTrace();
+		}
+
 		name = "Ubuntu One";
 	}
 
 	@Override
 	public void initTree()
 	{
-		remoteFileTree = new RemoteFolder();
+		remoteFileTree = factory.createFolder();
 		remoteFileTree.setPath("/~/Ubuntu One");
-		remoteFileTree.updateFromSource();
+		remoteFileTree.updateFromSource(false, false);
 		buildFileTree(false);
 	}
 
@@ -157,7 +175,7 @@ public class Ubuntu extends CSP<U1File, U1DownloadListener, U1UploadListener>
 	@Override
 	public DownloadJob<?> download(RemoteFile<?> file, LocalFolder parent, boolean overwrite,
 			ITransferProgressListener listener,
-			Object object) throws TransferException
+			Object object) throws TransferException, OperationException
 	{
 		// overwrite if required.
 		for (com.yagasoft.overcast.container.File<?> child : parent.getFilesArray())
@@ -280,7 +298,7 @@ public class Ubuntu extends CSP<U1File, U1DownloadListener, U1UploadListener>
 	@Override
 	public UploadJob<?, ?> upload(final LocalFile file, com.yagasoft.overcast.container.remote.RemoteFolder<?> parent,
 			boolean overwrite,
-			ITransferProgressListener listener, Object object) throws TransferException
+			ITransferProgressListener listener, Object object) throws TransferException, OperationException
 	{
 		// overwrite if required.
 		for (com.yagasoft.overcast.container.File<?> child : parent.getFilesArray())
@@ -359,6 +377,9 @@ public class Ubuntu extends CSP<U1File, U1DownloadListener, U1UploadListener>
 		return uploadJob;
 	}
 
+	/**
+	 * @see com.yagasoft.overcast.CSP#nextUploadJob()
+	 */
 	@Override
 	public void nextUploadJob()
 	{
@@ -381,6 +402,53 @@ public class Ubuntu extends CSP<U1File, U1DownloadListener, U1UploadListener>
 				}
 			}
 		}).start();
+	}
+
+	/**
+	 * @see com.yagasoft.overcast.CSP#calculateRemoteFreeSpace()
+	 */
+	@Override
+	public long calculateRemoteFreeSpace() throws OperationException
+	{
+		operationSuccess = false;
+
+		ubuntuService.getUser(new U1UserRequestListener()
+		{
+
+			@Override
+			public void onStart()
+			{}
+
+			@Override
+			public void onSuccess(U1User result)
+			{
+				remoteFreeSpace = result.getMaxBytes() - result.getUsedBytes();
+				operationSuccess = true;
+			}
+
+			@Override
+			public void onUbuntuOneFailure(U1Failure failure)
+			{}
+
+			@Override
+			public void onFailure(U1Failure failure)
+			{}
+
+			@Override
+			public void onFinish()
+			{}
+		});
+
+		if ( !operationSuccess)
+		{
+			throw new OperationException("Failed to get free space.");
+		}
+		else
+		{
+			operationSuccess = false;
+
+			return remoteFreeSpace;
+		}
 	}
 
 	// --------------------------------------------------------------------------------------

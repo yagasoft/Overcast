@@ -17,6 +17,7 @@ import com.yagasoft.overcast.container.local.LocalFile;
 import com.yagasoft.overcast.container.local.LocalFolder;
 import com.yagasoft.overcast.container.transfer.DownloadJob;
 import com.yagasoft.overcast.container.transfer.ITransferProgressListener;
+import com.yagasoft.overcast.exception.OperationException;
 import com.yagasoft.overcast.exception.TransferException;
 
 
@@ -51,9 +52,10 @@ public abstract class RemoteFile<T> extends File<T>
 	 * @return the download job
 	 * @throws TransferException
 	 *             A problem occurred during the transfer of the container.
+	 * @throws OperationException
 	 */
 	public DownloadJob<?> download(LocalFolder parent, boolean overwrite, ITransferProgressListener listener, Object object)
-			throws TransferException
+			throws TransferException, OperationException
 	{
 		return csp.download(this, parent, overwrite, listener, object);
 	}

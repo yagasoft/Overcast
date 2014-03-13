@@ -15,6 +15,7 @@ import com.yagasoft.overcast.container.Container;
 import com.yagasoft.overcast.container.Folder;
 import com.yagasoft.overcast.exception.AccessException;
 import com.yagasoft.overcast.exception.CreationException;
+import com.yagasoft.overcast.exception.OperationException;
 
 
 public class RemoteFolder extends com.yagasoft.overcast.container.remote.RemoteFolder<U1Directory>
@@ -202,7 +203,7 @@ public class RemoteFolder extends com.yagasoft.overcast.container.remote.RemoteF
 	 * @see com.yagasoft.overcast.container.Container#copy(com.yagasoft.overcast.container.Folder, boolean)
 	 */
 	@Override
-	public Container<?> copy(Folder<?> destination, boolean overwrite)
+	public Container<?> copy(Folder<?> destination, boolean overwrite) throws OperationException
 	{
 		return null;
 	}
@@ -211,14 +212,14 @@ public class RemoteFolder extends com.yagasoft.overcast.container.remote.RemoteF
 	 * @see com.yagasoft.overcast.container.Container#move(com.yagasoft.overcast.container.Folder, boolean)
 	 */
 	@Override
-	public void move(Folder<?> destination, boolean overwrite)
+	public void move(Folder<?> destination, boolean overwrite) throws OperationException
 	{}
 
 	/**
 	 * @see com.yagasoft.overcast.container.Container#rename(java.lang.String)
 	 */
 	@Override
-	public void rename(String newName)
+	public void rename(String newName) throws OperationException
 	{}
 
 	/**

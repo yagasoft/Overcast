@@ -4,6 +4,10 @@
  *		Modified MIT License (GPL v3 compatible)
  * 			License terms are in a separate file (license.txt)
  *
+ *		Project/File: Overcast/com.yagasoft.overcast.google/Google.java
+ *
+ *			Modified: 13-Mar-2014 (18:22:27)
+ *			   Using: Eclipse J-EE / JDK 7 / Windows 8.1 x64
  */
 
 package com.yagasoft.overcast.google;
@@ -29,6 +33,7 @@ import com.google.api.client.http.HttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.services.drive.Drive;
+import com.google.api.services.drive.model.About;
 import com.google.api.services.drive.model.File;
 import com.google.api.services.drive.model.ParentReference;
 import com.yagasoft.overcast.CSP;
@@ -41,6 +46,7 @@ import com.yagasoft.overcast.container.transfer.ITransferProgressListener;
 import com.yagasoft.overcast.container.transfer.TransferState;
 import com.yagasoft.overcast.container.transfer.UploadJob;
 import com.yagasoft.overcast.exception.CreationException;
+import com.yagasoft.overcast.exception.OperationException;
 import com.yagasoft.overcast.exception.TransferException;
 
 
@@ -95,9 +101,11 @@ public class Google extends CSP<File, MediaHttpDownloader, Drive.Files.Insert> i
 			// initialise the remote file factory.
 			factory = new RemoteFactory(this);
 
+			remoteFreeSpace = calculateRemoteFreeSpace();
+
 			name = "Google Drive";
 		}
-		catch (IOException | GeneralSecurityException | URISyntaxException e)
+		catch (IOException | GeneralSecurityException | URISyntaxException | OperationException e)
 		{
 			e.printStackTrace();
 		}
@@ -111,7 +119,7 @@ public class Google extends CSP<File, MediaHttpDownloader, Drive.Files.Insert> i
 	{
 		remoteFileTree = factory.createFolder();
 		remoteFileTree.setId("root");
-		remoteFileTree.updateFromSource(false, false);
+		remoteFileTree.updateFromSource();
 		buildFileTree(false);
 	}
 
@@ -156,26 +164,25 @@ public class Google extends CSP<File, MediaHttpDownloader, Drive.Files.Insert> i
 ////		}
 //	}
 
-	// //////////////////////////////////////////////////////////////////////////////////////
-	// #region Getters and setters.
-	// ======================================================================================
-
-	/**
-	 * @see com.yagasoft.overcast.CSP#calculateLocalFreeSpace()
-	 */
-	@Override
-	public long calculateLocalFreeSpace()
-	{
-		return 0;
-	}
-
 	/**
 	 * @see com.yagasoft.overcast.CSP#calculateRemoteFreeSpace()
 	 */
 	@Override
-	public long calculateRemoteFreeSpace()
+	public long calculateRemoteFreeSpace() throws OperationException
 	{
-		return 0;
+		About about;
+		try
+		{
+			about = driveService.about().get().execute();
+			remoteFreeSpace = about.getQuotaBytesTotal() - about.getQuotaBytesUsed();
+
+			return remoteFreeSpace;
+		}
+		catch (IOException e)
+		{
+			e.printStackTrace();
+			throw new OperationException("Couldn't get free space.");
+		}
 	}
 
 	/**
@@ -184,9 +191,8 @@ public class Google extends CSP<File, MediaHttpDownloader, Drive.Files.Insert> i
 	 *      com.yagasoft.overcast.container.transfer.ITransferProgressListener, java.lang.Object)
 	 */
 	@Override
-	public DownloadJob<?>[] download(com.yagasoft.overcast.container.remote.RemoteFolder<?> folder, LocalFolder parent,
-			boolean overwrite,
-			ITransferProgressListener listener, Object object)
+	public DownloadJob<?>[] download(com.yagasoft.overcast.container.remote.RemoteFolder<?> folder, LocalFolder parent
+			, boolean overwrite, ITransferProgressListener listener, Object object)
 	{
 		// make sure the folder doesn't exist at the destination.
 		Container<?> result = parent.searchByName(folder.getName(), false);
@@ -217,7 +223,7 @@ public class Google extends CSP<File, MediaHttpDownloader, Drive.Files.Insert> i
 			{
 				downloadJobs.add(((RemoteFile) file).download(parent, overwrite, listener, object));
 			}
-			catch (TransferException e)
+			catch (TransferException | OperationException e)
 			{
 				e.printStackTrace();
 			}
@@ -247,10 +253,8 @@ public class Google extends CSP<File, MediaHttpDownloader, Drive.Files.Insert> i
 	 *      com.yagasoft.overcast.container.transfer.ITransferProgressListener, java.lang.Object)
 	 */
 	@Override
-	public DownloadJob<?> download(com.yagasoft.overcast.container.remote.RemoteFile<?> file, LocalFolder parent,
-			boolean overwrite,
-			ITransferProgressListener listener,
-			Object object) throws TransferException
+	public DownloadJob<?> download(com.yagasoft.overcast.container.remote.RemoteFile<?> file, LocalFolder parent
+			, boolean overwrite, ITransferProgressListener listener, Object object) throws TransferException, OperationException
 	{
 		// check for the file existence in the parent
 		for (com.yagasoft.overcast.container.File<?> child : parent.getFilesArray())
@@ -361,9 +365,8 @@ public class Google extends CSP<File, MediaHttpDownloader, Drive.Files.Insert> i
 	 *      com.yagasoft.overcast.container.transfer.ITransferProgressListener, java.lang.Object)
 	 */
 	@Override
-	public UploadJob<?, ?>[] upload(LocalFolder folder, com.yagasoft.overcast.container.remote.RemoteFolder<?> parent,
-			boolean overwrite,
-			ITransferProgressListener listener, Object object)
+	public UploadJob<?, ?>[] upload(LocalFolder folder, com.yagasoft.overcast.container.remote.RemoteFolder<?> parent
+			, boolean overwrite, ITransferProgressListener listener, Object object)
 	{
 		// check if the folder exists at the CSP.
 		Container<?> result = parent.searchByName(folder.getName(), false);
@@ -401,7 +404,7 @@ public class Google extends CSP<File, MediaHttpDownloader, Drive.Files.Insert> i
 			{
 				uploadJobs.add(upload((LocalFile) file, parent, overwrite, listener, object));
 			}
-			catch (TransferException e)
+			catch (TransferException | OperationException e)
 			{
 				e.printStackTrace();
 			}
@@ -424,10 +427,8 @@ public class Google extends CSP<File, MediaHttpDownloader, Drive.Files.Insert> i
 	 *      com.yagasoft.overcast.container.transfer.ITransferProgressListener, java.lang.Object)
 	 */
 	@Override
-	public UploadJob<?, ?> upload(LocalFile file, com.yagasoft.overcast.container.remote.RemoteFolder<?> parent,
-			boolean overwrite,
-			ITransferProgressListener listener,
-			Object object) throws TransferException
+	public UploadJob<?, ?> upload(LocalFile file, com.yagasoft.overcast.container.remote.RemoteFolder<?> parent
+			, boolean overwrite, ITransferProgressListener listener, Object object) throws TransferException, OperationException
 	{
 		// overwrite if necessary.
 		for (com.yagasoft.overcast.container.File<?> child : parent.getFilesArray())

@@ -9,26 +9,27 @@ import java.net.URL;
 import com.google.api.services.drive.model.File;
 import com.yagasoft.overcast.container.Container;
 import com.yagasoft.overcast.container.Folder;
+import com.yagasoft.overcast.exception.OperationException;
 
 
 public class RemoteFile extends com.yagasoft.overcast.container.remote.RemoteFile<File>
 {
-	
+
 	/**
 	 * Better use the factory in Google class.
 	 */
 	public RemoteFile()
 	{}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.container.Container#generateId()
 	 */
 	@Override
 	public void generateId()
 	{
-		
+
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.container.Container#isExist()
 	 */
@@ -37,7 +38,7 @@ public class RemoteFile extends com.yagasoft.overcast.container.remote.RemoteFil
 	{
 		return false;
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.container.Container#updateInfo()
 	 */
@@ -47,7 +48,8 @@ public class RemoteFile extends com.yagasoft.overcast.container.remote.RemoteFil
 		id = sourceObject.getId();
 		name = sourceObject.getTitle();
 		type = sourceObject.getMimeType();
-		
+		path = ((parent == null) ? "/" : (parent.getPath())) + name;
+
 		try
 		{
 			size = sourceObject.getFileSize();
@@ -56,7 +58,7 @@ public class RemoteFile extends com.yagasoft.overcast.container.remote.RemoteFil
 		{
 			size = 0;
 		}
-		
+
 		try
 		{
 			link = new URL(sourceObject.getDownloadUrl());
@@ -66,7 +68,7 @@ public class RemoteFile extends com.yagasoft.overcast.container.remote.RemoteFil
 			link = null;
 		}
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.container.Container#updateFromSource()
 	 */
@@ -83,35 +85,35 @@ public class RemoteFile extends com.yagasoft.overcast.container.remote.RemoteFil
 			e.printStackTrace();
 		}
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.container.Container#copy(com.yagasoft.overcast.container.Folder, boolean)
 	 */
 	@Override
-	public Container<?> copy(Folder<?> destination, boolean overwrite)
+	public Container<?> copy(Folder<?> destination, boolean overwrite) throws OperationException
 	{
 		return null;
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.container.Container#move(com.yagasoft.overcast.container.Folder, boolean)
 	 */
 	@Override
-	public void move(Folder<?> destination, boolean overwrite)
+	public void move(Folder<?> destination, boolean overwrite) throws OperationException
 	{}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.container.Container#rename(java.lang.String)
 	 */
 	@Override
-	public void rename(String newName)
+	public void rename(String newName) throws OperationException
 	{}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.container.Container#delete()
 	 */
 	@Override
-	public void delete()
+	public void delete() throws OperationException
 	{
 		try
 		{
@@ -121,7 +123,8 @@ public class RemoteFile extends com.yagasoft.overcast.container.remote.RemoteFil
 		catch (IOException e)
 		{
 			e.printStackTrace();
+			throw new OperationException("Failed to delete file.");
 		}
 	}
-	
+
 }

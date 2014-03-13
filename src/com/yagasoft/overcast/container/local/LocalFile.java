@@ -27,6 +27,7 @@ import com.yagasoft.overcast.container.remote.RemoteFolder;
 import com.yagasoft.overcast.container.transfer.ITransferProgressListener;
 import com.yagasoft.overcast.container.transfer.UploadJob;
 import com.yagasoft.overcast.exception.AccessException;
+import com.yagasoft.overcast.exception.OperationException;
 import com.yagasoft.overcast.exception.TransferException;
 
 
@@ -35,19 +36,19 @@ import com.yagasoft.overcast.exception.TransferException;
  */
 public class LocalFile extends File<Path>
 {
-
+	
 	/** The {@link RemoteFile} corresponding to this local file if applicable. */
 	protected RemoteFile<?>	remoteMapping;
-
+	
 	/**
 	 * Instantiates a new local file.
 	 */
 	public LocalFile()
 	{}
-
+	
 	/**
 	 * Instantiates a new local file.
-	 *
+	 * 
 	 * @param file
 	 *            Java library File object.
 	 */
@@ -56,10 +57,10 @@ public class LocalFile extends File<Path>
 		sourceObject = file;
 		updateInfo();		// updating the info locally costs nothing, so do it automatically.
 	}
-
+	
 	/**
 	 * Instantiates a new local file.
-	 *
+	 * 
 	 * @param path
 	 *            Path to the file.
 	 */
@@ -67,7 +68,7 @@ public class LocalFile extends File<Path>
 	{
 		this(Paths.get(path));		// get the file object and pass it to the other constructor.
 	}
-
+	
 	/**
 	 * @see com.yagasoft.overcast.container.Container#generateId()
 	 */
@@ -76,7 +77,7 @@ public class LocalFile extends File<Path>
 	{
 		id = path;
 	}
-
+	
 	/**
 	 * @see com.yagasoft.overcast.container.Container#isExist()
 	 */
@@ -89,10 +90,10 @@ public class LocalFile extends File<Path>
 		{
 			throw new AccessException("Can't determine if file exists or not.");
 		}
-
+		
 		return Files.exists(sourceObject);
 	}
-
+	
 	/**
 	 * @see com.yagasoft.overcast.container.Container#updateInfo()
 	 */
@@ -101,7 +102,7 @@ public class LocalFile extends File<Path>
 	{
 		updateFromSource();		// updating the info locally costs nothing, so do it automatically.
 	}
-
+	
 	/**
 	 * @see com.yagasoft.overcast.container.Container#updateFromSource()
 	 */
@@ -111,7 +112,7 @@ public class LocalFile extends File<Path>
 		name = sourceObject.getFileName().toString();
 		path = sourceObject.toAbsolutePath().toString();
 		type = URLConnection.guessContentTypeFromName(path);		// guess type of file (MIME)
-
+		
 		try
 		{
 			size = Files.size(sourceObject);
@@ -121,15 +122,15 @@ public class LocalFile extends File<Path>
 			size = 0;
 			e.printStackTrace();
 		}
-
+		
 		generateId();
 	}
-
+	
 	/**
 	 * @see com.yagasoft.overcast.container.Container#copy(com.yagasoft.overcast.container.Folder, boolean)
 	 */
 	@Override
-	public LocalFile copy(Folder<?> destination, boolean overwrite)
+	public LocalFile copy(Folder<?> destination, boolean overwrite) throws OperationException
 	{
 		try
 		{
@@ -141,21 +142,20 @@ public class LocalFile extends File<Path>
 							new CopyOption[] { REPLACE_EXISTING, COPY_ATTRIBUTES }
 							:
 							new CopyOption[] { COPY_ATTRIBUTES }));
-
+			
 		}
 		catch (IOException e)
 		{
 			e.printStackTrace();
+			throw new OperationException("Failed to copy file.");
 		}
-
-		return null;
 	}
-
+	
 	/**
 	 * @see com.yagasoft.overcast.container.Container#move(com.yagasoft.overcast.container.Folder, boolean)
 	 */
 	@Override
-	public void move(Folder<?> destination, boolean overwrite)
+	public void move(Folder<?> destination, boolean overwrite) throws OperationException
 	{
 		try
 		{
@@ -166,20 +166,21 @@ public class LocalFile extends File<Path>
 							new CopyOption[] { REPLACE_EXISTING }
 							:
 							new CopyOption[0]);
-
+			
 			updateFromSource();		// need to update new path.
 		}
 		catch (IOException e)
 		{
 			e.printStackTrace();
+			throw new OperationException("Failed to move file.");
 		}
 	}
-
+	
 	/**
 	 * @see com.yagasoft.overcast.container.Container#rename(java.lang.String)
 	 */
 	@Override
-	public void rename(String newName)
+	public void rename(String newName) throws OperationException
 	{
 		try
 		{
@@ -190,19 +191,20 @@ public class LocalFile extends File<Path>
 		catch (IOException e)
 		{
 			e.printStackTrace();
+			throw new OperationException("Failed to rename file.");
 		}
 	}
-
+	
 	/**
 	 * @see com.yagasoft.overcast.container.Container#delete()
 	 */
 	@Override
-	public void delete()
+	public void delete() throws OperationException
 	{
 		try
 		{
 			Files.deleteIfExists(sourceObject);
-
+			
 			// file is obsolete after delete, so remove from parent.
 			if (parent != null)
 			{
@@ -212,9 +214,10 @@ public class LocalFile extends File<Path>
 		catch (IOException e)
 		{
 			e.printStackTrace();
+			throw new OperationException("Failed to delete file.");
 		}
 	}
-
+	
 	/**
 	 * Upload the container to the server.<br />
 	 * This should just call the one in {@link CSP}.
@@ -231,13 +234,14 @@ public class LocalFile extends File<Path>
 	 * @return the upload job
 	 * @throws TransferException
 	 *             A problem occurred during the transfer of the container.
+	 * @throws OperationException
 	 */
 	public UploadJob<?, ?> upload(RemoteFolder<?> parent, boolean overwrite, ITransferProgressListener listener, Object object)
-			throws TransferException
+			throws TransferException, OperationException
 	{
 		return parent.getCsp().upload(this, parent, overwrite, listener, object);
 	}
-
+	
 	/**
 	 * @return the remoteMapping
 	 */
@@ -245,7 +249,7 @@ public class LocalFile extends File<Path>
 	{
 		return remoteMapping;
 	}
-
+	
 	/**
 	 * @param remoteMapping
 	 *            the remoteMapping to set
@@ -254,5 +258,16 @@ public class LocalFile extends File<Path>
 	{
 		this.remoteMapping = remoteMapping;
 	}
-
+	
+	@Override
+	public CSP<Path, ?, ?> getCsp()
+	{
+		throw new UnsupportedOperationException("DO NOT USE!");
+	}
+	
+	@Override
+	public void setCsp(CSP<Path, ?, ?> csp)
+	{
+		throw new UnsupportedOperationException("DO NOT USE!");
+	}
 }

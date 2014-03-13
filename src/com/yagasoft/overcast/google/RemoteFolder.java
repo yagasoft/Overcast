@@ -5,21 +5,18 @@ package com.yagasoft.overcast.google;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 
-import com.google.api.client.googleapis.batch.BatchRequest;
-import com.google.api.client.googleapis.batch.json.JsonBatchCallback;
-import com.google.api.client.googleapis.json.GoogleJsonError;
-import com.google.api.client.http.HttpHeaders;
 import com.google.api.services.drive.Drive;
-import com.google.api.services.drive.Drive.Children;
-import com.google.api.services.drive.model.ChildList;
-import com.google.api.services.drive.model.ChildReference;
+import com.google.api.services.drive.Drive.Files.List;
 import com.google.api.services.drive.model.File;
+import com.google.api.services.drive.model.FileList;
 import com.google.api.services.drive.model.ParentReference;
 import com.yagasoft.logger.Logger;
 import com.yagasoft.overcast.container.Container;
 import com.yagasoft.overcast.container.Folder;
 import com.yagasoft.overcast.exception.CreationException;
+import com.yagasoft.overcast.exception.OperationException;
 
 
 public class RemoteFolder extends com.yagasoft.overcast.container.remote.RemoteFolder<File>
@@ -148,23 +145,24 @@ public class RemoteFolder extends com.yagasoft.overcast.container.remote.RemoteF
 
 		try
 		{
-			Children.List request = Google.driveService.children().list(id);
-			request.setQ("trashed=false");
+			List request = Google.getDriveService().files().list().setQ("trashed = false and '" + id + "' in parents");
 
 			ArrayList<String> childrenIds = new ArrayList<String>();
+			HashMap<String, File> children = new HashMap<String, File>();
 
 			do
 			{
 				try
 				{
-					ChildList children = request.execute();
+					FileList childrenResult = request.execute();
 
-					for (ChildReference child : children.getItems())
+					for (File child : childrenResult.getItems())
 					{
 						childrenIds.add(child.getId());
+						children.put(child.getId(), child);
 					}
 
-					request.setPageToken(children.getNextPageToken());
+					request.setPageToken(childrenResult.getNextPageToken());
 				}
 				catch (IOException e)
 				{
@@ -177,64 +175,24 @@ public class RemoteFolder extends com.yagasoft.overcast.container.remote.RemoteF
 
 			if ( !childrenIds.isEmpty())
 			{
-				BatchRequest batch = Google.driveService.batch();
-
-				JsonBatchCallback<File> callback = new JsonBatchCallback<File>()
+				for (String id1 : childrenIds)
 				{
-
-					@Override
-					public void onSuccess(File remote, HttpHeaders responseHeaders)
+					File remote = children.get(id1);
+					if (remote.getMimeType().indexOf("folder") >= 0)
 					{
-						if (remote.getMimeType().indexOf("folder") >= 0)
-						{
-							RemoteFolder folder = Google.factory.createFolder(remote, true);
-							add(folder);
+						RemoteFolder folder = Google.factory.createFolder(remote, false);
+						add(folder);
 
-							Logger.newEntry("Folder: " + folder.parent.getName() + "\\" + folder.name + " => " + folder.id);
-						}
-						else
-						{
-							RemoteFile file = Google.factory.createFile(remote, true);
-							add(file);
-
-							Logger.newEntry("File: " + name + "\\" + file.getName() + " => " + file.getId());
-						}
+						Logger.newEntry("Folder: " + folder.parent.getName() + "\\" + folder.name + " => " + folder.id);
 					}
-
-					@Override
-					public void onFailure(GoogleJsonError e, HttpHeaders responseHeaders)
+					else
 					{
-						System.out.println("Error Message: " + e.getMessage());
-					}
-				};
+						RemoteFile file = Google.factory.createFile(remote, false);
+						add(file);
 
-				for (String childId : childrenIds)
-				{
-					Google.driveService.files().get(childId).queue(batch, callback);
+						Logger.newEntry("File: " + name + "\\" + file.getName() + " => " + file.getId());
+					}
 				}
-
-				batch.execute();
-
-//				for (String childId : childrenIds)
-//				{
-//					File remote = Google.driveService.files().get(childId).execute();
-//
-//					if (remote.getMimeType().indexOf("folder") >= 0)
-//					{
-//						RemoteFolder folder = Google.factory.createFolder(remote, true);
-//						add(folder);
-//
-//						Logger.post("Folder: " + folder.parent.getName() + "\\" + folder.name + " => " + folder.id);
-//					}
-//					else
-//					{
-//						RemoteFile file = Google.factory.createFile(remote, true);
-//						add(file);
-//
-//						Logger.post("File: " + name + "\\" + file.getName() + " => " + file.getId());
-//					}
-//				}
-
 			}
 		}
 		catch (IOException e)
@@ -265,6 +223,7 @@ public class RemoteFolder extends com.yagasoft.overcast.container.remote.RemoteF
 	{
 		id = sourceObject.getId();
 		name = sourceObject.getTitle();
+		path = ((parent == null) ? "/" : (parent.getPath())) + name + "/";
 
 //		try
 //		{
@@ -302,7 +261,7 @@ public class RemoteFolder extends com.yagasoft.overcast.container.remote.RemoteF
 	 * @see com.yagasoft.overcast.container.Container#copy(com.yagasoft.overcast.container.Folder, boolean)
 	 */
 	@Override
-	public Container<?> copy(Folder<?> destination, boolean overwrite)
+	public Container<?> copy(Folder<?> destination, boolean overwrite) throws OperationException
 	{
 		return null;
 	}
@@ -311,14 +270,14 @@ public class RemoteFolder extends com.yagasoft.overcast.container.remote.RemoteF
 	 * @see com.yagasoft.overcast.container.Container#move(com.yagasoft.overcast.container.Folder, boolean)
 	 */
 	@Override
-	public void move(Folder<?> destination, boolean overwrite)
+	public void move(Folder<?> destination, boolean overwrite) throws OperationException
 	{}
 
 	/**
 	 * @see com.yagasoft.overcast.container.Container#rename(java.lang.String)
 	 */
 	@Override
-	public void rename(String newName)
+	public void rename(String newName) throws OperationException
 	{}
 
 	/**

@@ -28,6 +28,7 @@ import com.yagasoft.overcast.container.remote.RemoteFolder;
 import com.yagasoft.overcast.container.transfer.ITransferProgressListener;
 import com.yagasoft.overcast.container.transfer.UploadJob;
 import com.yagasoft.overcast.exception.AccessException;
+import com.yagasoft.overcast.exception.OperationException;
 import com.yagasoft.overcast.exception.TransferException;
 
 
@@ -39,6 +40,7 @@ public class LocalFolder extends Folder<Path>
 	
 	/** The {@link RemoteFolder} corresponding to this local folder if applicable. */
 	protected RemoteFolder<?>	remoteMapping;
+	protected long				localFreeSpace;
 	
 	/**
 	 * Instantiates a new local folder.
@@ -242,6 +244,7 @@ public class LocalFolder extends Folder<Path>
 		
 		name = sourceObject.getFileName().toString();
 		path = sourceObject.toAbsolutePath().toString();
+		localFreeSpace = calculateLocalFreeSpace();
 		
 		String parentString = sourceObject.getParent().toString();
 		
@@ -262,7 +265,7 @@ public class LocalFolder extends Folder<Path>
 	 * @see com.yagasoft.overcast.container.Container#copy(com.yagasoft.overcast.container.Folder, boolean)
 	 */
 	@Override
-	public LocalFolder copy(Folder<?> destination, boolean overwrite)
+	public LocalFolder copy(Folder<?> destination, boolean overwrite) throws OperationException
 	{
 		// call Oracle's copier.
 		TreeCopier treeCopier = new TreeCopier(sourceObject, (Path) destination.getSourceObject(), !overwrite, true);
@@ -284,7 +287,7 @@ public class LocalFolder extends Folder<Path>
 	 * @see com.yagasoft.overcast.container.Container#move(com.yagasoft.overcast.container.Folder, boolean)
 	 */
 	@Override
-	public void move(Folder<?> destination, boolean overwrite)
+	public void move(Folder<?> destination, boolean overwrite) throws OperationException
 	{
 		// call my modification to Oracle's copier.
 		TreeMover treeMover = new TreeMover(sourceObject, (Path) destination.getSourceObject(), !overwrite);
@@ -305,7 +308,7 @@ public class LocalFolder extends Folder<Path>
 	 * @see com.yagasoft.overcast.container.Container#rename(java.lang.String)
 	 */
 	@Override
-	public void rename(String newName)
+	public void rename(String newName) throws OperationException
 	{
 		try
 		{
@@ -367,6 +370,25 @@ public class LocalFolder extends Folder<Path>
 	}
 	
 	/**
+	 * Calculate local free space available on the local disk (the one the root resides on).
+	 * 
+	 * @return the free space in bytes
+	 */
+	public long calculateLocalFreeSpace()
+	{
+		try
+		{
+			return localFreeSpace = Files.getFileStore(sourceObject.getRoot()).getUnallocatedSpace();
+		}
+		catch (IOException e)
+		{
+			e.printStackTrace();
+		}
+		
+		return localFreeSpace;
+	}
+	
+	/**
 	 * Not supported; DO NOT use!<br />
 	 * Use {@link #updateInfo(boolean, boolean)} instead.
 	 */
@@ -386,6 +408,10 @@ public class LocalFolder extends Folder<Path>
 		throw new UnsupportedOperationException();
 	}
 	
+	// //////////////////////////////////////////////////////////////////////////////////////
+	// #region Getters and setters.
+	// ======================================================================================
+	
 	/**
 	 * @return the remoteMapping
 	 */
@@ -402,5 +428,43 @@ public class LocalFolder extends Folder<Path>
 	{
 		this.remoteMapping = remoteMapping;
 	}
+	
+	@Override
+	public CSP<Path, ?, ?> getCsp()
+	{
+		throw new UnsupportedOperationException("DO NOT USE!");
+	}
+	
+	@Override
+	public void setCsp(CSP<Path, ?, ?> csp)
+	{
+		throw new UnsupportedOperationException("DO NOT USE!");
+	}
+	
+	/**
+	 * @return the localFreeSpace
+	 */
+	public long getLocalFreeSpace()
+	{
+		if (localFreeSpace == 0)
+		{
+			calculateLocalFreeSpace();
+		}
+		
+		return localFreeSpace;
+	}
+	
+	/**
+	 * @param localFreeSpace
+	 *            the localFreeSpace to set
+	 */
+	public void setLocalFreeSpace(long localFreeSpace)
+	{
+		this.localFreeSpace = localFreeSpace;
+	}
+	
+	// ======================================================================================
+	// #endregion Getters and setters.
+	// //////////////////////////////////////////////////////////////////////////////////////
 	
 }
