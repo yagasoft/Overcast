@@ -3,7 +3,11 @@
  * 
  *		Modified MIT License (GPL v3 compatible)
  * 			License terms are in a separate file (license.txt)
- *
+ * 
+ *		Project/File: Overcast/com.yagasoft.overcast.container/File.java
+ * 
+ *			Modified: 27-Mar-2014 (16:12:15)
+ *			   Using: Eclipse J-EE / JDK 7 / Windows 8.1 x64
  */
 
 package com.yagasoft.overcast.container;
@@ -11,8 +15,9 @@ package com.yagasoft.overcast.container;
 
 /**
  * Class representing the commonalities between all file types (remote/local).
- *
- * @param <T> the type of the file in the original API of the CSP.
+ * 
+ * @param <T>
+ *            the type of the file in the original API of the CSP.
  */
 public abstract class File<T> extends Container<T>
 {

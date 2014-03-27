@@ -4,15 +4,19 @@
  *		Modified MIT License (GPL v3 compatible)
  * 			License terms are in a separate file (license.txt)
  *
+ *		Project/File: Overcast/com.yagasoft.overcast.container.transfer/UploadJob.java
+ *
+ *			Modified: 18-Mar-2014 (16:28:12)
+ *			   Using: Eclipse J-EE / JDK 7 / Windows 8.1 x64
  */
 
 package com.yagasoft.overcast.container.transfer;
 
 
+import com.yagasoft.overcast.container.File;
+import com.yagasoft.overcast.container.Folder;
 import com.yagasoft.overcast.container.local.LocalFile;
 import com.yagasoft.overcast.container.remote.RemoteFile;
-import com.yagasoft.overcast.container.remote.RemoteFolder;
-import com.yagasoft.overcast.container.transfer.TransferState;
 
 
 /**
@@ -24,18 +28,15 @@ import com.yagasoft.overcast.container.transfer.TransferState;
  * @param <S>
  *            the type of the file given by the CSP.
  */
-public final class UploadJob<T, S> extends TransferJob<T>
+public abstract class UploadJob<T, S> extends TransferJob<T>
 {
-
-	/** The parent. */
-	protected RemoteFolder<?>	parent;
-
+	
 	/** The remote file object. */
-	protected RemoteFile<S> remoteFile;
-
+	protected RemoteFile<S>	remoteFile;
+	
 	/**
 	 * Instantiates a new upload job.
-	 *
+	 * 
 	 * @param localFile
 	 *            the local file
 	 * @param remoteFile
@@ -47,17 +48,18 @@ public final class UploadJob<T, S> extends TransferJob<T>
 	 * @param cspTransferer
 	 *            uploader
 	 */
-	public UploadJob(LocalFile localFile, RemoteFile<S> remoteFile, RemoteFolder<?> parent, boolean overwrite, T cspTransferer)
+	public UploadJob(LocalFile localFile, RemoteFile<S> remoteFile, Folder<?> parent, boolean overwrite, T cspTransferer)
 	{
-		super(localFile, overwrite, cspTransferer);
+		super(localFile, parent, remoteFile.getCsp(), overwrite, cspTransferer);
 		this.parent = parent;
 		this.remoteFile = remoteFile;
 	}
-
+	
 	/**
 	 * Do NOT use!<br />
-	 * As the CSP API file type can't be determined in this general implementation, so it has to be passed after creating an object of this job in the CSP.
-	 *
+	 * As the CSP API file type can't be determined in this general implementation, so it has to be passed after creating an
+	 * object of this job in the CSP.
+	 * 
 	 * @see com.yagasoft.overcast.container.transfer.TransferJob#success()
 	 */
 	@Override
@@ -65,10 +67,10 @@ public final class UploadJob<T, S> extends TransferJob<T>
 	{
 		throw new UnsupportedOperationException();
 	}
-
+	
 	/**
 	 * Perform stuff on successful upload.
-	 *
+	 * 
 	 * @param file
 	 *            the file object from the original CSP API.
 	 */
@@ -79,48 +81,30 @@ public final class UploadJob<T, S> extends TransferJob<T>
 		localFile.setRemoteMapping(remoteFile);
 		remoteFile.setLocalMapping(localFile);
 		parent.add(remoteFile);
-		notifyListeners(TransferState.COMPLETED, 1.0f);
+		notifyProgressListeners(TransferState.COMPLETED, 1.0f);
 	}
-
+	
 	/**
 	 * @see com.yagasoft.overcast.container.transfer.TransferJob#failure()
 	 */
 	@Override
 	public void failure()
 	{
-		notifyListeners(TransferState.FAILED, 0.0f);
+		notifyProgressListeners(TransferState.FAILED, 0.0f);
 	}
-
+	
 	/**
-	 * @see com.yagasoft.overcast.container.transfer.TransferJob#notifyListeners(com.yagasoft.overcast.container.transfer.ITransferProgressListener.TransferState, float)
+	 * @see com.yagasoft.overcast.container.transfer.TransferJob#getSourceFile()
 	 */
 	@Override
-	public void notifyListeners(TransferState state, float progress)
+	public File<?> getSourceFile()
 	{
-		localFile.notifyListeners(state, progress);
+		return localFile;
 	}
-
+	
 	// --------------------------------------------------------------------------------------
 	// #region Getters and setters.
-
-	/**
-	 * @return the parent
-	 */
-	public RemoteFolder<?> getParent()
-	{
-		return parent;
-	}
-
-
-	/**
-	 * @param parent the parent to set
-	 */
-	public void setParent(RemoteFolder<?> parent)
-	{
-		this.parent = parent;
-	}
-
-
+	
 	/**
 	 * @return the remoteFile
 	 */
@@ -128,17 +112,17 @@ public final class UploadJob<T, S> extends TransferJob<T>
 	{
 		return remoteFile;
 	}
-
-
+	
 	/**
-	 * @param remoteFile the remoteFile to set
+	 * @param remoteFile
+	 *            the remoteFile to set
 	 */
 	public void setRemoteFile(RemoteFile<S> remoteFile)
 	{
 		this.remoteFile = remoteFile;
 	}
-
+	
 	// #endregion Getters and setters.
 	// --------------------------------------------------------------------------------------
-
+	
 }

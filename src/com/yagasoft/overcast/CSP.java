@@ -1,9 +1,13 @@
-/*
+/* 
  * Copyright (C) 2011-2014 by Ahmed Osama el-Sawalhy
- *
+ * 
  *		Modified MIT License (GPL v3 compatible)
  * 			License terms are in a separate file (license.txt)
- *
+ * 
+ *		Project/File: Overcast/com.yagasoft.overcast/CSP.java
+ * 
+ *			Modified: 27-Mar-2014 (16:11:41)
+ *			   Using: Eclipse J-EE / JDK 7 / Windows 8.1 x64
  */
 
 package com.yagasoft.overcast;
@@ -16,18 +20,22 @@ import com.yagasoft.logger.Logger;
 import com.yagasoft.overcast.authorisation.Authorisation;
 import com.yagasoft.overcast.container.local.LocalFile;
 import com.yagasoft.overcast.container.local.LocalFolder;
+import com.yagasoft.overcast.container.remote.RemoteFactory;
 import com.yagasoft.overcast.container.remote.RemoteFile;
 import com.yagasoft.overcast.container.remote.RemoteFolder;
 import com.yagasoft.overcast.container.transfer.DownloadJob;
 import com.yagasoft.overcast.container.transfer.ITransferProgressListener;
+import com.yagasoft.overcast.container.transfer.TransferJob;
 import com.yagasoft.overcast.container.transfer.UploadJob;
+import com.yagasoft.overcast.exception.CSPBuildException;
 import com.yagasoft.overcast.exception.OperationException;
 import com.yagasoft.overcast.exception.TransferException;
 
 
 /**
  * The class representing the Cloud Storage Provider.<br />
- * It's abstract, and the upload and download must be implemented first.
+ * It's abstract, and the upload and download must be implemented first.<br />
+ * The constructors should throw a {@link CSPBuildException} if it can't go through to the end.
  * 
  * @param <SourceFileType>
  *            The source file type (file type from the original CSP API) must be passed to this class.<br />
@@ -67,11 +75,17 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 	/** Current download job. */
 	protected DownloadJob<DownloaderType>						currentDownloadJob;
 	
+	/** Current download thread. */
+	protected Thread											currentDownloadThread;
+	
 	/** Upload queue. */
 	protected Queue<UploadJob<UploaderType, SourceFileType>>	uploadQueue		= new LinkedList<UploadJob<UploaderType, SourceFileType>>();
 	
 	/** Current upload job. */
 	protected UploadJob<UploaderType, SourceFileType>			currentUploadJob;
+	
+	/** Current upload thread. */
+	protected Thread											currentUploadThread;
 	
 	// add a RemoteFactory object in the subclass.
 	
@@ -124,13 +138,10 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 	 *            Whether to overwrite any existing files and folders on the local disk or not.
 	 * @param listener
 	 *            Object listening to the changes in the transfer state.
-	 * @param object
-	 *            Object passed by the initialiser to be passed back on state change. It can be used as a kind of "call-back" or
-	 *            something; the sender of this object can cast it back and use it as seen fit.
 	 * @return the download jobs
 	 */
 	public abstract DownloadJob<?>[] download(RemoteFolder<?> folder, LocalFolder parent, boolean overwrite
-			, ITransferProgressListener listener, Object object);
+			, ITransferProgressListener listener);
 	
 	/**
 	 * Download the file (passed) from the server.
@@ -143,17 +154,13 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 	 *            Whether to overwrite existing file on the local disk or not.
 	 * @param listener
 	 *            Object listening to the changes in the transfer state.
-	 * @param object
-	 *            Object passed by the initialiser to be passed back on state change. It can be used as a kind of "call-back" or
-	 *            something; the sender of this object can cast it back and use it as seen fit.
 	 * @return the download job
 	 * @throws TransferException
 	 *             A problem occurred during the transfer of the file.
 	 * @throws OperationException
 	 */
 	public abstract DownloadJob<?> download(RemoteFile<?> file, LocalFolder parent, boolean overwrite,
-			ITransferProgressListener listener
-			, Object object)
+			ITransferProgressListener listener)
 			throws TransferException, OperationException;
 	
 	/**
@@ -162,6 +169,35 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 	 * This should be called using a separate thread so as not to block the program.
 	 */
 	public abstract void nextDownloadJob();
+	
+	/**
+	 * Checks the download queue, if it's the same job passed, then call {@link #cancelCurrentDownload()};
+	 * if not, then simply remove it from the queue.
+	 * 
+	 * @param path
+	 *            Path.
+	 */
+	public void cancelDownload(TransferJob<?> job)
+	{
+		if (currentDownloadJob == job)
+		{
+			cancelCurrentDownload();
+		}
+		else
+		{
+			downloadQueue.remove(job);
+		}
+	}
+	
+	/**
+	 * Cancel current download.
+	 */
+	public void cancelCurrentDownload()
+	{
+		currentDownloadJob.cancelTransfer();
+//		currentDownloadJob = null;
+//		nextDownloadJob();
+	}
 	
 	/**
 	 * Upload the folder (passed) to the server.<br />
@@ -175,13 +211,10 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 	 *            Whether to overwrite any existing files and folders on the server or not.
 	 * @param listener
 	 *            Object listening to the changes in the transfer state.
-	 * @param object
-	 *            Object passed by the initialiser to be passed back on state change. It can be used as a kind of "call-back" or
-	 *            something; the sender of this object can cast it back and use it as seen fit.
 	 * @return the upload jobs
 	 */
 	public abstract UploadJob<?, ?>[] upload(LocalFolder folder, RemoteFolder<?> parent, boolean overwrite
-			, ITransferProgressListener listener, Object object);
+			, ITransferProgressListener listener);
 	
 	/**
 	 * Upload the file (passed) to the server.
@@ -194,17 +227,13 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 	 *            Whether to overwrite existing file on the server or not.
 	 * @param listener
 	 *            Object listening to the changes in the transfer state.
-	 * @param object
-	 *            Object passed by the initialiser to be passed back on state change. It can be used as a kind of "call-back" or
-	 *            something; the sender of this object can cast it back and use it as seen fit.
 	 * @return the upload job
 	 * @throws TransferException
 	 *             A problem occurred during the transfer of the file.
 	 * @throws OperationException
 	 */
 	public abstract UploadJob<?, ?> upload(LocalFile file, RemoteFolder<?> parent, boolean overwrite,
-			ITransferProgressListener listener
-			, Object object)
+			ITransferProgressListener listener)
 			throws TransferException, OperationException;
 	
 	/**
@@ -212,6 +241,43 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 	 * This should be called using a separate thread so as not to block the program.
 	 */
 	public abstract void nextUploadJob();
+	
+	/**
+	 * Checks the upload queue, if it's the same job passed, then call {@link #cancelCurrentUpload()};
+	 * if not, then simply remove it from the queue.
+	 * 
+	 * @param path
+	 *            Path.
+	 */
+	public void cancelUpload(TransferJob<?> job)
+	{
+		if (currentUploadJob == job)
+		{
+			cancelCurrentUpload();
+		}
+		else
+		{
+			uploadQueue.remove(job);
+		}
+	}
+	
+	/**
+	 * Cancel current upload.
+	 */
+	public void cancelCurrentUpload()
+	{
+		currentUploadJob.cancelTransfer();
+//		currentUploadJob = null;
+//		nextUploadJob();
+	}
+	
+	public abstract RemoteFactory<?, ?, ?, ?> getAbstractFactory();
+	
+	@Override
+	public String toString()
+	{
+		return name;
+	}
 	
 	// //////////////////////////////////////////////////////////////////////////////////////
 	// #region Getters and setters.

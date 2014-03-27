@@ -3,7 +3,11 @@
  * 
  *		Modified MIT License (GPL v3 compatible)
  * 			License terms are in a separate file (license.txt)
- *
+ * 
+ *		Project/File: Overcast/com.yagasoft.overcast.container/Folder.java
+ * 
+ *			Modified: 27-Mar-2014 (16:12:23)
+ *			   Using: Eclipse J-EE / JDK 7 / Windows 8.1 x64
  */
 
 package com.yagasoft.overcast.container;
@@ -14,6 +18,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 
+import com.yagasoft.overcast.container.operation.IOperationListener;
 import com.yagasoft.overcast.exception.CreationException;
 
 
@@ -38,20 +43,24 @@ public abstract class Folder<T> extends Container<T>
 	 * 
 	 * @param parent
 	 *            Parent folder to create in.
+	 * @param listener
+	 *            the listener
 	 * @throws CreationException
 	 *             problem with creating the folder
 	 */
-	public abstract void create(Folder<?> parent) throws CreationException;
+	public abstract void create(Folder<?> parent, IOperationListener listener) throws CreationException;
 	
 	/**
 	 * Creates the folder at the source with the info set (class attributes).
 	 * 
 	 * @param parentPath
 	 *            Parent path.
+	 * @param listener
+	 *            the listener
 	 * @throws CreationException
 	 *             problem with creating the folder
 	 */
-	public abstract void create(String parentPath) throws CreationException;
+	public abstract void create(String parentPath, IOperationListener listener) throws CreationException;
 	
 	/**
 	 * Adds the folder passed to the list of folder in this folder.

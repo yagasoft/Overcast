@@ -4,6 +4,10 @@
  *		Modified MIT License (GPL v3 compatible)
  * 			License terms are in a separate file (license.txt)
  *
+ *		Project/File: Overcast/com.yagasoft.overcast.container.transfer/DownloadJob.java
+ *
+ *			Modified: 18-Mar-2014 (16:26:36)
+ *			   Using: Eclipse J-EE / JDK 7 / Windows 8.1 x64
  */
 
 package com.yagasoft.overcast.container.transfer;
@@ -11,31 +15,28 @@ package com.yagasoft.overcast.container.transfer;
 
 import java.nio.file.Paths;
 
+import com.yagasoft.overcast.container.File;
+import com.yagasoft.overcast.container.Folder;
 import com.yagasoft.overcast.container.local.LocalFile;
-import com.yagasoft.overcast.container.local.LocalFolder;
 import com.yagasoft.overcast.container.remote.RemoteFile;
-import com.yagasoft.overcast.container.transfer.TransferState;
 
 
 /**
  * A class representing a job in the download queue.<br />
  * It's needed to contain information vital to complete the download process.
- *
+ * 
  * @param <T>
  *            the type of the object to perform the actual download.
  */
-public final class DownloadJob<T> extends TransferJob<T>
+public abstract class DownloadJob<T> extends TransferJob<T>
 {
-
-	/** The parent. */
-	protected LocalFolder	parent;
-
+	
 	/** The remote file to download. */
 	protected RemoteFile<?>	remoteFile;
-
+	
 	/**
 	 * Instantiates a new download job.
-	 *
+	 * 
 	 * @param remoteFile
 	 *            the remote file
 	 * @param parent
@@ -45,17 +46,17 @@ public final class DownloadJob<T> extends TransferJob<T>
 	 * @param cspTransferer
 	 *            downloader
 	 */
-	public DownloadJob(RemoteFile<?> remoteFile, LocalFolder parent, boolean overwrite, T cspTransferer)
+	public DownloadJob(RemoteFile<?> remoteFile, Folder<?> parent, boolean overwrite, T cspTransferer)
 	{
-		super(new LocalFile(), overwrite, cspTransferer);
+		super(new LocalFile(), parent, remoteFile.getCsp(), overwrite, cspTransferer);
 		this.parent = parent;
 		this.remoteFile = remoteFile;
-
+		
 		// prepare the local file object
 		localFile.setSourceObject(Paths.get(parent.getPath(), remoteFile.getName()));
 		localFile.setPath(localFile.getSourceObject().toString());
 	}
-
+	
 	/**
 	 * @see com.yagasoft.overcast.container.transfer.TransferJob#success()
 	 */
@@ -66,41 +67,41 @@ public final class DownloadJob<T> extends TransferJob<T>
 		localFile.setRemoteMapping(remoteFile);
 		remoteFile.setLocalMapping(localFile);
 		parent.add(localFile);
-		notifyListeners(TransferState.COMPLETED, 1.0f);
+		notifyProgressListeners(TransferState.COMPLETED, 1.0f);
 	}
-
+	
 	/**
 	 * ...
-	 *
+	 * 
 	 * @param path
 	 *            the path
 	 */
 	public void success(String path)
-	{
-
+	{	
+		
 	}
-
+	
 	/**
 	 * @see com.yagasoft.overcast.container.transfer.TransferJob#failure()
 	 */
 	@Override
 	public void failure()
 	{
-		notifyListeners(TransferState.FAILED, 0.0f);
+		notifyProgressListeners(TransferState.FAILED, 0.0f);
 	}
-
+	
 	/**
-	 * @see com.yagasoft.overcast.container.transfer.TransferJob#notifyListeners(com.yagasoft.overcast.container.transfer.ITransferProgressListener.TransferState, float)
+	 * @see com.yagasoft.overcast.container.transfer.TransferJob#getSourceFile()
 	 */
 	@Override
-	public void notifyListeners(TransferState state, float progress)
+	public File<?> getSourceFile()
 	{
-		remoteFile.notifyListeners(state, progress);
+		return remoteFile;
 	}
-
+	
 	// --------------------------------------------------------------------------------------
 	// #region Getters and setters.
-
+	
 	/**
 	 * @return the remoteFile
 	 */
@@ -108,35 +109,17 @@ public final class DownloadJob<T> extends TransferJob<T>
 	{
 		return remoteFile;
 	}
-
-
+	
 	/**
-	 * @param remoteFile the remoteFile to set
+	 * @param remoteFile
+	 *            the remoteFile to set
 	 */
 	public void setRemoteFile(RemoteFile<?> remoteFile)
 	{
 		this.remoteFile = remoteFile;
 	}
-
-
-	/**
-	 * @return the parent
-	 */
-	public LocalFolder getParent()
-	{
-		return parent;
-	}
-
-
-	/**
-	 * @param parent the parent to set
-	 */
-	public void setParent(LocalFolder parent)
-	{
-		this.parent = parent;
-	}
-
+	
 	// #endregion Getters and setters.
 	// --------------------------------------------------------------------------------------
-
+	
 }

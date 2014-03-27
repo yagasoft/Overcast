@@ -1,12 +1,12 @@
-/*
+/* 
  * Copyright (C) 2011-2014 by Ahmed Osama el-Sawalhy
- *
+ * 
  *		Modified MIT License (GPL v3 compatible)
  * 			License terms are in a separate file (license.txt)
- *
+ * 
  *		Project/File: Overcast/com.yagasoft.overcast.container/Container.java
- *
- *			Modified: 11-Mar-2014 (16:17:55)
+ * 
+ *			Modified: 27-Mar-2014 (16:12:04)
  *			   Using: Eclipse J-EE / JDK 7 / Windows 8.1 x64
  */
 
@@ -16,10 +16,11 @@ package com.yagasoft.overcast.container;
 import java.util.HashMap;
 
 import com.yagasoft.overcast.CSP;
-import com.yagasoft.overcast.container.transfer.ITransferProgressListener;
-import com.yagasoft.overcast.container.transfer.ITransferrable;
-import com.yagasoft.overcast.container.transfer.TransferEvent;
-import com.yagasoft.overcast.container.transfer.TransferState;
+import com.yagasoft.overcast.container.operation.IOperable;
+import com.yagasoft.overcast.container.operation.IOperationListener;
+import com.yagasoft.overcast.container.operation.Operation;
+import com.yagasoft.overcast.container.operation.OperationEvent;
+import com.yagasoft.overcast.container.operation.OperationState;
 import com.yagasoft.overcast.exception.AccessException;
 import com.yagasoft.overcast.exception.OperationException;
 
@@ -30,32 +31,32 @@ import com.yagasoft.overcast.exception.OperationException;
  * @param <T>
  *            the type of the file or folder in the original API of the CSP.
  */
-public abstract class Container<T> implements ITransferrable, Comparable<Container<T>>
+public abstract class Container<T> implements IOperable, Comparable<Container<T>>
 {
 	
 	/** Unique identifier for the container -- implementation specific. */
-	protected String										id;
+	protected String									id;
 	
 	/** Name of the container. */
-	protected String										name;
+	protected String									name;
 	
 	/** Path of the container at the source, including its name. */
-	protected String										path;
+	protected String									path;
 	
 	/** Size of the container in bytes. */
-	protected long											size;
+	protected long										size;
 	
 	/** Source object created by the original API of the CSP. */
-	protected T												sourceObject;
+	protected T											sourceObject;
 	
 	/** Parent folder containing this container. */
-	protected Folder<?>										parent;
+	protected Folder<?>									parent;
 	
-	/** Progress listeners to the download or upload of this container. */
-	protected HashMap<ITransferProgressListener, Object>	progressListeners	= new HashMap<ITransferProgressListener, Object>();
+	/** Listeners to the operations in this container. */
+	protected HashMap<IOperationListener, Operation>	operationListeners	= new HashMap<IOperationListener, Operation>();
 	
 	/** CSP object related to this container, or where the container is stored at. */
-	protected CSP<T, ?, ?>									csp;
+	protected CSP<T, ?, ?>								csp;
 	
 	/**
 	 * Generate unique ID for this container.
@@ -96,10 +97,12 @@ public abstract class Container<T> implements ITransferrable, Comparable<Contain
 	 *            Destination folder.
 	 * @param overwrite
 	 *            Overwrite existing container at the destination.
+	 * @param listener
 	 * @return Container object at the destination.
 	 * @throws OperationException
 	 */
-	public abstract Container<?> copy(Folder<?> destination, boolean overwrite) throws OperationException;
+	public abstract Container<?> copy(Folder<?> destination, boolean overwrite, IOperationListener listener)
+			throws OperationException;
 	
 	/**
 	 * Move this container to the destination folder.
@@ -108,69 +111,82 @@ public abstract class Container<T> implements ITransferrable, Comparable<Contain
 	 *            Destination folder.
 	 * @param overwrite
 	 *            Overwrite existing container at the destination.
+	 * @param listener
 	 * @throws OperationException
 	 */
-	public abstract void move(Folder<?> destination, boolean overwrite) throws OperationException;
+	public abstract void move(Folder<?> destination, boolean overwrite, IOperationListener listener) throws OperationException;
 	
 	/**
 	 * Rename this container.
 	 * 
 	 * @param newName
 	 *            The new name.
+	 * @param listener
 	 * @throws OperationException
 	 */
-	public abstract void rename(String newName) throws OperationException;
+	public abstract void rename(String newName, IOperationListener listener) throws OperationException;
 	
 	/**
 	 * Delete this container.
 	 * 
+	 * @param listener
 	 * @throws OperationException
 	 */
-	public abstract void delete() throws OperationException;
+	public abstract void delete(IOperationListener listener) throws OperationException;
 	
 	/**
-	 * @see com.yagasoft.overcast.container.transfer.ITransferrable#addProgressListener(com.yagasoft.overcast.container.transfer.ITransferProgressListener,
-	 *      java.lang.Object)
+	 * @see com.yagasoft.overcast.container.operation.IOperable#addOperationListener(com.yagasoft.overcast.container.operation.IOperationListener,
+	 *      Operation)
 	 */
 	@Override
-	public void addProgressListener(ITransferProgressListener listener, Object object)
+	public void addOperationListener(IOperationListener listener, Operation operation)
 	{
-		progressListeners.put(listener, object);
+		operationListeners.put(listener, operation);
 	}
 	
 	/**
-	 * @see com.yagasoft.overcast.container.transfer.ITransferrable#removeProgressListener(com.yagasoft.overcast.container.transfer.ITransferProgressListener)
+	 * @see com.yagasoft.overcast.container.operation.IOperable#removeOperationListener(com.yagasoft.overcast.container.operation.IOperationListener)
 	 */
 	@Override
-	public void removeProgressListener(ITransferProgressListener listener)
+	public void removeOperationListener(IOperationListener listener)
 	{
-		progressListeners.remove(listener);
+		operationListeners.remove(listener);
 	}
 	
 	/**
-	 * @see com.yagasoft.overcast.container.transfer.ITransferrable#notifyListeners(com.yagasoft.overcast.container.transfer.TransferState,float)
+	 * @see com.yagasoft.overcast.container.operation.IOperable#notifyOperationListeners(Operation,
+	 *      com.yagasoft.overcast.container.operation.OperationState, float)
 	 */
 	@Override
-	public void notifyListeners(TransferState state, float progress)
+	public void notifyOperationListeners(Operation operation, OperationState state, float progress)
 	{
-		for (ITransferProgressListener listener : progressListeners.keySet())
+		for (IOperationListener listener : operationListeners.keySet())
 		{
-			listener.progressChanged(new TransferEvent(this, state, progress, progressListeners.get(listener)));
-		}
-		
-		if (state == TransferState.COMPLETED)
-		{
-			clearListeners();
+			if (operationListeners.get(listener) == operation)
+			{
+				listener.operationProgressChanged(new OperationEvent(this, operation, state, progress));
+				
+				if ((state == OperationState.COMPLETED) || (state == OperationState.FAILED))
+				{
+					removeOperationListener(listener);
+				}
+			}
 		}
 	}
 	
 	/**
-	 * @see com.yagasoft.overcast.container.transfer.ITransferrable#clearListeners()
+	 * @see com.yagasoft.overcast.container.operation.IOperable#clearOperationListeners(com.yagasoft.overcast.container.operation.Operation)
 	 */
 	@Override
-	public void clearListeners()
+	public void clearOperationListeners(Operation operation)
 	{
-		progressListeners.clear();
+		for (IOperationListener listener : operationListeners.keySet())
+		{
+			if (operationListeners.get(listener) == operation)
+			{
+				removeOperationListener(listener);
+			}
+		}
 	}
 	
 	/**

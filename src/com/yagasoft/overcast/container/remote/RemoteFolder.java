@@ -4,6 +4,10 @@
  *		Modified MIT License (GPL v3 compatible)
  * 			License terms are in a separate file (license.txt)
  * 
+ *		Project/File: Overcast/com.yagasoft.overcast.container.remote/RemoteFolder.java
+ * 
+ *			Modified: 27-Mar-2014 (16:13:20)
+ *			   Using: Eclipse J-EE / JDK 7 / Windows 8.1 x64
  */
 
 package com.yagasoft.overcast.container.remote;
@@ -51,10 +55,10 @@ public abstract class RemoteFolder<T> extends Folder<T>
 	 * @throws TransferException
 	 *             A problem occurred during the transfer of the container.
 	 */
-	public DownloadJob<?>[] download(LocalFolder parent, boolean overwrite, ITransferProgressListener listener, Object object)
+	public DownloadJob<?>[] download(LocalFolder parent, boolean overwrite, ITransferProgressListener listener)
 			throws TransferException
 	{
-		return csp.download(this, parent, overwrite, listener, object);
+		return csp.download(this, parent, overwrite, listener);
 	}
 	
 	// --------------------------------------------------------------------------------------

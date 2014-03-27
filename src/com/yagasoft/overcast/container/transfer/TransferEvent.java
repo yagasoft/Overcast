@@ -4,77 +4,53 @@
  *		Modified MIT License (GPL v3 compatible)
  * 			License terms are in a separate file (license.txt)
  *
+ *		Project/File: Overcast/com.yagasoft.overcast.container.transfer/TransferEvent.java
+ *
+ *			Modified: 18-Mar-2014 (14:56:41)
+ *			   Using: Eclipse J-EE / JDK 7 / Windows 8.1 x64
  */
+
 package com.yagasoft.overcast.container.transfer;
 
-import com.yagasoft.overcast.container.Container;
+
+import com.yagasoft.overcast.container.Event;
 
 
 /**
  * A class representing a collection of information about a transfer event.
  */
-public class TransferEvent
+public class TransferEvent extends Event
 {
-
-	/** The container. */
-	Container<?> container;
 	
 	/** The state. */
-	TransferState state;
+	protected TransferState		state;
 	
 	/** The progress. */
-	float progress;
+	protected float				progress;
 	
-	/** The object. */
-	Object object;
-
-
+	/** Transfer job. */
+	protected TransferJob<?>	job;
+	
 	/**
 	 * Instantiates a new transfer event.
-	 *
-	 * @param container
-	 *            the container
+	 * 
+	 * @param job
+	 *            the job.
 	 * @param state
-	 *            the state
+	 *            the state.
 	 * @param progress
-	 *            the progress
-	 * @param object
-	 *            the object
+	 *            the progress.
 	 */
-	public TransferEvent(Container<?> container, TransferState state, float progress, Object object)
+	public TransferEvent(TransferJob<?> job, TransferState state, float progress)
 	{
-		this.container = container;
+		super(job.getSourceFile());
+		this.job = job;
 		this.state = state;
 		this.progress = progress;
-		this.object = object;
 	}
-
-
 	
-	/**
-	 * Gets the container.
-	 * 
-	 * @return the container
-	 */
-	public Container<?> getContainer()
-	{
-		return container;
-	}
-
-
-	
-	/**
-	 * Sets the container.
-	 * 
-	 * @param container
-	 *            the new container
-	 */
-	public void setContainer(Container<?> container)
-	{
-		this.container = container;
-	}
-
-
+	// --------------------------------------------------------------------------------------
+	// #region Getters and setters.
 	
 	/**
 	 * Gets the state.
@@ -85,8 +61,6 @@ public class TransferEvent
 	{
 		return state;
 	}
-
-
 	
 	/**
 	 * Sets the state.
@@ -98,8 +72,6 @@ public class TransferEvent
 	{
 		this.state = state;
 	}
-
-
 	
 	/**
 	 * Gets the progress.
@@ -110,8 +82,6 @@ public class TransferEvent
 	{
 		return progress;
 	}
-
-
 	
 	/**
 	 * Sets the progress.
@@ -123,31 +93,25 @@ public class TransferEvent
 	{
 		this.progress = progress;
 	}
-
-
 	
 	/**
-	 * Gets the object.
-	 * 
-	 * @return the object
+	 * @return the job
 	 */
-	public Object getObject()
+	public TransferJob<?> getJob()
 	{
-		return object;
+		return job;
 	}
-
-
 	
 	/**
-	 * Sets the object.
-	 * 
-	 * @param object
-	 *            the new object
+	 * @param job
+	 *            the job to set
 	 */
-	public void setObject(Object object)
+	public void setJob(TransferJob<?> job)
 	{
-		this.object = object;
+		this.job = job;
 	}
-
-
+	
+	// #endregion Getters and setters.
+	// --------------------------------------------------------------------------------------
+	
 }

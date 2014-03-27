@@ -1,3 +1,14 @@
+/* 
+ * Copyright (C) 2011-2014 by Ahmed Osama el-Sawalhy
+ * 
+ *		Modified MIT License (GPL v3 compatible)
+ * 			License terms are in a separate file (license.txt)
+ * 
+ *		Project/File: Overcast/com.yagasoft.overcast.ubuntu/Authorisation.java
+ * 
+ *			Modified: 27-Mar-2014 (16:15:19)
+ *			   Using: Eclipse J-EE / JDK 7 / Windows 8.1 x64
+ */
 
 package com.yagasoft.overcast.ubuntu;
 
@@ -6,9 +17,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Properties;
 
 import oauth.signpost.signature.HmacSha1MessageSigner;
@@ -22,39 +31,39 @@ import com.ubuntuone.api.sso.exceptions.TimeDriftException;
 import com.ubuntuone.api.sso.exceptions.U1PingException;
 import com.ubuntuone.api.sso.model.AuthenticateResponse;
 import com.yagasoft.overcast.authorisation.OAuth;
+import com.yagasoft.overcast.exception.AuthorisationException;
 
 
 public class Authorisation extends OAuth
 {
 	
-	private String	username;
-	private String	password;
-	private File	info;
-	private String	oauthData;
-	OAuthAuthorizer	oauthAuthorizer;
+	private File			authFile;
+	private String			oauthData;
+	private OAuthAuthorizer	oauthAuthorizer;
 	
-	
-	public Authorisation(String username, String password)
+	/**
+	 * @param userID
+	 * @param password
+	 * @param parent
+	 */
+	public Authorisation(String userID, String password, Path parent)
 	{
-		this.username = username;
-		this.password = password;
+		super(userID, password, parent, null);
 	}
 	
 	@Override
-	public void authorise()
+	public void authorise() throws AuthorisationException
 	{
 		
 		try
 		{
-			Path store = Paths.get(Authorisation.class.getResource("/").toURI());
-			
 			// See if we already have stored an OAuth token.
-			info = new File(store.toFile(), ".cliubuntuone");
+			authFile = new File(parent.toString(), ".cliubuntuone");
 			
-			if (info.exists())
+			if (authFile.exists())
 			{
 				final Properties creds = new Properties();
-				creds.load(new FileInputStream(info));
+				creds.load(new FileInputStream(authFile));
 				oauthData = creds.getProperty("oauth");
 			}
 			else
@@ -64,7 +73,7 @@ public class Authorisation extends OAuth
 			}
 			
 			// OAuth data we received contains consumerKey, consumerSecret, tokenKey and tokenSecret.
-			oauthAuthorizer = OAuthAuthorizer.getWithTokens(oauthData, new PlainTextMessageSigner());
+			setOauthAuthorizer(OAuthAuthorizer.getWithTokens(oauthData, new PlainTextMessageSigner()));
 			
 			// Make sure our time is not off too much.
 			OAuthAuthorizer.syncTimeWithU1(Ubuntu.httpClient);
@@ -73,16 +82,18 @@ public class Authorisation extends OAuth
 		{
 			e.printStackTrace();
 			System.err.println("Could not sync time with Ubuntu One. Sync with NTP?");
+			throw new AuthorisationException("Failed to authorise!");
 		}
-		catch (IOException | URISyntaxException e)
+		catch (IOException e)
 		{
 			e.printStackTrace();
+			throw new AuthorisationException("Failed to authorise!");
 		}
 		
 	}
 	
 	@Override
-	public void acquirePermission()
+	public void acquirePermission() throws AuthorisationException
 	{
 		try
 		{
@@ -95,27 +106,31 @@ public class Authorisation extends OAuth
 		{
 			e.printStackTrace();
 			System.err.println("Wrong username or password.");
+			throw new AuthorisationException("Failed to authorise!");
 		}
 		catch (IOException e)
 		{
 			e.printStackTrace();
 			System.err.println("Connection problem: " + e.getMessage());
+			throw new AuthorisationException("Failed to authorise!");
 		}
 		catch (TimeDriftException e)
 		{
 			e.printStackTrace();
 			System.err.println("Could not sync time with Ubuntu One. Sync with NTP?");
+			throw new AuthorisationException("Failed to authorise!");
 		}
 		catch (U1PingException e)
 		{
 			e.printStackTrace();
 			System.err.println("Could not authorize access to Ubuntu One. Please try again.");
+			throw new AuthorisationException("Failed to authorise!");
 		}
 	}
 	
 	private AuthenticateResponse authenticate() throws AuthenticationException, IOException, TimeDriftException, U1PingException
 	{
-		final BasicAuthorizer basicAuthorizer = new BasicAuthorizer(username, password);
+		final BasicAuthorizer basicAuthorizer = new BasicAuthorizer(userID, password);
 		
 		final U1AuthAPI authApi = new U1AuthAPI(Ubuntu.class.getPackage().getName(), "1.0", Ubuntu.httpClient, basicAuthorizer);
 		
@@ -127,13 +142,13 @@ public class Authorisation extends OAuth
 		OAuthAuthorizer.syncTimeWithU1(Ubuntu.httpClient);
 		
 		// Single Sign On has the token, let Ubuntu One know about it.
-		authApi.pingUbuntuOne(username);
+		authApi.pingUbuntuOne(userID);
 		
 		return response;
 	}
 	
 	@Override
-	public void reacquirePermission()
+	public void reacquirePermission() throws AuthorisationException
 	{}
 	
 	@Override
@@ -146,13 +161,30 @@ public class Authorisation extends OAuth
 		try
 		{
 			creds.put("oauth", oauthData);
-			creds.store(new FileOutputStream(info), "");
+			creds.store(new FileOutputStream(authFile), "");
 		}
 		catch (IOException e)
 		{
 			e.printStackTrace();
 		}
 		
+	}
+	
+	/**
+	 * @return the oauthAuthorizer
+	 */
+	public OAuthAuthorizer getOauthAuthorizer()
+	{
+		return oauthAuthorizer;
+	}
+	
+	/**
+	 * @param oauthAuthorizer
+	 *            the oauthAuthorizer to set
+	 */
+	public void setOauthAuthorizer(OAuthAuthorizer oauthAuthorizer)
+	{
+		this.oauthAuthorizer = oauthAuthorizer;
 	}
 	
 }

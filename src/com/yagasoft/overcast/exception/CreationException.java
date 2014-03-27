@@ -1,14 +1,16 @@
-/*
+/* 
  * Copyright (C) 2011-2014 by Ahmed Osama el-Sawalhy
- *
+ * 
  *		Modified MIT License (GPL v3 compatible)
  * 			License terms are in a separate file (license.txt)
- *
+ * 
+ *		Project/File: Overcast/com.yagasoft.overcast.exception/CreationException.java
+ * 
+ *			Modified: 27-Mar-2014 (16:14:16)
+ *			   Using: Eclipse J-EE / JDK 7 / Windows 8.1 x64
  */
 
 package com.yagasoft.overcast.exception;
-
-
 
 
 /**
@@ -16,10 +18,10 @@ package com.yagasoft.overcast.exception;
  */
 public class CreationException extends Exception
 {
-
+	
 	/** The Constant serialVersionUID. */
 	private static final long	serialVersionUID	= 6741643227201955184L;
-
+	
 	/**
 	 * Instantiates a new creation exception.
 	 */
@@ -27,7 +29,7 @@ public class CreationException extends Exception
 	{
 		super();
 	}
-
+	
 	/**
 	 * Instantiates a new creation exception.
 	 * 
@@ -38,7 +40,7 @@ public class CreationException extends Exception
 	{
 		super(message);
 	}
-
+	
 	/**
 	 * Instantiates a new creation exception.
 	 * 
@@ -49,7 +51,7 @@ public class CreationException extends Exception
 	{
 		super(cause);
 	}
-
+	
 	/**
 	 * Instantiates a new creation exception.
 	 * 
@@ -62,7 +64,7 @@ public class CreationException extends Exception
 	{
 		super(message, cause);
 	}
-
+	
 	/**
 	 * Instantiates a new creation exception.
 	 * 
@@ -78,11 +80,6 @@ public class CreationException extends Exception
 	public CreationException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace)
 	{
 		super(message, cause, enableSuppression, writableStackTrace);
-	}	
-	
+	}
 	
 }
-
-
-
-

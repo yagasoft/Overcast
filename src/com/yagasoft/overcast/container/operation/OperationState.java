@@ -4,23 +4,18 @@
  *		Modified MIT License (GPL v3 compatible)
  * 			License terms are in a separate file (license.txt)
  * 
- *		Project/File: Overcast/com.yagasoft.overcast.container.transfer/TransferState.java
+ *		Project/File: Overcast/com.yagasoft.overcast.container.operation/OperationState.java
  * 
- *			Modified: 27-Mar-2014 (16:13:51)
+ *			Modified: 27-Mar-2014 (16:11:28)
  *			   Using: Eclipse J-EE / JDK 7 / Windows 8.1 x64
  */
 
-package com.yagasoft.overcast.container.transfer;
+package com.yagasoft.overcast.container.operation;
 
 
-/**
- * Transfer states.
- */
-public enum TransferState
+public enum OperationState
 {
-	INITIALISED,
 	IN_PROGRESS,
-	CANCELLED,
 	FAILED,
 	COMPLETED
 }

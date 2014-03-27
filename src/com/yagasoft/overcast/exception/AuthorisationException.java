@@ -4,69 +4,65 @@
  *		Modified MIT License (GPL v3 compatible)
  * 			License terms are in a separate file (license.txt)
  * 
- *		Project/File: Overcast/com.yagasoft.overcast.exception/TransferException.java
+ *		Project/File: Overcast/com.yagasoft.overcast.exception/AuthorisationException.java
  * 
- *			Modified: 27-Mar-2014 (16:14:33)
+ *			Modified: 27-Mar-2014 (16:14:10)
  *			   Using: Eclipse J-EE / JDK 7 / Windows 8.1 x64
  */
 
 package com.yagasoft.overcast.exception;
 
 
-/**
- * Fired when there's a problem transferring a file to/from a CSP.
- */
-public class TransferException extends Exception
+public class AuthorisationException extends Exception
 {
 	
-	/** The Constant serialVersionUID. */
-	private static final long	serialVersionUID	= 6247277610637029361L;
+	private static final long	serialVersionUID	= -4400694569620144264L;
 	
 	/**
-	 * Instantiates a new transfer exception.
+	 * Instantiates a new authorisation exception.
 	 */
-	public TransferException()
+	public AuthorisationException()
 	{
 		super();
 	}
 	
 	/**
-	 * Instantiates a new transfer exception.
+	 * Instantiates a new authorisation exception.
 	 * 
 	 * @param message
 	 *            the message
 	 */
-	public TransferException(String message)
+	public AuthorisationException(String message)
 	{
 		super(message);
 	}
 	
 	/**
-	 * Instantiates a new transfer exception.
+	 * Instantiates a new authorisation exception.
 	 * 
 	 * @param cause
 	 *            the cause
 	 */
-	public TransferException(Throwable cause)
+	public AuthorisationException(Throwable cause)
 	{
 		super(cause);
 	}
 	
 	/**
-	 * Instantiates a new transfer exception.
+	 * Instantiates a new authorisation exception.
 	 * 
 	 * @param message
 	 *            the message
 	 * @param cause
 	 *            the cause
 	 */
-	public TransferException(String message, Throwable cause)
+	public AuthorisationException(String message, Throwable cause)
 	{
 		super(message, cause);
 	}
 	
 	/**
-	 * Instantiates a new transfer exception.
+	 * Instantiates a new authorisation exception.
 	 * 
 	 * @param message
 	 *            the message
@@ -77,9 +73,8 @@ public class TransferException extends Exception
 	 * @param writableStackTrace
 	 *            the writable stack trace
 	 */
-	public TransferException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace)
+	public AuthorisationException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace)
 	{
 		super(message, cause, enableSuppression, writableStackTrace);
 	}
-	
 }

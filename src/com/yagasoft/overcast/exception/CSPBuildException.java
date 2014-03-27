@@ -4,69 +4,65 @@
  *		Modified MIT License (GPL v3 compatible)
  * 			License terms are in a separate file (license.txt)
  * 
- *		Project/File: Overcast/com.yagasoft.overcast.exception/TransferException.java
+ *		Project/File: Overcast/com.yagasoft.overcast.exception/CSPBuildException.java
  * 
- *			Modified: 27-Mar-2014 (16:14:33)
+ *			Modified: 27-Mar-2014 (16:14:21)
  *			   Using: Eclipse J-EE / JDK 7 / Windows 8.1 x64
  */
 
 package com.yagasoft.overcast.exception;
 
 
-/**
- * Fired when there's a problem transferring a file to/from a CSP.
- */
-public class TransferException extends Exception
+public class CSPBuildException extends Exception
 {
 	
-	/** The Constant serialVersionUID. */
-	private static final long	serialVersionUID	= 6247277610637029361L;
+	private static final long	serialVersionUID	= 8259353575922782057L;
 	
 	/**
-	 * Instantiates a new transfer exception.
+	 * Instantiates a new CSP build exception.
 	 */
-	public TransferException()
+	public CSPBuildException()
 	{
 		super();
 	}
 	
 	/**
-	 * Instantiates a new transfer exception.
+	 * Instantiates a new CSP build exception.
 	 * 
 	 * @param message
 	 *            the message
 	 */
-	public TransferException(String message)
+	public CSPBuildException(String message)
 	{
 		super(message);
 	}
 	
 	/**
-	 * Instantiates a new transfer exception.
+	 * Instantiates a new CSP build exception.
 	 * 
 	 * @param cause
 	 *            the cause
 	 */
-	public TransferException(Throwable cause)
+	public CSPBuildException(Throwable cause)
 	{
 		super(cause);
 	}
 	
 	/**
-	 * Instantiates a new transfer exception.
+	 * Instantiates a new CSP build exception.
 	 * 
 	 * @param message
 	 *            the message
 	 * @param cause
 	 *            the cause
 	 */
-	public TransferException(String message, Throwable cause)
+	public CSPBuildException(String message, Throwable cause)
 	{
 		super(message, cause);
 	}
 	
 	/**
-	 * Instantiates a new transfer exception.
+	 * Instantiates a new CSP build exception.
 	 * 
 	 * @param message
 	 *            the message
@@ -77,9 +73,8 @@ public class TransferException extends Exception
 	 * @param writableStackTrace
 	 *            the writable stack trace
 	 */
-	public TransferException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace)
+	public CSPBuildException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace)
 	{
 		super(message, cause, enableSuppression, writableStackTrace);
 	}
-	
 }

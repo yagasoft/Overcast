@@ -1,9 +1,13 @@
-/*
+/* 
  * Copyright (C) 2011-2014 by Ahmed Osama el-Sawalhy
- *
+ * 
  *		Modified MIT License (GPL v3 compatible)
  * 			License terms are in a separate file (license.txt)
- *
+ * 
+ *		Project/File: Overcast/com.yagasoft.overcast.container.local/LocalFolder.java
+ * 
+ *			Modified: 27-Mar-2014 (16:12:44)
+ *			   Using: Eclipse J-EE / JDK 7 / Windows 8.1 x64
  */
 
 package com.yagasoft.overcast.container.local;
@@ -24,10 +28,15 @@ import com.yagasoft.overcast.container.FolderHelper;
 import com.yagasoft.overcast.container.FolderHelper.TreeCopier;
 import com.yagasoft.overcast.container.FolderHelper.TreeDeleter;
 import com.yagasoft.overcast.container.FolderHelper.TreeMover;
+import com.yagasoft.overcast.container.operation.IOperationListener;
+import com.yagasoft.overcast.container.operation.Operation;
+import com.yagasoft.overcast.container.operation.OperationEvent;
+import com.yagasoft.overcast.container.operation.OperationState;
 import com.yagasoft.overcast.container.remote.RemoteFolder;
 import com.yagasoft.overcast.container.transfer.ITransferProgressListener;
 import com.yagasoft.overcast.container.transfer.UploadJob;
 import com.yagasoft.overcast.exception.AccessException;
+import com.yagasoft.overcast.exception.CreationException;
 import com.yagasoft.overcast.exception.OperationException;
 import com.yagasoft.overcast.exception.TransferException;
 
@@ -81,19 +90,19 @@ public class LocalFolder extends Folder<Path>
 	}
 	
 	/**
-	 * @see com.yagasoft.overcast.container.Folder#create(Folder<?>)
+	 * @see com.yagasoft.overcast.container.Folder#create(Folder<?>, IOperationListener)
 	 */
 	@Override
-	public void create(Folder<?> parent)
+	public void create(Folder<?> parent, IOperationListener listener) throws CreationException
 	{
-		create(parent.getPath());		// extract path and call overloaded string function.
+		create(parent.getPath(), listener);		// extract path and call overloaded string function.
 	}
 	
 	/**
-	 * @see com.yagasoft.overcast.container.Folder#create(java.lang.String)
+	 * @see com.yagasoft.overcast.container.Folder#create(java.lang.String, IOperationListener)
 	 */
 	@Override
-	public void create(String parentPath)
+	public void create(String parentPath, IOperationListener listener) throws CreationException
 	{
 		try
 		{
@@ -102,7 +111,10 @@ public class LocalFolder extends Folder<Path>
 		catch (IOException e)
 		{
 			e.printStackTrace();
+			listener.operationProgressChanged(new OperationEvent(this, Operation.CREATE, OperationState.FAILED, 0f));
 		}
+		
+		listener.operationProgressChanged(new OperationEvent(this, Operation.CREATE, OperationState.COMPLETED, 1.0f));
 	}
 	
 	/**
@@ -262,10 +274,10 @@ public class LocalFolder extends Folder<Path>
 	}
 	
 	/**
-	 * @see com.yagasoft.overcast.container.Container#copy(com.yagasoft.overcast.container.Folder, boolean)
+	 * @see com.yagasoft.overcast.container.Container#copy(com.yagasoft.overcast.container.Folder, boolean, IOperationListener)
 	 */
 	@Override
-	public LocalFolder copy(Folder<?> destination, boolean overwrite) throws OperationException
+	public LocalFolder copy(Folder<?> destination, boolean overwrite, IOperationListener listener) throws OperationException
 	{
 		// call Oracle's copier.
 		TreeCopier treeCopier = new TreeCopier(sourceObject, (Path) destination.getSourceObject(), !overwrite, true);
@@ -284,10 +296,10 @@ public class LocalFolder extends Folder<Path>
 	}
 	
 	/**
-	 * @see com.yagasoft.overcast.container.Container#move(com.yagasoft.overcast.container.Folder, boolean)
+	 * @see com.yagasoft.overcast.container.Container#move(com.yagasoft.overcast.container.Folder, boolean, IOperationListener)
 	 */
 	@Override
-	public void move(Folder<?> destination, boolean overwrite) throws OperationException
+	public void move(Folder<?> destination, boolean overwrite, IOperationListener listener) throws OperationException
 	{
 		// call my modification to Oracle's copier.
 		TreeMover treeMover = new TreeMover(sourceObject, (Path) destination.getSourceObject(), !overwrite);
@@ -305,10 +317,10 @@ public class LocalFolder extends Folder<Path>
 	}
 	
 	/**
-	 * @see com.yagasoft.overcast.container.Container#rename(java.lang.String)
+	 * @see com.yagasoft.overcast.container.Container#rename(java.lang.String, IOperationListener)
 	 */
 	@Override
-	public void rename(String newName) throws OperationException
+	public void rename(String newName, IOperationListener listener) throws OperationException
 	{
 		try
 		{
@@ -323,10 +335,10 @@ public class LocalFolder extends Folder<Path>
 	}
 	
 	/**
-	 * @see com.yagasoft.overcast.container.Container#delete()
+	 * @see com.yagasoft.overcast.container.Container#delete(IOperationListener)
 	 */
 	@Override
-	public void delete()
+	public void delete(IOperationListener listener)
 	{
 		TreeDeleter treeDeleter = new TreeDeleter();
 		
@@ -356,17 +368,14 @@ public class LocalFolder extends Folder<Path>
 	 *            Whether to overwrite existing container on the server or not.
 	 * @param listener
 	 *            Object listening to the changes in the transfer state.
-	 * @param object
-	 *            Object passed by the initialiser to be passed back on state change. It can be used as a kind of "call-back" or
-	 *            something; the sender of this object can cast it back and use it as seen fit.
 	 * @return the upload jobs
 	 * @throws TransferException
 	 *             A problem occurred during the transfer of the container.
 	 */
-	public UploadJob<?, ?>[] upload(RemoteFolder<?> parent, boolean overwrite, ITransferProgressListener listener, Object object)
+	public UploadJob<?, ?>[] upload(RemoteFolder<?> parent, boolean overwrite, ITransferProgressListener listener)
 			throws TransferException
 	{
-		return parent.getCsp().upload(this, parent, overwrite, listener, object);
+		return parent.getCsp().upload(this, parent, overwrite, listener);
 	}
 	
 	/**
