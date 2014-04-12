@@ -1,6 +1,6 @@
 The Modified MIT License (GPL v3 compatible)
 
-Copyright (c) 2011-{{{year}}} {{{fullname}}}
+Copyright (c) 2011-2014 Ahmed el-Sawalhy
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
