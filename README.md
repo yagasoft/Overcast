@@ -7,18 +7,18 @@ A façade that facilitates creating APIs to deal with Cloud Storage Providers (C
 
   + A standardised template to use to implement any remote file system.
   + Support for the most common operations for folders and files.
-    ++ Copy/move/rename/delete
-    ++ Upload/download
-    ++ File tree
+    + Copy/move/rename/delete
+    + Upload/download
+    + File tree
   + Support for OAuth or traditional way of logging in.
   + Full event and exception handling for all actions.
   + Local file system, Google, and Dropbox are implemented out of the box.
 
 ### Implementation instructions:
 
-###### CSP:
+  ###### CSP:
 
-  +	To be filled later ...
+    +	To be filled later ...
 
 ### Developers' notes:
 
