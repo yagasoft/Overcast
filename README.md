@@ -27,5 +27,5 @@ A façade that facilitates creating APIs to deal with Cloud Storage Providers (C
 
 <br>
 <br>
-**Copyright &copy; 2013-2014 by Ahmed Osama el-Sawalhy**
- * Modified MIT License (GPL v3 compatible).
+**Copyright &copy; 2011-2014 by Ahmed el-Sawalhy**
+ * The Modified MIT License (GPL v3 compatible).
