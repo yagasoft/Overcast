@@ -16,7 +16,7 @@ A façade that facilitates creating APIs to deal with Cloud Storage Providers (C
 
 ### Implementation instructions:
 
-  ###### CSP:
+###### CSP:
 
     +	To be filled later ...
 
