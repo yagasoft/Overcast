@@ -1,6 +1,6 @@
 The Modified MIT License (GPL v3 compatible)
 
-Copyright (c) 2011-2014 Ahmed el-Sawalhy
+Copyright (c) 2011-2014 Ahmed Osama el-Sawalhy
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -18,7 +18,7 @@ or other dealings in this Software without prior written authorization.
 
 The end-user documentation included with the redistribution, if any, must
 include the following acknowledgment: "This product includes software developed
-by Ahmed el-Sawalhy (http://yagasoft.com) and his contributors", in
+by Ahmed Osama el-Sawalhy (http://yagasoft.com) and his contributors", in
 the same place and form as other third-party acknowledgments. Alternately, this
 acknowledgment may appear in the software itself, in the same form and location
 as other such third-party acknowledgments.
