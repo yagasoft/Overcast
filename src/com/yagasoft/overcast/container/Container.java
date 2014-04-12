@@ -26,7 +26,8 @@ import com.yagasoft.overcast.exception.OperationException;
 
 
 /**
- * A class representing the common attributes and operation of the files and folders.
+ * A class representing the common attributes and operation of the files and folders.<br />
+ * All methods in this class (or subclasses) must be synchronised in the implementation.
  * 
  * @param <T>
  *            the type of the file or folder in the original API of the CSP.
@@ -69,8 +70,9 @@ public abstract class Container<T> implements IOperable, Comparable<Container<T>
 	 * @return true, if it exists
 	 * @throws AccessException
 	 *             Can't access the container to determine its existence.
+	 * @throws OperationException 
 	 */
-	public abstract boolean isExist() throws AccessException;
+	public abstract boolean isExist() throws AccessException, OperationException;
 	
 	/**
 	 * Is this a folder?
@@ -87,8 +89,9 @@ public abstract class Container<T> implements IOperable, Comparable<Container<T>
 	/**
 	 * Update from where the container resides. It reads the meta of the container.<br />
 	 * It might go online to do it.
+	 * @throws OperationException 
 	 */
-	public abstract void updateFromSource();
+	public abstract void updateFromSource() throws OperationException;
 	
 	/**
 	 * Copy this container to the destination folder.

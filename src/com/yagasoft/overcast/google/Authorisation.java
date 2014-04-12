@@ -79,6 +79,17 @@ public class Authorisation extends OAuth
 	@Override
 	public void authorise() throws AuthorisationException
 	{
+		// go online and get the token.
+		acquirePermission();
+	}
+	
+	/**
+	 * @see com.yagasoft.overcast.authorisation.OAuth#acquirePermission()
+	 */
+	@Override
+	public void acquirePermission() throws AuthorisationException
+	{
+		// authorise
 		try
 		{
 			// the folder where Google API stores creds.
@@ -94,11 +105,11 @@ public class Authorisation extends OAuth
 			String clientId = clientSecrets.getDetails().getClientId();
 			String clientSecret = clientSecrets.getDetails().getClientSecret();
 			
-			// problem!
-			if (clientId.startsWith("Enter") || clientSecret.startsWith("Enter "))
+			// problem?!
+			if (clientId.startsWith("Enter") || clientSecret.startsWith("Enter"))
 			{
 				Logger.post("Enter Client ID and Secret from https://code.google.com/apis/console/?api=drive "
-						+ "into ./client_secrets.json");
+						+ "into google_secrets.json");
 				throw new AuthorisationException("Failed to authorise!");
 			}
 			
@@ -107,31 +118,12 @@ public class Authorisation extends OAuth
 					Collections.singleton(DriveScopes.DRIVE))
 					.setDataStoreFactory(dataStoreFactory).setAccessType("offline").build();
 			
-			// go online and get the token.
-			acquirePermission();
-		}
-		catch (IOException e)
-		{
-			e.printStackTrace();
-			throw new AuthorisationException("Failed to authorise!");
-		}
-	}
-	
-	/**
-	 * @see com.yagasoft.overcast.authorisation.OAuth#acquirePermission()
-	 */
-	@Override
-	public void acquirePermission() throws AuthorisationException
-	{
-		// authorise
-		try
-		{
 			credential = new AuthorizationCodeInstalledApp(flow, new LocalServerReceiver()).authorize(userID);
 		}
 		catch (IOException e)
 		{
 			e.printStackTrace();
-			throw new AuthorisationException("Failed to authorise!");
+			throw new AuthorisationException("Failed to authorise! " + e.getMessage());
 		}
 		
 	}
@@ -149,9 +141,9 @@ public class Authorisation extends OAuth
 	 * @see com.yagasoft.overcast.authorisation.OAuth#saveToken()
 	 */
 	@Override
-	public void saveToken()
-	{	
-		
+	protected void saveToken() throws AuthorisationException
+	{
+		throw new UnsupportedOperationException("Google handles saving tokens automatically!");
 	}
 	
 	/**

@@ -26,7 +26,8 @@ import com.yagasoft.overcast.exception.TransferException;
 
 
 /**
- * A class representing the files on the server.
+ * A class representing the files on the server.<br />
+ * All methods in this class must be synchronised in the implementation.
  * 
  * @param <T>
  *            The source file type (file type from the original CSP API) must be passed to this class.

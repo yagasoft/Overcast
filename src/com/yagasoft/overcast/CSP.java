@@ -1,25 +1,31 @@
-/* 
+/*
  * Copyright (C) 2011-2014 by Ahmed Osama el-Sawalhy
- * 
+ *
  *		Modified MIT License (GPL v3 compatible)
  * 			License terms are in a separate file (license.txt)
- * 
+ *
  *		Project/File: Overcast/com.yagasoft.overcast/CSP.java
- * 
- *			Modified: 27-Mar-2014 (16:11:41)
+ *
+ *			Modified: 11-Apr-2014 (19:26:51)
  *			   Using: Eclipse J-EE / JDK 7 / Windows 8.1 x64
  */
 
 package com.yagasoft.overcast;
 
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.Queue;
 
 import com.yagasoft.logger.Logger;
 import com.yagasoft.overcast.authorisation.Authorisation;
+import com.yagasoft.overcast.container.Container;
+import com.yagasoft.overcast.container.Folder;
 import com.yagasoft.overcast.container.local.LocalFile;
 import com.yagasoft.overcast.container.local.LocalFolder;
+import com.yagasoft.overcast.container.operation.IOperationListener;
+import com.yagasoft.overcast.container.operation.OperationEvent;
 import com.yagasoft.overcast.container.remote.RemoteFactory;
 import com.yagasoft.overcast.container.remote.RemoteFile;
 import com.yagasoft.overcast.container.remote.RemoteFolder;
@@ -28,6 +34,7 @@ import com.yagasoft.overcast.container.transfer.ITransferProgressListener;
 import com.yagasoft.overcast.container.transfer.TransferJob;
 import com.yagasoft.overcast.container.transfer.UploadJob;
 import com.yagasoft.overcast.exception.CSPBuildException;
+import com.yagasoft.overcast.exception.CreationException;
 import com.yagasoft.overcast.exception.OperationException;
 import com.yagasoft.overcast.exception.TransferException;
 
@@ -92,18 +99,28 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 	/**
 	 * Initialises the tree -- only reads the root from the source, along with the contents (only single level).
 	 */
-	public abstract void initTree();
+	public abstract void initTree() throws OperationException;
 	
 	/**
 	 * Builds the file tree by starting from the root and going down.
 	 * 
 	 * @param recursively
 	 *            If true, then build all the levels possible under the root.
+	 * @throws OperationException
 	 */
-	public void buildFileTree(boolean recursively)
+	public void buildFileTree(boolean recursively) throws OperationException
 	{
 		Logger.newSection();
+		
+		// make sure there's a root to access.
+		if (remoteFileTree == null)
+		{
+			initTree();
+		}
+		
+		// build more levels if required.
 		remoteFileTree.buildTree(recursively);
+		
 		Logger.endSection();
 	}
 	
@@ -113,7 +130,7 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 	 * @param numberOfLevels
 	 *            How many levels to fetch -- 0 is root level only.
 	 */
-	public void buildFileTree(int numberOfLevels)
+	public void buildFileTree(int numberOfLevels) throws OperationException
 	{
 		remoteFileTree.buildTree(numberOfLevels);
 	}
@@ -139,9 +156,59 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 	 * @param listener
 	 *            Object listening to the changes in the transfer state.
 	 * @return the download jobs
+	 * @throws OperationException
+	 * @throws TransferException
+	 * @throws CreationException
 	 */
-	public abstract DownloadJob<?>[] download(RemoteFolder<?> folder, LocalFolder parent, boolean overwrite
-			, ITransferProgressListener listener);
+	@SuppressWarnings("rawtypes")
+	public DownloadJob<?>[] download(RemoteFolder<?> folder, LocalFolder parent, boolean overwrite
+			, ITransferProgressListener listener) throws TransferException, OperationException, CreationException
+	{
+		// make sure the folder doesn't exist at the destination.
+		Container<?> result = parent.searchByName(folder.getName(), false);
+		LocalFolder localFolder = null;
+		
+		// if it doesn't exist ...
+		if ((result == null) || !result.isFolder())
+		{
+			// ... create the folder at the destination.
+			localFolder = new LocalFolder();
+			
+			localFolder.create(parent, new IOperationListener()
+			{
+				
+				@Override
+				public void operationProgressChanged(OperationEvent event)
+				{}
+			});
+			
+			localFolder.updateFromSource(true, false);
+		}
+		else
+		{	// ... else, just use the one at the destination.
+			localFolder = (LocalFolder) result;
+		}
+		
+		localFolder.setRemoteMapping(folder);
+		folder.setLocalMapping(localFolder);
+		
+		ArrayList<DownloadJob> downloadJobs = new ArrayList<DownloadJob>();
+		
+		// add each file in the folder to the download queue.
+		for (com.yagasoft.overcast.container.File<?> file : folder.getFilesArray())
+		{
+			downloadJobs.add(download((RemoteFile) file, parent, overwrite, listener));
+		}
+		
+		// call the download method for each sub-folder.
+		for (Folder<?> childFolder : folder.getFoldersArray())
+		{
+			downloadJobs.addAll(new ArrayList<DownloadJob>(Arrays.asList(download((RemoteFolder) childFolder, localFolder,
+					overwrite, listener))));
+		}
+		
+		return downloadJobs.toArray(new DownloadJob[downloadJobs.size()]);
+	}
 	
 	/**
 	 * Download the file (passed) from the server.
@@ -168,7 +235,45 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 	 * <br />
 	 * This should be called using a separate thread so as not to block the program.
 	 */
-	public abstract void nextDownloadJob();
+	public void nextDownloadJob()
+	{
+		// if there's nothing being transferred, and there's something in the queue ...
+		if ((currentDownloadJob == null) && !downloadQueue.isEmpty())
+		{
+			// ... take one job from the queue ...
+			currentDownloadJob = downloadQueue.remove();
+			
+			currentDownloadThread = new Thread(new Runnable()
+			{
+				
+				@Override
+				public void run()
+				{
+					try
+					{	// start the transfer (starts when thread starts below).
+						initiateDownload();
+					}
+					catch (TransferException e)
+					{	// in case of failure, notify the listeners of the failure, and check for more jobs.
+						e.printStackTrace();
+						currentDownloadJob.failure();
+					}
+					finally
+					{
+						resetDownload();
+					}
+				}
+			});
+			
+			// go ...
+			currentDownloadThread.start();
+		}
+	}
+	
+	/**
+	 * Starts the download.
+	 */
+	protected abstract void initiateDownload() throws TransferException;
 	
 	/**
 	 * Checks the download queue, if it's the same job passed, then call {@link #cancelCurrentDownload()};
@@ -195,8 +300,12 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 	public void cancelCurrentDownload()
 	{
 		currentDownloadJob.cancelTransfer();
-//		currentDownloadJob = null;
-//		nextDownloadJob();
+	}
+	
+	public void resetDownload()
+	{
+		currentDownloadJob = null;
+		nextDownloadJob();
 	}
 	
 	/**
@@ -212,9 +321,59 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 	 * @param listener
 	 *            Object listening to the changes in the transfer state.
 	 * @return the upload jobs
+	 * @throws TransferException
+	 * @throws OperationException
+	 * @throws CreationException
 	 */
-	public abstract UploadJob<?, ?>[] upload(LocalFolder folder, RemoteFolder<?> parent, boolean overwrite
-			, ITransferProgressListener listener);
+	@SuppressWarnings("rawtypes")
+	public UploadJob<?, ?>[] upload(LocalFolder folder, RemoteFolder<?> parent, boolean overwrite
+			, ITransferProgressListener listener) throws TransferException, OperationException, CreationException
+	{
+		// check if the folder exists at the CSP.
+		Container<?> result = parent.searchByName(folder.getName(), false);
+		RemoteFolder<?> remoteFolder = null;
+		
+		// if it doesn't exist, create it.
+		if ((result == null) || !result.isFolder())
+		{
+			remoteFolder = getAbstractFactory().createFolder();
+			remoteFolder.setName(folder.getName());
+			
+			remoteFolder.create(parent, new IOperationListener()
+			{
+				
+				@Override
+				public void operationProgressChanged(OperationEvent event)
+				{}
+			});
+			
+			remoteFolder.updateFromSource(true, false);
+		}
+		else
+		{
+			remoteFolder = (RemoteFolder) result;
+		}
+		
+		remoteFolder.setLocalMapping(folder);
+		folder.setRemoteMapping(remoteFolder);
+		
+		ArrayList<UploadJob> uploadJobs = new ArrayList<UploadJob>();
+		
+		// go through the files in the folder, and create an upload job for them.
+		for (com.yagasoft.overcast.container.File<?> file : folder.getFilesArray())
+		{
+			uploadJobs.add(upload((LocalFile) file, parent, overwrite, listener));
+		}
+		
+		// check sub-folders as well.
+		for (Folder childFolder : folder.getFoldersArray())
+		{
+			uploadJobs.addAll(new ArrayList<UploadJob>(Arrays.asList(upload((LocalFolder) childFolder, remoteFolder,
+					overwrite, listener))));
+		}
+		
+		return uploadJobs.toArray(new UploadJob[uploadJobs.size()]);
+	}
 	
 	/**
 	 * Upload the file (passed) to the server.
@@ -240,7 +399,45 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 	 * If the queue has a job, set it as the current one after removing it from the queue, and then start the job. <br />
 	 * This should be called using a separate thread so as not to block the program.
 	 */
-	public abstract void nextUploadJob();
+	public void nextUploadJob()
+	{
+		// if no transfers, and queue has a job ...
+		if ((currentUploadJob == null) && !uploadQueue.isEmpty())
+		{
+			currentUploadJob = uploadQueue.remove();
+			
+			currentUploadThread = new Thread(new Runnable()
+			{
+				
+				@Override
+				public void run()
+				{
+					try
+					{
+						// start the transfer (starts when thread starts below).
+						initiateUpload();
+					}
+					catch (TransferException e)
+					{
+						e.printStackTrace();
+						currentUploadJob.failure();
+					}
+					finally
+					{
+						resetUpload();
+					}
+				}
+			});
+			
+			// go ...
+			currentUploadThread.start();
+		}
+	}
+	
+	/**
+	 * Starts the upload and passes the result to the upload job to add to the file object.
+	 */
+	protected abstract void initiateUpload() throws TransferException;
 	
 	/**
 	 * Checks the upload queue, if it's the same job passed, then call {@link #cancelCurrentUpload()};
@@ -267,8 +464,12 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 	public void cancelCurrentUpload()
 	{
 		currentUploadJob.cancelTransfer();
-//		currentUploadJob = null;
-//		nextUploadJob();
+	}
+	
+	public void resetUpload()
+	{
+		currentUploadJob = null;
+		nextUploadJob();
 	}
 	
 	public abstract RemoteFactory<?, ?, ?, ?> getAbstractFactory();

@@ -11,6 +11,7 @@ package com.yagasoft.overcast.container.remote;
 
 import com.yagasoft.overcast.CSP;
 import com.yagasoft.overcast.container.local.LocalFolder;
+import com.yagasoft.overcast.container.transfer.DownloadJob;
 import com.yagasoft.overcast.container.transfer.ITransferProgressListener;
 import com.yagasoft.overcast.exception.TransferException;
 
@@ -34,9 +35,10 @@ public interface IRemote
 	 * @param object
 	 *            Object passed by the initialiser to be passed back on state change. It can be used as a kind of "call-back" or
 	 *            something; the sender of this object can cast it back and use it as seen fit.
+	 * @return the download job
 	 * @throws TransferException
 	 *             A problem occurred during the transfer of the container.
 	 */
-	public void download(LocalFolder parent, boolean overwrite, ITransferProgressListener listener, Object object)
+	public DownloadJob<?> download(LocalFolder parent, boolean overwrite, ITransferProgressListener listener, Object object)
 			throws TransferException;
 }

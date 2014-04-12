@@ -20,11 +20,14 @@ import com.yagasoft.overcast.container.Folder;
 import com.yagasoft.overcast.container.local.LocalFolder;
 import com.yagasoft.overcast.container.transfer.DownloadJob;
 import com.yagasoft.overcast.container.transfer.ITransferProgressListener;
+import com.yagasoft.overcast.exception.CreationException;
+import com.yagasoft.overcast.exception.OperationException;
 import com.yagasoft.overcast.exception.TransferException;
 
 
 /**
- * A class representing the folders on the server.
+ * A class representing the folders on the server.<br />
+ * All methods in this class must be synchronised in the implementation.
  * 
  * @param <T>
  *            The source folder type (folder type from the original CSP API) must be passed to this class.
@@ -54,9 +57,11 @@ public abstract class RemoteFolder<T> extends Folder<T>
 	 * @return the download jobs
 	 * @throws TransferException
 	 *             A problem occurred during the transfer of the container.
+	 * @throws CreationException
+	 * @throws OperationException
 	 */
 	public DownloadJob<?>[] download(LocalFolder parent, boolean overwrite, ITransferProgressListener listener)
-			throws TransferException
+			throws TransferException, OperationException, CreationException
 	{
 		return csp.download(this, parent, overwrite, listener);
 	}

@@ -10,18 +10,17 @@
  *			   Using: Eclipse J-EE / JDK 7 / Windows 8.1 x64
  */
 
-package com.yagasoft.overcast.google;
+package com.yagasoft.overcast.dropbox.transfer;
 
 
-import com.google.api.client.googleapis.media.MediaHttpDownloader;
 import com.yagasoft.overcast.container.local.LocalFolder;
-import com.yagasoft.overcast.container.transfer.TransferState;
+import com.yagasoft.overcast.dropbox.RemoteFile;
 
 
-public class DownloadJob extends com.yagasoft.overcast.container.transfer.DownloadJob<MediaHttpDownloader>
+public class DownloadJob extends com.yagasoft.overcast.container.transfer.DownloadJob<Downloader>
 {
 	
-	Thread	canceller;
+	Downloader	canceller;
 	
 	/**
 	 * Instantiates a new download job.
@@ -38,7 +37,7 @@ public class DownloadJob extends com.yagasoft.overcast.container.transfer.Downlo
 	 *            Canceller.
 	 */
 	public DownloadJob(RemoteFile remoteFile, LocalFolder parent, boolean overwrite
-			, MediaHttpDownloader cspTransferer, Thread canceller)
+			, Downloader cspTransferer, Downloader canceller)
 	{
 		super(remoteFile, parent, overwrite, cspTransferer);
 		this.canceller = canceller;
@@ -47,20 +46,16 @@ public class DownloadJob extends com.yagasoft.overcast.container.transfer.Downlo
 	/**
 	 * @see com.yagasoft.overcast.container.transfer.TransferJob#cancelTransfer()
 	 */
-	@SuppressWarnings("deprecation")
 	@Override
 	public void cancelTransfer()
 	{
-		// Google doesn't have a cancel method, so I had to improvise.
-		canceller.stop();
-		notifyProgressListeners(TransferState.CANCELLED, 0.0f);
-		remoteFile.getCsp().resetDownload();
+		canceller.cancel();
 	}
 	
 	/**
 	 * @return the canceller
 	 */
-	public Thread getCanceller()
+	public Downloader getCanceller()
 	{
 		return canceller;
 	}
@@ -69,7 +64,7 @@ public class DownloadJob extends com.yagasoft.overcast.container.transfer.Downlo
 	 * @param canceller
 	 *            the canceller to set
 	 */
-	public void setCanceller(Thread canceller)
+	public void setCanceller(Downloader canceller)
 	{
 		this.canceller = canceller;
 	}

@@ -10,21 +10,16 @@
  *			   Using: Eclipse J-EE / JDK 7 / Windows 8.1 x64
  */
 
-package com.yagasoft.overcast.google;
+package com.yagasoft.overcast.dropbox;
 
 
-import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 
-import com.google.api.services.drive.Drive;
-import com.google.api.services.drive.Drive.Files.List;
-import com.google.api.services.drive.model.File;
-import com.google.api.services.drive.model.FileList;
-import com.google.api.services.drive.model.ParentReference;
+import com.dropbox.core.DbxEntry;
+import com.dropbox.core.DbxException;
 import com.yagasoft.logger.Logger;
 import com.yagasoft.overcast.container.Container;
 import com.yagasoft.overcast.container.Folder;
@@ -32,11 +27,12 @@ import com.yagasoft.overcast.container.operation.IOperationListener;
 import com.yagasoft.overcast.container.operation.Operation;
 import com.yagasoft.overcast.container.operation.OperationEvent;
 import com.yagasoft.overcast.container.operation.OperationState;
+import com.yagasoft.overcast.exception.AccessException;
 import com.yagasoft.overcast.exception.CreationException;
 import com.yagasoft.overcast.exception.OperationException;
 
 
-public class RemoteFolder extends com.yagasoft.overcast.container.remote.RemoteFolder<File>
+public class RemoteFolder extends com.yagasoft.overcast.container.remote.RemoteFolder<DbxEntry.Folder>
 {
 	
 	/**
@@ -62,26 +58,22 @@ public class RemoteFolder extends com.yagasoft.overcast.container.remote.RemoteF
 	{
 		addOperationListener(listener, Operation.CREATE);
 		
+		// check if the folder exists in the parent ...
 		RemoteFolder result = parent.searchByName(name, false);
 		
 		try
 		{
+			// if it exists, problem!
 			if (result != null)
 			{
 				throw new CreationException("Folder already Exists!");
 			}
 			
-			File metadata = new File();
-			metadata.setTitle(name);
-			metadata.setMimeType("application/vnd.google-apps.folder");
-			metadata.setParents(Arrays.asList(new ParentReference().setId(parent.getId())));
-			
-			Drive.Files.Insert insert = Google.driveService.files().insert(metadata);
-			sourceObject = insert.execute();
+			sourceObject = Dropbox.dropboxService.createFolder(parent.getPath() + "/" + name);
 			parent.add(this);
 			notifyOperationListeners(Operation.CREATE, OperationState.COMPLETED, 1.0f);
 		}
-		catch (IOException | CreationException e)
+		catch (DbxException | CreationException e)
 		{
 			e.printStackTrace();
 			notifyOperationListeners(Operation.CREATE, OperationState.FAILED, 0f);
@@ -98,16 +90,17 @@ public class RemoteFolder extends com.yagasoft.overcast.container.remote.RemoteF
 	 * @see com.yagasoft.overcast.container.Container#isExist()
 	 */
 	@Override
-	public synchronized boolean isExist() throws OperationException
+	public synchronized boolean isExist() throws AccessException
 	{
+		// if fetching meta-data of the file fails, then it doesn't exist, probably.
 		try
 		{
-			return (Google.driveService.files().get((sourceObject == null) ? id : sourceObject.getId()).execute() != null);
+			return (Dropbox.dropboxService.getMetadata((sourceObject == null) ? path : sourceObject.path) != null);
 		}
-		catch (IOException e)
+		catch (DbxException e)
 		{
 			e.printStackTrace();
-			return false;
+			throw new AccessException("Couldn't determine existence! " + e.getMessage());
 		}
 	}
 	
@@ -117,6 +110,7 @@ public class RemoteFolder extends com.yagasoft.overcast.container.remote.RemoteF
 	@Override
 	public synchronized void buildTree(int numberOfLevels) throws OperationException
 	{
+		// no more levels to check.
 		if (numberOfLevels < 0)
 		{
 			return;
@@ -124,50 +118,41 @@ public class RemoteFolder extends com.yagasoft.overcast.container.remote.RemoteF
 		
 		try
 		{
-			List request = Google.getDriveService().files().list().setQ("trashed = false and '" + id + "' in parents");
+			// get folder list from Dropbox (metadata)
+			DbxEntry.WithChildren listing = Dropbox.dropboxService.getMetadataWithChildren(path);
 			
-			ArrayList<String> childrenIds = new ArrayList<String>();
-			HashMap<String, File> children = new HashMap<String, File>();
+			//
+			HashMap<String, DbxEntry> children = new HashMap<String, DbxEntry>();
 			
-			do
+			for (DbxEntry child : listing.children)
 			{
-				try
-				{
-					FileList childrenResult = request.execute();
-					
-					for (File child : childrenResult.getItems())
-					{
-						childrenIds.add(child.getId());
-						children.put(child.getId(), child);
-					}
-					
-					request.setPageToken(childrenResult.getNextPageToken());
-				}
-				catch (IOException e)
-				{
-					request.setPageToken(null);
-					e.printStackTrace();
-					throw new OperationException(e.getMessage());
-				}
-			} while ((request.getPageToken() != null) && (request.getPageToken().length() > 0));
+				children.put(child.isFolder() ? child.path : ((DbxEntry.File) child).rev, child);
+			}
 			
+			// collect the children IDs and filter already existing and deleted ones.
+			ArrayList<String> childrenIds = new ArrayList<String>(children.keySet());
 			removeObsolete(childrenIds, true);
 			
+			// if there're new children on the server ...
 			if ( !childrenIds.isEmpty())
 			{
-				for (String id1 : childrenIds)
+				// check each one ...
+				for (String child : childrenIds)
 				{
-					File remote = children.get(id1);
-					if (remote.getMimeType().indexOf("folder") >= 0)
+					DbxEntry childAsEntry = children.get(child);
+					
+					// if the child is a folder ...
+					if (childAsEntry.isFolder())
 					{
-						RemoteFolder folder = Google.factory.createFolder(remote, false);
-						add(folder);
+						// create an object for it using the factory.
+						RemoteFolder folder = Dropbox.factory.createFolder((DbxEntry.Folder) childAsEntry, false);
+						add(folder);	// add it to this parent.
 						
 						Logger.newEntry("Folder: " + folder.parent.getName() + "/" + folder.name + " => " + folder.id);
 					}
 					else
 					{
-						RemoteFile file = Google.factory.createFile(remote, false);
+						RemoteFile file = Dropbox.factory.createFile((DbxEntry.File) childAsEntry, false);
 						add(file);
 						
 						Logger.newEntry("File: " + name + "/" + file.getName() + " => " + file.getId());
@@ -175,12 +160,13 @@ public class RemoteFolder extends com.yagasoft.overcast.container.remote.RemoteF
 				}
 			}
 		}
-		catch (IOException | OperationException e)
+		catch (DbxException e)
 		{
 			e.printStackTrace();
-			throw new OperationException("Couldn't build tree! " + e.getMessage());
+			throw new OperationException("Failed to build tree! " + e.getMessage());
 		}
 		
+		// load sub-folders up to the level.
 		for (Folder<?> folder : getFoldersArray())
 		{
 			folder.buildTree(numberOfLevels - 1);
@@ -202,19 +188,10 @@ public class RemoteFolder extends com.yagasoft.overcast.container.remote.RemoteF
 	@Override
 	public synchronized void updateInfo(boolean folderContents, boolean recursively)
 	{
-		id = sourceObject.getId();
-		name = sourceObject.getTitle();
+		id = sourceObject.path;
+		name = sourceObject.name;
 		path = (((parent == null) || parent.getPath().equals("/")) ? "/" : (parent.getPath() + "/")) + name;
-		// size = calculateSize(); // might be too heavy, so don't do it automatically.
-		
-		try
-		{
-			link = new URL(sourceObject.getSelfLink());
-		}
-		catch (MalformedURLException e)
-		{
-			link = null;
-		}
+		// size = calculateSize(); // commented because it might be heavy, so better do it explicitly.
 	}
 	
 	/**
@@ -230,10 +207,21 @@ public class RemoteFolder extends com.yagasoft.overcast.container.remote.RemoteF
 		
 		try
 		{
-			sourceObject = Google.driveService.files().get((sourceObject == null) ? id : sourceObject.getId()).execute();
+			// re-fetch the meta-data from the server.
+			sourceObject = Dropbox.dropboxService.getMetadata((sourceObject == null) ? path : sourceObject.path).asFolder();
 			updateInfo();
+			
+			try
+			{
+				// get link if available.
+				link = new URL(Dropbox.dropboxService.createShareableUrl(sourceObject.path));
+			}
+			catch (MalformedURLException | DbxException e)
+			{
+				link = null;
+			}
 		}
-		catch (IOException e)
+		catch (DbxException e)
 		{
 			e.printStackTrace();
 			throw new OperationException("Couldn't update info! " + e.getMessage());
@@ -248,9 +236,9 @@ public class RemoteFolder extends com.yagasoft.overcast.container.remote.RemoteF
 			throws OperationException
 	{
 		addOperationListener(listener, Operation.COPY);
-
+		
 		Container<?> existingFile = destination.searchByName(name, false);
-
+		
 		try
 		{
 			if ((existingFile != null) && (existingFile instanceof RemoteFile))
@@ -259,7 +247,7 @@ public class RemoteFolder extends com.yagasoft.overcast.container.remote.RemoteF
 				{
 					existingFile.delete(new IOperationListener()
 					{
-
+						
 						@Override
 						public void operationProgressChanged(OperationEvent event)
 						{}
@@ -270,14 +258,14 @@ public class RemoteFolder extends com.yagasoft.overcast.container.remote.RemoteF
 					throw new OperationException("Folder already exists!");
 				}
 			}
-
-			Google.driveService.parents().insert(id, new ParentReference().setId(((RemoteFolder) destination).getId())).execute();
-			RemoteFile file = Google.getFactory().createFile(sourceObject, false);
+			
+			Dropbox.dropboxService.copy(path, destination.getPath() + "/" + name);
+			RemoteFolder file = Dropbox.getFactory().createFolder(sourceObject, false);
 			destination.add(file);
 			notifyOperationListeners(Operation.COPY, OperationState.COMPLETED, 1.0f);
 			return file;
 		}
-		catch (IOException | OperationException e)
+		catch (DbxException | OperationException e)
 		{
 			e.printStackTrace();
 			notifyOperationListeners(Operation.COPY, OperationState.FAILED, 0.0f);
@@ -297,9 +285,9 @@ public class RemoteFolder extends com.yagasoft.overcast.container.remote.RemoteF
 			throws OperationException
 	{
 		addOperationListener(listener, Operation.MOVE);
-
+		
 		Container<?> existingFile = destination.searchByName(name, false);
-
+		
 		try
 		{
 			if ((existingFile != null) && (existingFile instanceof RemoteFile))
@@ -308,7 +296,7 @@ public class RemoteFolder extends com.yagasoft.overcast.container.remote.RemoteF
 				{
 					existingFile.delete(new IOperationListener()
 					{
-
+						
 						@Override
 						public void operationProgressChanged(OperationEvent event)
 						{}
@@ -319,14 +307,13 @@ public class RemoteFolder extends com.yagasoft.overcast.container.remote.RemoteF
 					throw new OperationException("Folder already exists.");
 				}
 			}
-
-			Google.driveService.parents().delete(id, parent.getId());
-			Google.driveService.parents().insert(id, new ParentReference().setId(((RemoteFolder) destination).getId())).execute();
+			
+			Dropbox.dropboxService.move(path, destination.getPath() + "/" + name);
 			parent.remove(this);
 			destination.add(this);
 			notifyOperationListeners(Operation.MOVE, OperationState.COMPLETED, 1.0f);
 		}
-		catch (IOException | OperationException e)
+		catch (DbxException | OperationException e)
 		{
 			e.printStackTrace();
 			notifyOperationListeners(Operation.MOVE, OperationState.FAILED, 0.0f);
@@ -336,7 +323,6 @@ public class RemoteFolder extends com.yagasoft.overcast.container.remote.RemoteF
 		{
 			clearOperationListeners(Operation.MOVE);
 		}
-
 	}
 	
 	/**
@@ -346,21 +332,20 @@ public class RemoteFolder extends com.yagasoft.overcast.container.remote.RemoteF
 	public synchronized void rename(String newName, IOperationListener listener) throws OperationException
 	{
 		addOperationListener(listener, Operation.RENAME);
-
+		
 		Container<?> existingFile = parent.searchByName(newName, false);
-
+		
 		try
 		{
 			if ((existingFile != null) && (existingFile instanceof RemoteFile))
 			{
 				throw new OperationException("Folder already exists!");
 			}
-
-			sourceObject.setTitle(newName);
-			Google.driveService.files().patch(id, sourceObject);
+			
+			Dropbox.dropboxService.move(path, parent.getPath() + "/" + newName);
 			notifyOperationListeners(Operation.RENAME, OperationState.COMPLETED, 1.0f);
 		}
-		catch (IOException | OperationException e)
+		catch (DbxException | OperationException e)
 		{
 			e.printStackTrace();
 			notifyOperationListeners(Operation.RENAME, OperationState.FAILED, 0.0f);
@@ -382,21 +367,21 @@ public class RemoteFolder extends com.yagasoft.overcast.container.remote.RemoteF
 		
 		try
 		{
-			Drive.Files.Delete delete = Google.driveService.files().delete(id);
-			delete.execute();
+			Dropbox.dropboxService.delete(path);
 			parent.remove(this);
 			notifyOperationListeners(Operation.DELETE, OperationState.COMPLETED, 1.0f);
 		}
-		catch (IOException e)
+		catch (DbxException e)
 		{
 			e.printStackTrace();
-			notifyOperationListeners(Operation.DELETE, OperationState.FAILED, 0f);
+			notifyOperationListeners(Operation.DELETE, OperationState.FAILED, 0.0f);
 			throw new OperationException("Couldn't delete folder! " + e.getMessage());
 		}
 		finally
 		{
 			clearOperationListeners(Operation.DELETE);
 		}
+		
 	}
 	
 	/**

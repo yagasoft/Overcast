@@ -16,16 +16,17 @@ package com.yagasoft.overcast.google;
 import com.google.api.services.drive.Drive;
 import com.google.api.services.drive.model.File;
 import com.yagasoft.overcast.container.local.LocalFile;
+import com.yagasoft.overcast.container.transfer.TransferState;
 
 
 public class UploadJob extends com.yagasoft.overcast.container.transfer.UploadJob<Drive.Files.Insert, File>
 {
-	
+
 	Thread	canceller;
-	
+
 	/**
 	 * Instantiates a new upload job.
-	 * 
+	 *
 	 * @param localFile
 	 *            Local file.
 	 * @param remoteFile
@@ -45,7 +46,7 @@ public class UploadJob extends com.yagasoft.overcast.container.transfer.UploadJo
 		super(localFile, remoteFile, parent, overwrite, cspTransferer);
 		this.canceller = canceller;
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.container.transfer.TransferJob#cancelTransfer()
 	 */
@@ -55,8 +56,10 @@ public class UploadJob extends com.yagasoft.overcast.container.transfer.UploadJo
 	{
 		// Google doesn't have a cancel method, so I had to improvise.
 		canceller.stop();
+		notifyProgressListeners(TransferState.CANCELLED, 0.0f);
+		remoteFile.getCsp().resetUpload();
 	}
-	
+
 	/**
 	 * @return the canceller
 	 */
@@ -64,7 +67,7 @@ public class UploadJob extends com.yagasoft.overcast.container.transfer.UploadJo
 	{
 		return canceller;
 	}
-	
+
 	/**
 	 * @param canceller
 	 *            the canceller to set
@@ -73,5 +76,5 @@ public class UploadJob extends com.yagasoft.overcast.container.transfer.UploadJo
 	{
 		this.canceller = canceller;
 	}
-	
+
 }

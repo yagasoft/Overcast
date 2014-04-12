@@ -1,11 +1,11 @@
-/* 
+/*
  * Copyright (C) 2011-2014 by Ahmed Osama el-Sawalhy
- * 
+ *
  *		Modified MIT License (GPL v3 compatible)
  * 			License terms are in a separate file (license.txt)
- * 
+ *
  *		Project/File: Overcast/com.yagasoft.overcast.container.local/LocalFile.java
- * 
+ *
  *			Modified: 27-Mar-2014 (16:12:38)
  *			   Using: Eclipse J-EE / JDK 7 / Windows 8.1 x64
  */
@@ -87,13 +87,13 @@ public class LocalFile extends File<Path>
 	 * @see com.yagasoft.overcast.container.Container#isExist()
 	 */
 	@Override
-	public boolean isExist() throws AccessException
+	public synchronized boolean isExist() throws AccessException
 	{
 		// if the Java library says the file doesn't exist, and at same time it says the file doesn't 'not exist', then ...
 		// obviously a problem.
 		if ( !Files.exists(sourceObject) && !Files.notExists(sourceObject))
 		{
-			throw new AccessException("Can't determine if file exists or not.");
+			throw new AccessException("Can't determine if file exists or not!");
 		}
 		
 		return Files.exists(sourceObject);
@@ -103,16 +103,23 @@ public class LocalFile extends File<Path>
 	 * @see com.yagasoft.overcast.container.Container#updateInfo()
 	 */
 	@Override
-	public void updateInfo()
+	public synchronized void updateInfo()
 	{
-		updateFromSource();		// updating the info locally costs nothing, so do it automatically.
+		try
+		{
+			updateFromSource();	// updating the info locally costs nothing, so do it automatically.
+		}
+		catch (OperationException e)
+		{
+			e.printStackTrace();
+		}
 	}
 	
 	/**
 	 * @see com.yagasoft.overcast.container.Container#updateFromSource()
 	 */
 	@Override
-	public void updateFromSource()
+	public synchronized void updateFromSource() throws OperationException
 	{
 		name = sourceObject.getFileName().toString();
 		path = sourceObject.toAbsolutePath().toString();
@@ -126,6 +133,7 @@ public class LocalFile extends File<Path>
 		{
 			size = 0;
 			e.printStackTrace();
+			throw new OperationException("Couldn't update info! " + e.getMessage());
 		}
 		
 		generateId();
@@ -135,7 +143,8 @@ public class LocalFile extends File<Path>
 	 * @see com.yagasoft.overcast.container.Container#copy(com.yagasoft.overcast.container.Folder, boolean, IOperationListener)
 	 */
 	@Override
-	public LocalFile copy(Folder<?> destination, boolean overwrite, IOperationListener listener) throws OperationException
+	public synchronized LocalFile copy(Folder<?> destination, boolean overwrite, IOperationListener listener)
+			throws OperationException
 	{
 		try
 		{
@@ -152,7 +161,7 @@ public class LocalFile extends File<Path>
 		catch (IOException e)
 		{
 			e.printStackTrace();
-			throw new OperationException("Failed to copy file.");
+			throw new OperationException("Failed to copy file! " + e.getMessage());
 		}
 	}
 	
@@ -160,7 +169,8 @@ public class LocalFile extends File<Path>
 	 * @see com.yagasoft.overcast.container.Container#move(com.yagasoft.overcast.container.Folder, boolean, IOperationListener)
 	 */
 	@Override
-	public void move(Folder<?> destination, boolean overwrite, IOperationListener listener) throws OperationException
+	public synchronized void move(Folder<?> destination, boolean overwrite, IOperationListener listener)
+			throws OperationException
 	{
 		try
 		{
@@ -177,7 +187,7 @@ public class LocalFile extends File<Path>
 		catch (IOException e)
 		{
 			e.printStackTrace();
-			throw new OperationException("Failed to move file.");
+			throw new OperationException("Failed to move file! " + e.getMessage());
 		}
 	}
 	
@@ -185,7 +195,7 @@ public class LocalFile extends File<Path>
 	 * @see com.yagasoft.overcast.container.Container#rename(java.lang.String, IOperationListener)
 	 */
 	@Override
-	public void rename(String newName, IOperationListener listener) throws OperationException
+	public synchronized void rename(String newName, IOperationListener listener) throws OperationException
 	{
 		try
 		{
@@ -196,7 +206,7 @@ public class LocalFile extends File<Path>
 		catch (IOException e)
 		{
 			e.printStackTrace();
-			throw new OperationException("Failed to rename file.");
+			throw new OperationException("Failed to rename file! " + e.getMessage());
 		}
 	}
 	
@@ -204,7 +214,7 @@ public class LocalFile extends File<Path>
 	 * @see com.yagasoft.overcast.container.Container#delete(IOperationListener)
 	 */
 	@Override
-	public void delete(IOperationListener listener) throws OperationException
+	public synchronized void delete(IOperationListener listener) throws OperationException
 	{
 		try
 		{
@@ -219,7 +229,7 @@ public class LocalFile extends File<Path>
 		catch (IOException e)
 		{
 			e.printStackTrace();
-			throw new OperationException("Failed to delete file.");
+			throw new OperationException("Failed to delete file! " + e.getMessage());
 		}
 	}
 	
@@ -238,7 +248,7 @@ public class LocalFile extends File<Path>
 	 *             A problem occurred during the transfer of the container.
 	 * @throws OperationException
 	 */
-	public UploadJob<?, ?> upload(RemoteFolder<?> parent, boolean overwrite, ITransferProgressListener listener)
+	public synchronized UploadJob<?, ?> upload(RemoteFolder<?> parent, boolean overwrite, ITransferProgressListener listener)
 			throws TransferException, OperationException
 	{
 		return parent.getCsp().upload(this, parent, overwrite, listener);

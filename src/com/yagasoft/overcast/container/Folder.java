@@ -6,7 +6,7 @@
  * 
  *		Project/File: Overcast/com.yagasoft.overcast.container/Folder.java
  * 
- *			Modified: 27-Mar-2014 (16:12:23)
+ *			Modified: 12-Apr-2014 (19:37:14)
  *			   Using: Eclipse J-EE / JDK 7 / Windows 8.1 x64
  */
 
@@ -14,12 +14,17 @@ package com.yagasoft.overcast.container;
 
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 
 import com.yagasoft.overcast.container.operation.IOperationListener;
+import com.yagasoft.overcast.container.operation.Operation;
+import com.yagasoft.overcast.container.operation.OperationState;
+import com.yagasoft.overcast.container.remote.RemoteFolder;
 import com.yagasoft.overcast.exception.CreationException;
+import com.yagasoft.overcast.exception.OperationException;
 
 
 /**
@@ -51,7 +56,7 @@ public abstract class Folder<T> extends Container<T>
 	public abstract void create(Folder<?> parent, IOperationListener listener) throws CreationException;
 	
 	/**
-	 * Creates the folder at the source with the info set (class attributes).
+	 * Creates the folder at the source with the name set as a field and the parent path passed.
 	 * 
 	 * @param parentPath
 	 *            Parent path.
@@ -60,7 +65,70 @@ public abstract class Folder<T> extends Container<T>
 	 * @throws CreationException
 	 *             problem with creating the folder
 	 */
-	public abstract void create(String parentPath, IOperationListener listener) throws CreationException;
+	@SuppressWarnings("rawtypes")
+	public void create(String parentPath, IOperationListener listener) throws CreationException
+	{
+		// split the parent path into nodes.
+		ArrayList<String> splitPath = new ArrayList<String>(Arrays.asList(parentPath.split("/")));
+		
+		// remove the first node as it's the root
+		if (splitPath.get(0).equals(""))
+		{
+			splitPath.remove(0);
+		}
+		
+		RemoteFolder parent = csp.getRemoteFileTree();
+		
+		// if there're sub-folders in the path
+		if (splitPath.size() > 0)
+		{
+			// search for the first sub-folder.
+			RemoteFolder result = (RemoteFolder) parent.searchByName(splitPath.get(0), false);
+			
+			// if it's found, and there're more sub-folders ...
+			// (if it's found but not sub-folders, then it's the parent we want to create in)
+			while ((result != null) && (splitPath.size() > 0))
+			{
+				// this it the intended parent for now ...
+				parent = result;
+				splitPath.remove(0);		// don't need it anymore in the node's list.
+				
+				// more sub-folders?
+				if (splitPath.size() > 0)
+				{
+					// check for the next node in the current parent.
+					result = (RemoteFolder) parent.searchByName(splitPath.get(0), false);
+				}
+				else
+				{	// no more sub-folders, this is the parent for now.
+					break;
+				}
+			}
+		}
+		
+		// couldn't find a node in the first iteration, so start creating the rest of the path.
+		while (splitPath.size() > 0)
+		{
+			RemoteFolder tempFolder = csp.getAbstractFactory().createFolder();
+			tempFolder.setName(splitPath.remove(0));
+			tempFolder.create(parent, listener);
+			parent = tempFolder;		// new parent is the newly created folder.
+		}
+		
+		// done with creating/traversing the path, now search if this folder exists in the last node.
+		RemoteFolder result = (RemoteFolder) parent.searchByName(name, false);
+		
+		// if so, then it already exists.
+		if (result != null)
+		{
+			notifyOperationListeners(Operation.CREATE, OperationState.FAILED, 0f);
+			throw new CreationException("Folder already exists!");
+		}
+		else
+		{
+			create(parent, listener);		// create the folder in the reached parent.
+		}
+	}
 	
 	/**
 	 * Adds the folder passed to the list of folder in this folder.
@@ -72,6 +140,7 @@ public abstract class Folder<T> extends Container<T>
 	{
 		folders.put(folder.id, folder);		// extract the ID of the folder and use it to map the folder passed.
 		folder.parent = this;				// set the parent of the folder passed as this folder.
+		folder.updateInfo();				// parent changed; update info.
 	}
 	
 	/**
@@ -84,6 +153,7 @@ public abstract class Folder<T> extends Container<T>
 	{
 		files.put(file.id, file);
 		file.parent = this;
+		file.updateInfo();
 	}
 	
 	/**
@@ -126,16 +196,19 @@ public abstract class Folder<T> extends Container<T>
 	 * 
 	 * @param numberOfLevels
 	 *            Depth to go to in sub-folders, with zero as this folder contents only.
+	 * @throws OperationException
 	 */
-	public abstract void buildTree(int numberOfLevels);
+	public abstract void buildTree(int numberOfLevels) throws OperationException;
 	
 	/**
 	 * Equivalent to {@link Folder#buildTree(int)} with Integer.MAX_VALUE passed if recursive, or passing zero if not.
 	 * 
 	 * @param recursively
 	 *            Recursively build this tree.
+	 * @throws OperationException
+	 *             the operation exception
 	 */
-	public void buildTree(boolean recursively)
+	public void buildTree(boolean recursively) throws OperationException
 	{
 		if (recursively)
 		{
@@ -151,8 +224,9 @@ public abstract class Folder<T> extends Container<T>
 	 * I chose to add it here and not in updateFromSource because it's an intensive operation that should be done manually only.
 	 * 
 	 * @return Size in bytes.
+	 * @throws OperationException
 	 */
-	public abstract long calculateSize();
+	public abstract long calculateSize() throws OperationException;
 	
 	/**
 	 * @see com.yagasoft.overcast.container.Container#isFolder()
@@ -182,8 +256,9 @@ public abstract class Folder<T> extends Container<T>
 	 *            Update folder contents.
 	 * @param recursively
 	 *            Recursive or not.
+	 * @throws OperationException
 	 */
-	public abstract void updateFromSource(boolean folderContents, boolean recursively);
+	public abstract void updateFromSource(boolean folderContents, boolean recursively) throws OperationException;
 	
 	/**
 	 * Checks if this file/folder exists in this folder, and whether to search recursively.

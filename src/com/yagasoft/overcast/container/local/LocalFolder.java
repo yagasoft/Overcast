@@ -1,11 +1,11 @@
-/* 
+/*
  * Copyright (C) 2011-2014 by Ahmed Osama el-Sawalhy
- * 
+ *
  *		Modified MIT License (GPL v3 compatible)
  * 			License terms are in a separate file (license.txt)
- * 
+ *
  *		Project/File: Overcast/com.yagasoft.overcast.container.local/LocalFolder.java
- * 
+ *
  *			Modified: 27-Mar-2014 (16:12:44)
  *			   Using: Eclipse J-EE / JDK 7 / Windows 8.1 x64
  */
@@ -30,7 +30,6 @@ import com.yagasoft.overcast.container.FolderHelper.TreeDeleter;
 import com.yagasoft.overcast.container.FolderHelper.TreeMover;
 import com.yagasoft.overcast.container.operation.IOperationListener;
 import com.yagasoft.overcast.container.operation.Operation;
-import com.yagasoft.overcast.container.operation.OperationEvent;
 import com.yagasoft.overcast.container.operation.OperationState;
 import com.yagasoft.overcast.container.remote.RemoteFolder;
 import com.yagasoft.overcast.container.transfer.ITransferProgressListener;
@@ -46,40 +45,42 @@ import com.yagasoft.overcast.exception.TransferException;
  */
 public class LocalFolder extends Folder<Path>
 {
-	
+
 	/** The {@link RemoteFolder} corresponding to this local folder if applicable. */
 	protected RemoteFolder<?>	remoteMapping;
 	protected long				localFreeSpace;
-	
+
 	/**
 	 * Instantiates a new local folder.
 	 */
 	public LocalFolder()
 	{}
-	
+
 	/**
 	 * Instantiates a new local folder.
-	 * 
+	 *
 	 * @param file
 	 *            Java library File object.
+	 * @throws OperationException
 	 */
-	public LocalFolder(Path file)
+	public LocalFolder(Path file) throws OperationException
 	{
 		sourceObject = file;
 		updateFromSource(false, false);		// updating the info locally costs nothing, so do it automatically.
 	}
-	
+
 	/**
 	 * Instantiates a new local folder.
-	 * 
+	 *
 	 * @param path
 	 *            Path to the folder.
+	 * @throws OperationException
 	 */
-	public LocalFolder(String path)
+	public LocalFolder(String path) throws OperationException
 	{
 		this(Paths.get(path));		// get the folder object and pass it to the other constructor.
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.container.Container#generateId()
 	 */
@@ -88,66 +89,72 @@ public class LocalFolder extends Folder<Path>
 	{
 		id = path;
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.container.Folder#create(Folder<?>, IOperationListener)
 	 */
 	@Override
-	public void create(Folder<?> parent, IOperationListener listener) throws CreationException
+	public synchronized void create(Folder<?> parent, IOperationListener listener) throws CreationException
 	{
 		create(parent.getPath(), listener);		// extract path and call overloaded string function.
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.container.Folder#create(java.lang.String, IOperationListener)
 	 */
 	@Override
-	public void create(String parentPath, IOperationListener listener) throws CreationException
+	public synchronized void create(String parentPath, IOperationListener listener) throws CreationException
 	{
+		addOperationListener(listener, Operation.CREATE);
+
 		try
 		{
 			Files.createDirectories(Paths.get(parentPath, name));
+			notifyOperationListeners(Operation.CREATE, OperationState.COMPLETED, 1.0f);
 		}
 		catch (IOException e)
 		{
 			e.printStackTrace();
-			listener.operationProgressChanged(new OperationEvent(this, Operation.CREATE, OperationState.FAILED, 0f));
+			notifyOperationListeners(Operation.CREATE, OperationState.FAILED, 0f);
+			throw new CreationException("Couldn't create folder! " + e.getMessage());
 		}
-		
-		listener.operationProgressChanged(new OperationEvent(this, Operation.CREATE, OperationState.COMPLETED, 1.0f));
+		finally
+		{
+			clearOperationListeners(Operation.CREATE);
+		}
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.container.Container#isExist()
 	 */
 	@Override
-	public boolean isExist() throws AccessException
+	public synchronized boolean isExist() throws AccessException
 	{
 		// if the Java library says the folder doesn't exist, and at same time it says the folder doesn't 'not exist', then ...
 		// obviously a problem.
 		if ( !Files.exists(sourceObject) && !Files.notExists(sourceObject))
 		{
-			throw new AccessException("Can't determine if folder exists or not.");
+			throw new AccessException("Can't determine if folder exists or not!");
 		}
-		
+
 		return Files.exists(sourceObject);
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.container.Folder#buildTree(int)
 	 */
 	@Override
-	public void buildTree(int numberOfLevels)
+	public synchronized void buildTree(int numberOfLevels) throws OperationException
 	{
 		// stop at the required depth.
 		if (numberOfLevels < 0)
 		{
 			return;
 		}
-		
+
 		ArrayList<Path> paths = new ArrayList<Path>();		// will be used to store children read from disk.
 		ArrayList<String> pathsString = new ArrayList<String>();	// will be used to filter children.
-		
+
 		// read children of the folder from the disk.
 		try (DirectoryStream<Path> stream = Files.newDirectoryStream(sourceObject))
 		{
@@ -160,14 +167,15 @@ public class LocalFolder extends Folder<Path>
 		catch (IOException | DirectoryIteratorException e)
 		{
 			e.printStackTrace();
+			throw new OperationException("Couldn't build tree! " + e.getMessage());
 		}
-		
+
 		// filter!
 		removeObsolete(pathsString, true);
-		
+
 //		HashMap<String, Folder<?>> newFolders = new HashMap<String, Folder<?>>();
 //		HashMap<String, File<?>> newFiles = new HashMap<String, File<?>>();
-		
+
 		// add new files and folders to this folder's list, and build recursively if required.
 		for (Path path : paths)
 		{
@@ -206,18 +214,18 @@ public class LocalFolder extends Folder<Path>
 //
 //		folders = newFolders;
 //		files = newFiles;
-		
+
 //		for (Container<?> container : getChildrenArray())
 //		{
 //			System.out.println(container.getPath());
 //		}
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.container.Folder#calculateSize()
 	 */
 	@Override
-	public long calculateSize()
+	public synchronized long calculateSize() throws OperationException
 	{
 		try
 		{
@@ -227,39 +235,47 @@ public class LocalFolder extends Folder<Path>
 		{
 			size = 0;
 			e.printStackTrace();
+			throw new OperationException("Couldn't determine size! " + e.getMessage());
 		}
-		
+
 		return size;
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.container.Folder#updateInfo(boolean, boolean)
 	 */
 	@Override
-	public void updateInfo(boolean folderContents, boolean recursively)
+	public synchronized void updateInfo(boolean folderContents, boolean recursively)
 	{
-		updateFromSource(folderContents, recursively);		// updating the info locally costs nothing, so do it automatically.
+		try
+		{
+			updateFromSource(folderContents, recursively);		// updating the info locally costs nothing, so do it automatically.
+		}
+		catch (OperationException e)
+		{
+			e.printStackTrace();
+		}
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.container.Folder#updateFromSource(boolean, boolean)
 	 */
 	@Override
-	public void updateFromSource(boolean folderContents, boolean recursively)
+	public synchronized void updateFromSource(boolean folderContents, boolean recursively) throws OperationException
 	{
 		// NOTE: re-write this method!!! <<<<<<<<<<<<<<<<<<<<<<<<<<
-		
+
 		if (folderContents)
 		{
 			buildTree(recursively);
 		}
-		
+
 		name = sourceObject.getFileName().toString();
 		path = sourceObject.toAbsolutePath().toString();
 		localFreeSpace = calculateLocalFreeSpace();
-		
+
 		String parentString = sourceObject.getParent().toString();
-		
+
 		if (parentString.equals(sourceObject.getRoot().toString()))
 		{
 			parent = new LocalFolder();
@@ -269,19 +285,20 @@ public class LocalFolder extends Folder<Path>
 		{
 			parent = new LocalFolder(parentString);
 		}
-		
+
 		generateId();
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.container.Container#copy(com.yagasoft.overcast.container.Folder, boolean, IOperationListener)
 	 */
 	@Override
-	public LocalFolder copy(Folder<?> destination, boolean overwrite, IOperationListener listener) throws OperationException
+	public synchronized LocalFolder copy(Folder<?> destination, boolean overwrite, IOperationListener listener)
+			throws OperationException
 	{
 		// call Oracle's copier.
 		TreeCopier treeCopier = new TreeCopier(sourceObject, (Path) destination.getSourceObject(), !overwrite, true);
-		
+
 		try
 		{
 			Files.walkFileTree(sourceObject, treeCopier);
@@ -290,20 +307,20 @@ public class LocalFolder extends Folder<Path>
 		catch (IOException e)
 		{
 			e.printStackTrace();
+			throw new OperationException("Couldn't copy folder! " + e.getMessage());
 		}
-		
-		return null;
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.container.Container#move(com.yagasoft.overcast.container.Folder, boolean, IOperationListener)
 	 */
 	@Override
-	public void move(Folder<?> destination, boolean overwrite, IOperationListener listener) throws OperationException
+	public synchronized void move(Folder<?> destination, boolean overwrite, IOperationListener listener)
+			throws OperationException
 	{
 		// call my modification to Oracle's copier.
 		TreeMover treeMover = new TreeMover(sourceObject, (Path) destination.getSourceObject(), !overwrite);
-		
+
 		try
 		{
 			Files.walkFileTree(sourceObject, treeMover);
@@ -313,14 +330,15 @@ public class LocalFolder extends Folder<Path>
 		catch (IOException e)
 		{
 			e.printStackTrace();
+			throw new OperationException("Couldn't move folder! " + e.getMessage());
 		}
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.container.Container#rename(java.lang.String, IOperationListener)
 	 */
 	@Override
-	public void rename(String newName, IOperationListener listener) throws OperationException
+	public synchronized void rename(String newName, IOperationListener listener) throws OperationException
 	{
 		try
 		{
@@ -331,21 +349,22 @@ public class LocalFolder extends Folder<Path>
 		catch (IOException e)
 		{
 			e.printStackTrace();
+			throw new OperationException("Couldn't rename folder! " + e.getMessage());
 		}
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.container.Container#delete(IOperationListener)
 	 */
 	@Override
-	public void delete(IOperationListener listener)
+	public synchronized void delete(IOperationListener listener) throws OperationException
 	{
 		TreeDeleter treeDeleter = new TreeDeleter();
-		
+
 		try
 		{
 			Files.walkFileTree(sourceObject, treeDeleter);		// delete the content first recursively (must!).
-			
+
 			// folder is obsolete after delete, so remove from parent.
 			if (parent != null)
 			{
@@ -355,13 +374,14 @@ public class LocalFolder extends Folder<Path>
 		catch (IOException e)
 		{
 			e.printStackTrace();
+			throw new OperationException("Couldn't delete folder! " + e.getMessage());
 		}
 	}
-	
+
 	/**
 	 * Upload the container to the server.<br />
 	 * This should just call the one in {@link CSP}.
-	 * 
+	 *
 	 * @param parent
 	 *            The remote folder to upload to. Must pass a {@link RemoteFolder} with the path initialised in it.
 	 * @param overwrite
@@ -371,19 +391,22 @@ public class LocalFolder extends Folder<Path>
 	 * @return the upload jobs
 	 * @throws TransferException
 	 *             A problem occurred during the transfer of the container.
+	 * @throws CreationException
+	 * @throws OperationException
 	 */
-	public UploadJob<?, ?>[] upload(RemoteFolder<?> parent, boolean overwrite, ITransferProgressListener listener)
-			throws TransferException
+	public synchronized UploadJob<?, ?>[] upload(RemoteFolder<?> parent, boolean overwrite, ITransferProgressListener listener)
+			throws TransferException, OperationException, CreationException
 	{
 		return parent.getCsp().upload(this, parent, overwrite, listener);
 	}
-	
+
 	/**
 	 * Calculate local free space available on the local disk (the one the root resides on).
-	 * 
+	 *
 	 * @return the free space in bytes
+	 * @throws OperationException
 	 */
-	public long calculateLocalFreeSpace()
+	public synchronized long calculateLocalFreeSpace() throws OperationException
 	{
 		try
 		{
@@ -392,11 +415,10 @@ public class LocalFolder extends Folder<Path>
 		catch (IOException e)
 		{
 			e.printStackTrace();
+			throw new OperationException("Couldn't determine free space! " + e.getMessage());
 		}
-		
-		return localFreeSpace;
 	}
-	
+
 	/**
 	 * Not supported; DO NOT use!<br />
 	 * Use {@link #updateInfo(boolean, boolean)} instead.
@@ -406,7 +428,7 @@ public class LocalFolder extends Folder<Path>
 	{
 		throw new UnsupportedOperationException();
 	}
-	
+
 	/**
 	 * Not supported; DO NOT use!<br />
 	 * Use {@link #updateFromSource(boolean, boolean)} instead.
@@ -416,11 +438,11 @@ public class LocalFolder extends Folder<Path>
 	{
 		throw new UnsupportedOperationException();
 	}
-	
+
 	// //////////////////////////////////////////////////////////////////////////////////////
 	// #region Getters and setters.
 	// ======================================================================================
-	
+
 	/**
 	 * @return the remoteMapping
 	 */
@@ -428,7 +450,7 @@ public class LocalFolder extends Folder<Path>
 	{
 		return remoteMapping;
 	}
-	
+
 	/**
 	 * @param remoteMapping
 	 *            the remoteMapping to set
@@ -437,32 +459,33 @@ public class LocalFolder extends Folder<Path>
 	{
 		this.remoteMapping = remoteMapping;
 	}
-	
+
 	@Override
 	public CSP<Path, ?, ?> getCsp()
 	{
 		throw new UnsupportedOperationException("DO NOT USE!");
 	}
-	
+
 	@Override
 	public void setCsp(CSP<Path, ?, ?> csp)
 	{
 		throw new UnsupportedOperationException("DO NOT USE!");
 	}
-	
+
 	/**
 	 * @return the localFreeSpace
+	 * @throws OperationException
 	 */
-	public long getLocalFreeSpace()
+	public long getLocalFreeSpace() throws OperationException
 	{
 		if (localFreeSpace == 0)
 		{
 			calculateLocalFreeSpace();
 		}
-		
+
 		return localFreeSpace;
 	}
-	
+
 	/**
 	 * @param localFreeSpace
 	 *            the localFreeSpace to set
@@ -471,9 +494,9 @@ public class LocalFolder extends Folder<Path>
 	{
 		this.localFreeSpace = localFreeSpace;
 	}
-	
+
 	// ======================================================================================
 	// #endregion Getters and setters.
 	// //////////////////////////////////////////////////////////////////////////////////////
-	
+
 }

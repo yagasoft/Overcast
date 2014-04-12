@@ -1,11 +1,11 @@
-/* 
+/*
  * Copyright (C) 2011-2014 by Ahmed Osama el-Sawalhy
- * 
+ *
  *		Modified MIT License (GPL v3 compatible)
  * 			License terms are in a separate file (license.txt)
- * 
+ *
  *		Project/File: Overcast/com.yagasoft.overcast.container.remote/RemoteFactory.java
- * 
+ *
  *			Modified: 27-Mar-2014 (16:13:08)
  *			   Using: Eclipse J-EE / JDK 7 / Windows 8.1 x64
  */
@@ -18,6 +18,7 @@ import java.util.Arrays;
 
 import com.yagasoft.overcast.CSP;
 import com.yagasoft.overcast.container.Container;
+import com.yagasoft.overcast.exception.OperationException;
 
 
 /**
@@ -184,7 +185,15 @@ public abstract class RemoteFactory<FolderSourceType, FolderType extends RemoteF
 	{
 		if (online)
 		{
-			container.updateFromSource();
+			try
+			{
+				container.updateFromSource();
+			}
+			catch (OperationException e)
+			{
+				e.printStackTrace();
+				container.updateInfo();
+			}
 		}
 		else
 		{
@@ -343,7 +352,16 @@ public abstract class RemoteFactory<FolderSourceType, FolderType extends RemoteF
 		// search for each entry in the path ...
 		while ((result != null) && (splitPath.size() > 0))
 		{
-			result.updateFromSource(true, false);
+			try
+			{
+				result.updateFromSource(true, false);
+			}
+			catch (OperationException e)
+			{
+				e.printStackTrace();
+				result.updateInfo(true, false);
+			}
+			
 			result = result.searchByName(splitPath.remove(0), false);
 		} // ..., until either it reaches the end of the path successfully, or not.
 		
