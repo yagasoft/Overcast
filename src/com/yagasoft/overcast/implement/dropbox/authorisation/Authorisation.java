@@ -18,7 +18,6 @@ import java.awt.Desktop.Action;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
-import java.nio.file.Path;
 
 import com.dropbox.core.DbxAppInfo;
 import com.dropbox.core.DbxAuthFinish;
@@ -39,59 +38,63 @@ import com.yagasoft.overcast.implement.dropbox.Dropbox;
  */
 public class Authorisation extends OAuth
 {
-
+	
 	/** Receiver. */
 	private LocalServerReceiver	receiver;
-
+	
 	/** Redirect URI. */
 	private String				redirectUri;
-
+	
 	/** Auth finishing object. */
 	private DbxAuthFinish		authFinish;
-
+	
 	/** App info. */
 	private DbxAppInfo			appInfo;
-
+	
 	/** Auth info. */
 	protected DbxAuthInfo		authInfo;
-
-
+	
 	/**
 	 * Instantiates a new authorisation.
-	 *
-	 * @param infoFile Info file.
-	 * @param port Port for listening server.
-	 * @throws AuthorisationException the authorisation exception
+	 * 
+	 * @param infoFile
+	 *            Info file name.
+	 * @param port
+	 *            Port for listening server.
+	 * @throws AuthorisationException
+	 *             the authorisation exception
 	 */
-	public Authorisation(Path infoFile, int port) throws AuthorisationException
+	public Authorisation(String infoFile, int port) throws AuthorisationException
 	{
 		this("user", infoFile, port);
 	}
-
+	
 	/**
 	 * @param userID
 	 * @param password
-	 * @param info
+	 * @param infoFile
+	 *            Info file name
 	 * @throws AuthorisationException
 	 */
-	public Authorisation(String userID, Path infoFile, int port) throws AuthorisationException
+	public Authorisation(String userID, String infoFile, int port) throws AuthorisationException
 	{
-		super(infoFile.getParent(), infoFile);
+		super(infoFile);
 		this.userID = userID;
 		setupServer(port);
 	}
-
+	
 	/**
 	 * Sets the up server to receive authorisation code.
-	 *
-	 * @param port any free port on localhost.
+	 * 
+	 * @param port
+	 *            any free port on localhost.
 	 */
 	public void setupServer(int port)
 	{
 		receiver = new LocalServerReceiver("localhost", port);
 		redirectUri = receiver.getUri();
 	}
-
+	
 	/**
 	 * @see com.yagasoft.overcast.base.csp.authorisation.Authorisation#authorise()
 	 */
@@ -108,7 +111,7 @@ public class Authorisation extends OAuth
 			acquirePermission();		// open browser to ask for user permission, then save token.
 		}
 	}
-
+	
 	/**
 	 * @see com.yagasoft.overcast.base.csp.authorisation.OAuth#acquirePermission()
 	 */
@@ -119,21 +122,21 @@ public class Authorisation extends OAuth
 		{
 			// Read app info file (contains app key and app secret)
 			appInfo = DbxAppInfo.Reader.readFromFile(infoFile.toString());
-
+			
 			// Run through Dropbox API authorization process
 			DbxWebAuthNoRedirect webAuth = new DbxWebAuthNoRedirect(Dropbox.getRequestConfig(), appInfo, redirectUri);
 			String authoriseUrl = webAuth.start();		// get URL to send to browser
 			String code = authorise(authoriseUrl, redirectUri);		// opens browser and get access code.
-
+			
 			// problem with getting code from browser?
 			if (code == null)
 			{
 				throw new AuthorisationException("Failed to authorise!");
 			}
-
+			
 			code = code.trim();
 			authFinish = webAuth.finish(code);		// get access token using access code.
-
+			
 			saveToken();
 		}
 		catch (FileLoadException | DbxException e)
@@ -141,9 +144,9 @@ public class Authorisation extends OAuth
 			e.printStackTrace();
 			throw new AuthorisationException("Failed to authorise! " + e.getMessage());
 		}
-
+		
 	}
-
+	
 	/**
 	 * @see com.yagasoft.overcast.base.csp.authorisation.OAuth#reacquirePermission()
 	 */
@@ -153,8 +156,8 @@ public class Authorisation extends OAuth
 		try
 		{
 			// read the token from disk.
-			authInfo = DbxAuthInfo.Reader.readFromFile(new File(parent.toFile(), "dropbox_token.dat"));
-
+			authInfo = DbxAuthInfo.Reader.readFromFile(new File(tokenParent.toFile(), "dropbox_token.dat"));
+			
 			// make sure the token is valid.
 			DbxClient dbxClient = new DbxClient(Dropbox.getRequestConfig(), authInfo.accessToken, authInfo.host);
 			dbxClient.getAccountInfo();
@@ -164,7 +167,7 @@ public class Authorisation extends OAuth
 			throw new AuthorisationException("Failed to authorise! " + e.getMessage());
 		}
 	}
-
+	
 	/**
 	 * @see com.yagasoft.overcast.base.csp.authorisation.OAuth#saveToken()
 	 */
@@ -175,9 +178,9 @@ public class Authorisation extends OAuth
 		{
 			// prepare access token to be saved to disk.
 			authInfo = new DbxAuthInfo(authFinish.accessToken, appInfo.host);
-
+			
 			// Save auth information to output file.
-			DbxAuthInfo.Writer.writeToFile(authInfo, new File(parent.toFile(), "dropbox_token.dat"));
+			DbxAuthInfo.Writer.writeToFile(authInfo, new File(tokenParent.toFile(), "dropbox_token.dat"));
 		}
 		catch (IOException e)
 		{
@@ -185,10 +188,10 @@ public class Authorisation extends OAuth
 			throw new AuthorisationException("Failed to authorise! " + e.getMessage());
 		}
 	}
-
+	
 	/**
 	 * Authorises the installed application to access user's protected data.
-	 *
+	 * 
 	 * @param url
 	 *            Url.
 	 * @param redirectUri
@@ -206,18 +209,18 @@ public class Authorisation extends OAuth
 		{
 			throw new AuthorisationException("Failed to authorise! Server not setup.");
 		}
-
+		
 		try
 		{
 			// open browser to get access code.
 			browse(url + "&redirect_uri=" + receiver.getRedirectUri());
-	
+			
 			// receive authorisation code.
 			String code = receiver.waitForCode();
-	
+			
 			// stop the listening server.
 			receiver.stop();
-
+			
 			return code;
 		}
 		catch (IOException e)
@@ -226,21 +229,21 @@ public class Authorisation extends OAuth
 			throw new AuthorisationException("Failed to authorise! " + e.getMessage());
 		}
 	}
-
+	
 	/**
 	 * Open a browser at the given URL using {@link Desktop} if available, or alternatively output the
 	 * URL to {@link System#out} for command-line applications.
-	 *
+	 * 
 	 * @param url
 	 *            URL to browse
-	 * @throws AuthorisationException 
+	 * @throws AuthorisationException
 	 */
 	private void browse(String url) throws AuthorisationException
 	{
 		// Ask user to open in their browser using copy-paste
 		System.out.println("Please open the following address in your browser:");
 		System.out.println("  " + url);
-
+		
 		// Attempt to open it in the browser
 		try
 		{
@@ -264,7 +267,7 @@ public class Authorisation extends OAuth
 			throw new AuthorisationException("Failed to authorise! " + e.getMessage());
 		}
 	}
-
+	
 	/**
 	 * @return the appInfo
 	 */
@@ -272,17 +275,16 @@ public class Authorisation extends OAuth
 	{
 		return appInfo;
 	}
-
-
+	
 	/**
-	 * @param appInfo the appInfo to set
+	 * @param appInfo
+	 *            the appInfo to set
 	 */
 	public void setAppInfo(DbxAppInfo appInfo)
 	{
 		this.appInfo = appInfo;
 	}
-
-
+	
 	/**
 	 * @return the authInfo
 	 */
@@ -290,14 +292,14 @@ public class Authorisation extends OAuth
 	{
 		return authInfo;
 	}
-
-
+	
 	/**
-	 * @param authInfo the authInfo to set
+	 * @param authInfo
+	 *            the authInfo to set
 	 */
 	public void setAuthInfo(DbxAuthInfo authInfo)
 	{
 		this.authInfo = authInfo;
 	}
-
+	
 }

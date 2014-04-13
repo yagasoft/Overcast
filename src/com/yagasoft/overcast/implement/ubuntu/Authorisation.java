@@ -1,11 +1,11 @@
-/* 
+/*
  * Copyright (C) 2011-2014 by Ahmed Osama el-Sawalhy
- * 
+ *
  *		Modified MIT License (GPL v3 compatible)
  * 			License terms are in a separate file (license.txt)
- * 
+ *
  *		Project/File: Overcast/com.yagasoft.overcast.ubuntu/Authorisation.java
- * 
+ *
  *			Modified: 27-Mar-2014 (16:15:19)
  *			   Using: Eclipse J-EE / JDK 7 / Windows 8.1 x64
  */
@@ -17,7 +17,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.Properties;
 
 import oauth.signpost.signature.HmacSha1MessageSigner;
@@ -46,9 +45,9 @@ public class Authorisation extends OAuth
 	 * @param password
 	 * @param parent
 	 */
-	public Authorisation(String userID, String password, Path parent)
+	public Authorisation(String userID, String password)
 	{
-		super(userID, password, parent, null);
+		super(userID, password);
 	}
 	
 	@Override
@@ -58,7 +57,7 @@ public class Authorisation extends OAuth
 		try
 		{
 			// See if we already have stored an OAuth token.
-			authFile = new File(parent.toString(), ".cliubuntuone");
+			authFile = new File(tokenParent.toString(), "ubuntu_token.dat");
 			
 			if (authFile.exists())
 			{

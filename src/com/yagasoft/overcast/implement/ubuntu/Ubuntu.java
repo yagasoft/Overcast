@@ -13,8 +13,6 @@
 package com.yagasoft.overcast.implement.ubuntu;
 
 
-import java.nio.file.Paths;
-
 import org.apache.http.client.HttpClient;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
@@ -74,7 +72,7 @@ public class Ubuntu extends CSP<U1File, U1DownloadListener, U1UploadListener>
 		httpClient = new DefaultHttpClient(new ThreadSafeClientConnManager());
 		
 		// authorise using the username and password.
-		authorisation = new Authorisation(username, password, Paths.get(System.getProperty("user.dir") + "/bin"));
+		authorisation = new Authorisation(username, password);
 		
 		try
 		{
@@ -178,7 +176,8 @@ public class Ubuntu extends CSP<U1File, U1DownloadListener, U1UploadListener>
 	 *      com.yagasoft.overcast.base.container.transfer.ITransferProgressListener)
 	 */
 	@Override
-	public DownloadJob download(com.yagasoft.overcast.base.container.remote.RemoteFile<?> file, LocalFolder parent, boolean overwrite
+	public DownloadJob download(com.yagasoft.overcast.base.container.remote.RemoteFile<?> file, LocalFolder parent,
+			boolean overwrite
 			, ITransferProgressListener listener) throws TransferException, OperationException
 	{
 		// overwrite if required.

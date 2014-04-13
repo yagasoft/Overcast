@@ -1,12 +1,12 @@
 /*
  * Copyright (C) 2011-2014 by Ahmed Osama el-Sawalhy
  *
- *		Modified MIT License (GPL v3 compatible)
- * 			License terms are in a separate file (license.txt)
+ *		The Modified MIT Licence (GPL v3 compatible)
+ * 			Licence terms are in a separate file (LICENCE.md)
  *
- *		Project/File: Overcast/com.yagasoft.overcast.authorisation/OAuth.java
+ *		Project/File: Overcast/com.yagasoft.overcast.base.csp.authorisation/OAuth.java
  *
- *			Modified: 11-Apr-2014 (12:31:01)
+ *			Modified: 13-Apr-2014 (14:04:59)
  *			   Using: Eclipse J-EE / JDK 7 / Windows 8.1 x64
  */
 
@@ -14,6 +14,7 @@ package com.yagasoft.overcast.base.csp.authorisation;
 
 
 import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import com.yagasoft.overcast.exception.AuthorisationException;
 
@@ -24,8 +25,11 @@ import com.yagasoft.overcast.exception.AuthorisationException;
 public abstract class OAuth extends Authorisation
 {
 
+	/** Info parent. */
+	private Path	infoParent	= Paths.get(System.getProperty("user.dir") + "/etc/secrets");
+
 	/** Parent folder to store tokens. */
-	protected Path	parent;
+	protected Path	tokenParent	= Paths.get(System.getProperty("user.dir") + "/var");
 
 	/** Info file containing info to get token. */
 	protected Path	infoFile;
@@ -64,10 +68,9 @@ public abstract class OAuth extends Authorisation
 	 *            Parent.
 	 * @param infoFile
 	 */
-	public OAuth(Path parent, Path infoFile)
+	public OAuth(String infoFile)
 	{
-		this.parent = parent;
-		this.infoFile = infoFile;
+		this(null, null, infoFile);
 	}
 
 	/**
@@ -81,11 +84,10 @@ public abstract class OAuth extends Authorisation
 	 *            Parent.
 	 * @param infoFile
 	 */
-	public OAuth(String userID, String password, Path parent, Path infoFile)
+	public OAuth(String userID, String password, String infoFile)
 	{
-		super(userID, password);
-		this.parent = parent;
-		this.infoFile = infoFile;
+		this(userID, password);
+		this.infoFile = infoParent.resolve(infoFile);
 	}
 
 	/**
@@ -118,24 +120,24 @@ public abstract class OAuth extends Authorisation
 	// ======================================================================================
 
 	/**
-	 * Gets the parent.
+	 * Gets the token parent.
 	 *
 	 * @return the parent
 	 */
-	public Path getParent()
+	public Path getTokenParent()
 	{
-		return parent;
+		return tokenParent;
 	}
 
 	/**
-	 * Sets the parent.
+	 * Sets the token parent.
 	 *
 	 * @param parent
 	 *            the parent to set
 	 */
-	public void setParent(Path parent)
+	public void setTokenParent(Path parent)
 	{
-		this.parent = parent;
+		tokenParent = parent;
 	}
 
 	/**
@@ -143,7 +145,7 @@ public abstract class OAuth extends Authorisation
 	 *
 	 * @return the info file
 	 */
-	public java.nio.file.Path getInfoFile()
+	public Path getInfoFile()
 	{
 		return infoFile;
 	}
@@ -199,6 +201,24 @@ public abstract class OAuth extends Authorisation
 	public void setRefreshToken(int value)
 	{
 		refreshToken = value;
+	}
+
+	/**
+	 * @return the infoParent
+	 */
+	public Path getInfoParent()
+	{
+		return infoParent;
+	}
+
+	/**
+	 * @param infoParent
+	 *            the infoParent to set
+	 */
+	public void setInfoParent(Path infoParent)
+	{
+		this.infoParent = infoParent;
+		this.infoFile = infoParent.resolve(infoFile);
 	}
 
 	// ======================================================================================

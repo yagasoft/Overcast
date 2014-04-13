@@ -16,7 +16,6 @@ package com.yagasoft.overcast.implement.google;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.nio.file.Paths;
 import java.security.GeneralSecurityException;
 import java.util.Arrays;
 
@@ -53,34 +52,34 @@ import com.yagasoft.overcast.exception.TransferException;
 public class Google extends CSP<File, MediaHttpDownloader, Drive.Files.Insert> implements MediaHttpDownloaderProgressListener,
 		MediaHttpUploaderProgressListener
 {
-	
+
 	static private Google		instance;
-	
+
 	/**
 	 * Be sure to specify the name of your application. If the application name is {@code null} or blank, the application will log
 	 * a warning.
 	 * Suggested format is "MyCompany-ProductName/1.0".
 	 */
 	static final String			APPLICATION_NAME	= "Overcast";
-	
+
 	/** Global instance of the HTTP transport. */
 	static HttpTransport		httpTransport;
-	
+
 	/** Global Drive API client. */
 	static Drive				driveService;
-	
+
 	/** Global instance of the JSON factory. */
 	static final JsonFactory	JSON_FACTORY		= JacksonFactory.getDefaultInstance();
-	
+
 	/** The authorisation. */
 	Authorisation				authorisation;
-	
+
 	/** The remote file factory. */
 	static RemoteFactory		factory;
-	
+
 	/**
 	 * Instantiates a new google.
-	 * 
+	 *
 	 * @throws CSPBuildException
 	 * @throws AuthorisationException
 	 */
@@ -90,19 +89,18 @@ public class Google extends CSP<File, MediaHttpDownloader, Drive.Files.Insert> i
 		{
 			// used in authorisation and transfers.
 			httpTransport = GoogleNetHttpTransport.newTrustedTransport();
-			
+
 			// authenticate.
-			authorisation = new Authorisation(userID, Paths.get(System.getProperty("user.dir")
-					+ "/bin/google_secrets.json"));
+			authorisation = new Authorisation(userID, "google.json");
 			authorisation.authorise();
-			
+
 			// set up the global Drive instance
 			driveService = new Drive.Builder(httpTransport, JSON_FACTORY, authorisation.credential)
 					.setApplicationName(APPLICATION_NAME).build();
-			
+
 			// initialise the remote file factory.
 			factory = new RemoteFactory(this);
-			
+
 			name = "Google Drive";
 		}
 		catch (IOException | GeneralSecurityException e)
@@ -111,17 +109,17 @@ public class Google extends CSP<File, MediaHttpDownloader, Drive.Files.Insert> i
 			throw new CSPBuildException("Can't construct CSP object! " + e.getMessage());
 		}
 	}
-	
+
 	public static Google getInstance(String userID) throws CSPBuildException, AuthorisationException
 	{
 		if (instance == null)
 		{
 			instance = new Google(userID);
 		}
-		
+
 		return instance;
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.base.csp.CSP#initTree()
 	 */
@@ -133,7 +131,7 @@ public class Google extends CSP<File, MediaHttpDownloader, Drive.Files.Insert> i
 		remoteFileTree.updateFromSource();
 		buildFileTree(false);
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.base.csp.CSP#calculateRemoteFreeSpace()
 	 */
@@ -152,7 +150,7 @@ public class Google extends CSP<File, MediaHttpDownloader, Drive.Files.Insert> i
 			throw new OperationException("Couldn't get free space! " + e.getMessage());
 		}
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.base.csp.CSP#download(com.yagasoft.overcast.base.container.remote.RemoteFile,
 	 *      com.yagasoft.overcast.base.container.local.LocalFolder, boolean,
@@ -173,7 +171,7 @@ public class Google extends CSP<File, MediaHttpDownloader, Drive.Files.Insert> i
 				{
 					child.delete(new IOperationListener()
 					{
-						
+
 						@Override
 						public void operationProgressChanged(OperationEvent event)
 						{}
@@ -185,33 +183,33 @@ public class Google extends CSP<File, MediaHttpDownloader, Drive.Files.Insert> i
 				}
 			}
 		}
-		
+
 		// initialise downloader.
 		MediaHttpDownloader downloader = new MediaHttpDownloader(Google.getHttpTransport()
 				, Google.driveService.getRequestFactory().getInitializer());
 		downloader.setDirectDownloadEnabled(false);
 		downloader.setProgressListener(this);
 		downloader.setChunkSize(MediaHttpUploader.MINIMUM_CHUNK_SIZE);
-		
+
 		// create a download job and add it to the queue.
 		DownloadJob downloadJob = new DownloadJob((RemoteFile) file, parent, overwrite, downloader, null);
 		downloadQueue.add(downloadJob);
-		
+
 		// add the transfer listener to the job object.
 		downloadJob.addProgressListener(listener);
-		
+
 		nextDownloadJob();		// check if this job can be executed right away.
-		
+
 		return downloadJob;
 	}
-	
+
 	@Override
 	protected void initiateDownload() throws TransferException
 	{
-		
+
 		// save the download thread to be able to cancel the download if needed.
 		((DownloadJob) currentDownloadJob).setCanceller(currentDownloadThread);
-		
+
 		try
 		{
 			// ... get a stream to the file on the local disk ...
@@ -227,9 +225,9 @@ public class Google extends CSP<File, MediaHttpDownloader, Drive.Files.Insert> i
 			e.printStackTrace();
 			throw new TransferException("Failed to download file! " + e.getMessage());
 		}
-		
+
 	}
-	
+
 	/**
 	 * @see com.google.api.client.googleapis.media.MediaHttpDownloaderProgressListener#progressChanged(com.google.api.client.googleapis.media.MediaHttpDownloader)
 	 */
@@ -241,15 +239,15 @@ public class Google extends CSP<File, MediaHttpDownloader, Drive.Files.Insert> i
 			case MEDIA_IN_PROGRESS:
 				currentDownloadJob.progress((float) downloader.getProgress());		// notify listeners of progress.
 				break;
-			
+
 			case MEDIA_COMPLETE:
 			default:
 				System.out.println(downloader.getDownloadState());
 				break;
 		}
-		
+
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.base.csp.CSP#upload(com.yagasoft.overcast.base.container.local.LocalFile,
 	 *      com.yagasoft.overcast.base.container.remote.RemoteFolder, boolean,
@@ -268,7 +266,7 @@ public class Google extends CSP<File, MediaHttpDownloader, Drive.Files.Insert> i
 				{
 					child.delete(new IOperationListener()
 					{
-						
+
 						@Override
 						public void operationProgressChanged(OperationEvent event)
 						{}
@@ -280,37 +278,37 @@ public class Google extends CSP<File, MediaHttpDownloader, Drive.Files.Insert> i
 				}
 			}
 		}
-		
+
 		// prepare file information to be passed to Google service.
 		File metadata = new File();
 		metadata.setTitle(file.getName());
 		metadata.setMimeType(file.getType());
 		metadata.setParents(Arrays.asList(new ParentReference().setId(parent.getId())));
-		
+
 		// file content object to be passed as well.
 		FileContent content = new FileContent(file.getType(), file.getSourceObject().toFile());
-		
+
 		try
 		{
 			// pass info and content object, and create the uploader.
 			Drive.Files.Insert insert = Google.driveService.files().insert(metadata, content);
-			
+
 			// initialise the uploader.
 			MediaHttpUploader uploader = insert.getMediaHttpUploader();
 			uploader.setDirectUploadEnabled(false);
 			uploader.setProgressListener(this);
 			uploader.setChunkSize(MediaHttpUploader.MINIMUM_CHUNK_SIZE);
-			
+
 			// create an object for the file that's going to be uploaded to be linked to.
 			RemoteFile remoteFile = factory.createFile();
-			
+
 			// create an upload job.
 			UploadJob uploadJob = new UploadJob(file, remoteFile, (RemoteFolder) parent
 					, overwrite, insert, null);
 			uploadQueue.add(uploadJob);		// add it to the queue.
 			uploadJob.addProgressListener(listener);
 			nextUploadJob();		// check if it can be executed immediately.
-			
+
 			return uploadJob;
 		}
 		catch (IOException e)
@@ -319,7 +317,7 @@ public class Google extends CSP<File, MediaHttpDownloader, Drive.Files.Insert> i
 			throw new TransferException("Failed to upload file! " + e.getMessage());
 		}
 	}
-	
+
 	@Override
 	protected void initiateUpload() throws TransferException
 	{
@@ -327,7 +325,7 @@ public class Google extends CSP<File, MediaHttpDownloader, Drive.Files.Insert> i
 		{
 			// save the upload thread to be able to cancel the upload if needed.
 			((UploadJob) currentUploadJob).setCanceller(currentUploadThread);
-			
+
 			currentUploadJob.success(currentUploadJob.getCspTransferer().execute());
 		}
 		catch (IOException e)
@@ -336,7 +334,7 @@ public class Google extends CSP<File, MediaHttpDownloader, Drive.Files.Insert> i
 			throw new TransferException("Failed to upload file! " + e.getMessage());
 		}
 	}
-	
+
 	/**
 	 * @see com.google.api.client.googleapis.media.MediaHttpUploaderProgressListener#progressChanged(com.google.api.client.googleapis.media.MediaHttpUploader)
 	 */
@@ -348,28 +346,28 @@ public class Google extends CSP<File, MediaHttpDownloader, Drive.Files.Insert> i
 			case INITIATION_COMPLETE:
 				currentUploadJob.notifyProgressListeners(TransferState.INITIALISED, 0.0f);
 				break;
-			
+
 			case MEDIA_IN_PROGRESS:
 				currentUploadJob.progress((float) uploader.getProgress());
 				break;
-			
+
 			case MEDIA_COMPLETE:
 			default:
 				System.out.println(uploader.getUploadState());
 				break;
 		}
 	}
-	
+
 	@Override
 	public com.yagasoft.overcast.base.container.remote.RemoteFactory<?, ?, ?, ?> getAbstractFactory()
 	{
 		return factory;
 	}
-	
+
 	// //////////////////////////////////////////////////////////////////////////////////////
 	// #region Getters and setters.
 	// ======================================================================================
-	
+
 	/**
 	 * @return the httpTransport
 	 */
@@ -377,7 +375,7 @@ public class Google extends CSP<File, MediaHttpDownloader, Drive.Files.Insert> i
 	{
 		return httpTransport;
 	}
-	
+
 	/**
 	 * @param httpTransport
 	 *            the httpTransport to set
@@ -386,7 +384,7 @@ public class Google extends CSP<File, MediaHttpDownloader, Drive.Files.Insert> i
 	{
 		Google.httpTransport = httpTransport;
 	}
-	
+
 	/**
 	 * @return the driveService
 	 */
@@ -394,7 +392,7 @@ public class Google extends CSP<File, MediaHttpDownloader, Drive.Files.Insert> i
 	{
 		return driveService;
 	}
-	
+
 	/**
 	 * @param driveService
 	 *            the driveService to set
@@ -403,7 +401,7 @@ public class Google extends CSP<File, MediaHttpDownloader, Drive.Files.Insert> i
 	{
 		Google.driveService = driveService;
 	}
-	
+
 	/**
 	 * @return the jsonFactory
 	 */
@@ -411,7 +409,7 @@ public class Google extends CSP<File, MediaHttpDownloader, Drive.Files.Insert> i
 	{
 		return JSON_FACTORY;
 	}
-	
+
 	/**
 	 * @return the factory
 	 */
@@ -419,7 +417,7 @@ public class Google extends CSP<File, MediaHttpDownloader, Drive.Files.Insert> i
 	{
 		return factory;
 	}
-	
+
 	/**
 	 * @param factory
 	 *            the factory to set
@@ -428,9 +426,9 @@ public class Google extends CSP<File, MediaHttpDownloader, Drive.Files.Insert> i
 	{
 		Google.factory = factory;
 	}
-	
+
 	// ======================================================================================
 	// #endregion Getters and setters.
 	// //////////////////////////////////////////////////////////////////////////////////////
-	
+
 }

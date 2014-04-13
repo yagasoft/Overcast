@@ -1,11 +1,11 @@
-/* 
+/*
  * Copyright (C) 2011-2014 by Ahmed Osama el-Sawalhy
- * 
+ *
  *		Modified MIT License (GPL v3 compatible)
  * 			License terms are in a separate file (license.txt)
- * 
+ *
  *		Project/File: Overcast/com.yagasoft.overcast.google/Authorisation.java
- * 
+ *
  *			Modified: 27-Mar-2014 (16:14:42)
  *			   Using: Eclipse J-EE / JDK 7 / Windows 8.1 x64
  */
@@ -37,42 +37,40 @@ import com.yagasoft.overcast.exception.AuthorisationException;
  */
 public class Authorisation extends OAuth
 {
-	
+
 	/** Directory to store user credentials. */
 	protected Path							dataStoreFolder;
-	
+
 	/**
 	 * Global instance of the {@link DataStoreFactory}.
 	 */
 	protected FileDataStoreFactory			dataStoreFactory;
-	
+
 	/** The credential. */
 	protected Credential					credential;
-	
+
 	/** The flow. */
 	protected GoogleAuthorizationCodeFlow	flow;
-	
+
 	/**
 	 * @param info
 	 */
-	public Authorisation(Path infoFile) throws AuthorisationException
+	public Authorisation(String infoFile) throws AuthorisationException
 	{
-		super(infoFile.getParent(), infoFile);
-		userID = "user";
+		super("user", infoFile);
 	}
-	
+
 	/**
 	 * @param userID
 	 * @param password
 	 * @param info
 	 * @throws AuthorisationException
 	 */
-	public Authorisation(String userID, Path infoFile) throws AuthorisationException
+	public Authorisation(String userID, String infoFile) throws AuthorisationException
 	{
-		super(infoFile.getParent(), infoFile);
-		this.userID = userID;
+		super(userID, infoFile);
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.base.csp.authorisation.Authorisation#authorise()
 	 */
@@ -82,7 +80,7 @@ public class Authorisation extends OAuth
 		// go online and get the token.
 		acquirePermission();
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.base.csp.authorisation.OAuth#acquirePermission()
 	 */
@@ -93,18 +91,18 @@ public class Authorisation extends OAuth
 		try
 		{
 			// the folder where Google API stores creds.
-			dataStoreFolder = parent;
+			dataStoreFolder = tokenParent;
 			dataStoreFactory = new FileDataStoreFactory(dataStoreFolder.toFile());
-			
+
 			// load the JSON containing info required for identifying the dev account.
 			GoogleClientSecrets clientSecrets =
 					GoogleClientSecrets.load(Google.JSON_FACTORY,
 							new InputStreamReader(Files.newInputStream(infoFile)));
-			
+
 			// dev info contained in the JSON.
 			String clientId = clientSecrets.getDetails().getClientId();
 			String clientSecret = clientSecrets.getDetails().getClientSecret();
-			
+
 			// problem?!
 			if (clientId.startsWith("Enter") || clientSecret.startsWith("Enter"))
 			{
@@ -112,12 +110,12 @@ public class Authorisation extends OAuth
 						+ "into google_secrets.json");
 				throw new AuthorisationException("Failed to authorise!");
 			}
-			
+
 			// set up authorisation code flow
 			flow = new GoogleAuthorizationCodeFlow.Builder(Google.httpTransport, Google.JSON_FACTORY, clientSecrets,
 					Collections.singleton(DriveScopes.DRIVE))
 					.setDataStoreFactory(dataStoreFactory).setAccessType("offline").build();
-			
+
 			credential = new AuthorizationCodeInstalledApp(flow, new LocalServerReceiver()).authorize(userID);
 		}
 		catch (IOException e)
@@ -125,9 +123,9 @@ public class Authorisation extends OAuth
 			e.printStackTrace();
 			throw new AuthorisationException("Failed to authorise! " + e.getMessage());
 		}
-		
+
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.base.csp.authorisation.OAuth#reacquirePermission()
 	 */
@@ -136,7 +134,7 @@ public class Authorisation extends OAuth
 	{
 		acquirePermission();
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.base.csp.authorisation.OAuth#saveToken()
 	 */
@@ -145,7 +143,7 @@ public class Authorisation extends OAuth
 	{
 		throw new UnsupportedOperationException("Google handles saving tokens automatically!");
 	}
-	
+
 	/**
 	 * @return the credential
 	 */
@@ -153,7 +151,7 @@ public class Authorisation extends OAuth
 	{
 		return credential;
 	}
-	
+
 	/**
 	 * @param credential
 	 *            the credential to set
@@ -162,5 +160,5 @@ public class Authorisation extends OAuth
 	{
 		this.credential = credential;
 	}
-	
+
 }
