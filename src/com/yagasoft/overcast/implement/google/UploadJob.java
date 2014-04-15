@@ -1,12 +1,12 @@
-/*
+/* 
  * Copyright (C) 2011-2014 by Ahmed Osama el-Sawalhy
- *
- *		Modified MIT License (GPL v3 compatible)
- * 			License terms are in a separate file (license.txt)
- *
- *		Project/File: Overcast/com.yagasoft.overcast.google/UploadJob.java
- *
- *			Modified: 18-Mar-2014 (19:34:12)
+ * 
+ *		The Modified MIT Licence (GPL v3 compatible)
+ * 			License terms are in a separate file (LICENCE.md)
+ * 
+ *		Project/File: Overcast/com.yagasoft.overcast.implement.google/UploadJob.java
+ * 
+ *			Modified: Apr 15, 2014 (1:54:35 PM)
  *			   Using: Eclipse J-EE / JDK 7 / Windows 8.1 x64
  */
 
@@ -19,9 +19,13 @@ import com.yagasoft.overcast.base.container.local.LocalFile;
 import com.yagasoft.overcast.base.container.transfer.TransferState;
 
 
+/**
+ * @see com.yagasoft.overcast.base.container.transfer.UploadJob
+ */
 public class UploadJob extends com.yagasoft.overcast.base.container.transfer.UploadJob<Drive.Files.Insert, File>
 {
 
+	/** The canceller to cancel this transfer. */
 	Thread	canceller;
 
 	/**

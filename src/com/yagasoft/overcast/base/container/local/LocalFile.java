@@ -1,12 +1,12 @@
-/*
+/* 
  * Copyright (C) 2011-2014 by Ahmed Osama el-Sawalhy
- *
- *		Modified MIT License (GPL v3 compatible)
- * 			License terms are in a separate file (license.txt)
- *
- *		Project/File: Overcast/com.yagasoft.overcast.container.local/LocalFile.java
- *
- *			Modified: 27-Mar-2014 (16:12:38)
+ * 
+ *		The Modified MIT Licence (GPL v3 compatible)
+ * 			License terms are in a separate file (LICENCE.md)
+ * 
+ *		Project/File: Overcast/com.yagasoft.overcast.base.container.local/LocalFile.java
+ * 
+ *			Modified: Apr 15, 2014 (8:08:39 AM)
  *			   Using: Eclipse J-EE / JDK 7 / Windows 8.1 x64
  */
 
@@ -23,6 +23,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import com.yagasoft.logger.Logger;
 import com.yagasoft.overcast.base.container.File;
 import com.yagasoft.overcast.base.container.Folder;
 import com.yagasoft.overcast.base.container.operation.IOperationListener;
@@ -89,10 +90,13 @@ public class LocalFile extends File<Path>
 	@Override
 	public synchronized boolean isExist() throws AccessException
 	{
+		Logger.newSection("checking file existence: " + path);
+		
 		// if the Java library says the file doesn't exist, and at same time it says the file doesn't 'not exist', then ...
 		// obviously a problem.
 		if ( !Files.exists(sourceObject) && !Files.notExists(sourceObject))
 		{
+			Logger.newEntry("problem!");
 			throw new AccessException("Can't determine if file exists or not!");
 		}
 		
@@ -105,14 +109,19 @@ public class LocalFile extends File<Path>
 	@Override
 	public synchronized void updateInfo()
 	{
+		Logger.newSection("updating file info: " + path);
+		
 		try
 		{
 			updateFromSource();	// updating the info locally costs nothing, so do it automatically.
 		}
 		catch (OperationException e)
 		{
+			Logger.newEntry("problem!");
 			e.printStackTrace();
 		}
+		
+		Logger.newEntry("done!");
 	}
 	
 	/**
@@ -121,6 +130,8 @@ public class LocalFile extends File<Path>
 	@Override
 	public synchronized void updateFromSource() throws OperationException
 	{
+		Logger.newSection("updating info from source: " + path);
+		
 		name = sourceObject.getFileName().toString();
 		path = sourceObject.toAbsolutePath().toString();
 		type = URLConnection.guessContentTypeFromName(path);		// guess type of file (MIME)
@@ -137,6 +148,8 @@ public class LocalFile extends File<Path>
 		}
 		
 		generateId();
+		
+		Logger.newEntry("done!");
 	}
 	
 	/**
@@ -146,6 +159,8 @@ public class LocalFile extends File<Path>
 	public synchronized LocalFile copy(Folder<?> destination, boolean overwrite, IOperationListener listener)
 			throws OperationException
 	{
+		Logger.newSection("copying file " + path);
+		
 		try
 		{
 			return new LocalFile(Files.copy(
@@ -160,6 +175,8 @@ public class LocalFile extends File<Path>
 		}
 		catch (IOException e)
 		{
+			Logger.newEntry("problem!");
+			
 			e.printStackTrace();
 			throw new OperationException("Failed to copy file! " + e.getMessage());
 		}
@@ -172,6 +189,8 @@ public class LocalFile extends File<Path>
 	public synchronized void move(Folder<?> destination, boolean overwrite, IOperationListener listener)
 			throws OperationException
 	{
+		Logger.newSection("moving file: " + path);
+		
 		try
 		{
 			sourceObject = Files.move(
@@ -183,9 +202,13 @@ public class LocalFile extends File<Path>
 							new CopyOption[0]);
 			
 			updateFromSource();		// need to update new path.
+			
+			Logger.newEntry("done!");
 		}
 		catch (IOException e)
 		{
+			Logger.newEntry("problem!");
+			
 			e.printStackTrace();
 			throw new OperationException("Failed to move file! " + e.getMessage());
 		}
@@ -197,14 +220,20 @@ public class LocalFile extends File<Path>
 	@Override
 	public synchronized void rename(String newName, IOperationListener listener) throws OperationException
 	{
+		Logger.newSection("renaming file: " + path);
+		
 		try
 		{
 			// renaming is effectively moving under a new name.
 			sourceObject = Files.move(sourceObject, sourceObject.resolveSibling(newName));
 			updateFromSource();
+			
+			Logger.newEntry("done!");
 		}
 		catch (IOException e)
 		{
+			Logger.newEntry("problem!");
+			
 			e.printStackTrace();
 			throw new OperationException("Failed to rename file! " + e.getMessage());
 		}
@@ -216,6 +245,8 @@ public class LocalFile extends File<Path>
 	@Override
 	public synchronized void delete(IOperationListener listener) throws OperationException
 	{
+		Logger.newSection("deleting file: " + path);
+		
 		try
 		{
 			Files.deleteIfExists(sourceObject);
@@ -225,9 +256,13 @@ public class LocalFile extends File<Path>
 			{
 				parent.remove(this);
 			}
+			
+			Logger.newEntry("done!");
 		}
 		catch (IOException e)
 		{
+			Logger.newEntry("problem!");
+			
 			e.printStackTrace();
 			throw new OperationException("Failed to delete file! " + e.getMessage());
 		}

@@ -1,12 +1,12 @@
-/*
+/* 
  * Copyright (C) 2011-2014 by Ahmed Osama el-Sawalhy
- *
- *		Modified MIT License (GPL v3 compatible)
- * 			License terms are in a separate file (license.txt)
- *
- *		Project/File: Overcast/com.yagasoft.overcast.google/RemoteFile.java
- *
- *			Modified: 27-Mar-2014 (16:15:03)
+ * 
+ *		The Modified MIT Licence (GPL v3 compatible)
+ * 			License terms are in a separate file (LICENCE.md)
+ * 
+ *		Project/File: Overcast/com.yagasoft.overcast.implement.dropbox/RemoteFile.java
+ * 
+ *			Modified: Apr 15, 2014 (9:50:40 AM)
  *			   Using: Eclipse J-EE / JDK 7 / Windows 8.1 x64
  */
 
@@ -18,6 +18,7 @@ import java.net.URL;
 
 import com.dropbox.core.DbxEntry;
 import com.dropbox.core.DbxException;
+import com.yagasoft.logger.Logger;
 import com.yagasoft.overcast.base.container.Container;
 import com.yagasoft.overcast.base.container.Folder;
 import com.yagasoft.overcast.base.container.operation.IOperationListener;
@@ -28,11 +29,16 @@ import com.yagasoft.overcast.exception.AccessException;
 import com.yagasoft.overcast.exception.OperationException;
 
 
+/**
+ * RemoteFile of Dropbox.
+ * 
+ * @see com.yagasoft.overcast.base.container.remote.RemoteFile
+ */
 public class RemoteFile extends com.yagasoft.overcast.base.container.remote.RemoteFile<DbxEntry.File>
 {
 	
 	/**
-	 * Better use the factory in Google class.
+	 * Better use the factory in Dropbox class.
 	 */
 	public RemoteFile()
 	{}
@@ -42,9 +48,7 @@ public class RemoteFile extends com.yagasoft.overcast.base.container.remote.Remo
 	 */
 	@Override
 	public void generateId()
-	{	
-		
-	}
+	{}
 	
 	/**
 	 * @see com.yagasoft.overcast.base.container.Container#isExist()
@@ -52,6 +56,8 @@ public class RemoteFile extends com.yagasoft.overcast.base.container.remote.Remo
 	@Override
 	public synchronized boolean isExist() throws AccessException
 	{
+		Logger.newSection("checking existence of " + path);
+		
 		// if fetching meta-data of the file fails, then it doesn't exist, probably.
 		try
 		{
@@ -59,6 +65,8 @@ public class RemoteFile extends com.yagasoft.overcast.base.container.remote.Remo
 		}
 		catch (DbxException e)
 		{
+			Logger.newEntry("problem!");
+			
 			e.printStackTrace();
 			throw new AccessException("Couldn't determine existence! " + e.getMessage());
 		}
@@ -70,6 +78,8 @@ public class RemoteFile extends com.yagasoft.overcast.base.container.remote.Remo
 	@Override
 	public synchronized void updateInfo()
 	{
+		Logger.newSection("updating file info " + path);
+		
 		id = sourceObject.rev;
 		name = sourceObject.name;
 		type = null;
@@ -84,6 +94,7 @@ public class RemoteFile extends com.yagasoft.overcast.base.container.remote.Remo
 			size = 0;
 		}
 		
+		Logger.newEntry("done!");
 	}
 	
 	/**
@@ -92,6 +103,8 @@ public class RemoteFile extends com.yagasoft.overcast.base.container.remote.Remo
 	@Override
 	public synchronized void updateFromSource() throws OperationException
 	{
+		Logger.newSection("updating file info from the csp " + path);
+		
 		try
 		{
 			sourceObject = Dropbox.dropboxService.getMetadata((sourceObject == null) ? path : sourceObject.path).asFile();
@@ -105,9 +118,13 @@ public class RemoteFile extends com.yagasoft.overcast.base.container.remote.Remo
 			{
 				link = null;
 			}
+			
+			Logger.newEntry("done!");
 		}
 		catch (DbxException e)
 		{
+			Logger.newEntry("problem!");
+			
 			e.printStackTrace();
 			throw new OperationException("Couldn't update info! " + e.getMessage());
 		}
@@ -120,6 +137,8 @@ public class RemoteFile extends com.yagasoft.overcast.base.container.remote.Remo
 	public synchronized Container<?> copy(Folder<?> destination, boolean overwrite, IOperationListener listener)
 			throws OperationException
 	{
+		Logger.newSection("copying file " + path);
+		
 		addOperationListener(listener, Operation.COPY);
 		
 		Container<?> existingFile = destination.searchByName(name, false);
@@ -148,10 +167,15 @@ public class RemoteFile extends com.yagasoft.overcast.base.container.remote.Remo
 			RemoteFile file = Dropbox.getFactory().createFile(sourceObject, false);
 			destination.add(file);
 			notifyOperationListeners(Operation.COPY, OperationState.COMPLETED, 1.0f);
+			
+			Logger.newEntry("done!");
+			
 			return file;
 		}
 		catch (DbxException | OperationException e)
 		{
+			Logger.newEntry("problem!");
+			
 			e.printStackTrace();
 			notifyOperationListeners(Operation.COPY, OperationState.FAILED, 0.0f);
 			throw new OperationException("Copy of file failed! " + e.getMessage());
@@ -169,6 +193,8 @@ public class RemoteFile extends com.yagasoft.overcast.base.container.remote.Remo
 	public synchronized void move(Folder<?> destination, boolean overwrite, IOperationListener listener)
 			throws OperationException
 	{
+		Logger.newSection("moving file " + path);
+		
 		addOperationListener(listener, Operation.MOVE);
 		
 		Container<?> existingFile = destination.searchByName(name, false);
@@ -197,9 +223,13 @@ public class RemoteFile extends com.yagasoft.overcast.base.container.remote.Remo
 			parent.remove(this);
 			destination.add(this);
 			notifyOperationListeners(Operation.MOVE, OperationState.COMPLETED, 1.0f);
+			
+			Logger.newEntry("done!");
 		}
 		catch (DbxException | OperationException e)
 		{
+			Logger.newEntry("problem!");
+			
 			e.printStackTrace();
 			notifyOperationListeners(Operation.MOVE, OperationState.FAILED, 0.0f);
 			throw new OperationException("Move of file failed! " + e.getMessage());
@@ -216,6 +246,8 @@ public class RemoteFile extends com.yagasoft.overcast.base.container.remote.Remo
 	@Override
 	public synchronized void rename(String newName, IOperationListener listener) throws OperationException
 	{
+		Logger.newSection("renaming file " + path);
+		
 		addOperationListener(listener, Operation.RENAME);
 		
 		Container<?> existingFile = parent.searchByName(newName, false);
@@ -229,9 +261,13 @@ public class RemoteFile extends com.yagasoft.overcast.base.container.remote.Remo
 			
 			Dropbox.dropboxService.move(path, parent.getPath() + "/" + newName);
 			notifyOperationListeners(Operation.RENAME, OperationState.COMPLETED, 1.0f);
+			
+			Logger.newEntry("done!");
 		}
 		catch (DbxException | OperationException e)
 		{
+			Logger.newEntry("problem!");
+			
 			e.printStackTrace();
 			notifyOperationListeners(Operation.RENAME, OperationState.FAILED, 0.0f);
 			throw new OperationException("Couldn't rename file! " + e.getMessage());
@@ -248,6 +284,8 @@ public class RemoteFile extends com.yagasoft.overcast.base.container.remote.Remo
 	@Override
 	public synchronized void delete(IOperationListener listener) throws OperationException
 	{
+		Logger.newSection("deleting file " + path);
+		
 		addOperationListener(listener, Operation.DELETE);
 		
 		try
@@ -255,9 +293,13 @@ public class RemoteFile extends com.yagasoft.overcast.base.container.remote.Remo
 			Dropbox.dropboxService.delete(path);
 			parent.remove(this);
 			notifyOperationListeners(Operation.DELETE, OperationState.COMPLETED, 1.0f);
+			
+			Logger.newEntry("done!");
 		}
 		catch (DbxException e)
 		{
+			Logger.newEntry("problem!");
+			
 			e.printStackTrace();
 			notifyOperationListeners(Operation.DELETE, OperationState.FAILED, 0.0f);
 			throw new OperationException("Couldn't delete file! " + e.getMessage());

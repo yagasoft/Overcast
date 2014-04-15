@@ -1,12 +1,12 @@
-/*
+/* 
  * Copyright (C) 2011-2014 by Ahmed Osama el-Sawalhy
- *
- *		Modified MIT License (GPL v3 compatible)
- * 			License terms are in a separate file (license.txt)
- *
- *		Project/File: Overcast/com.yagasoft.overcast.container.transfer/DownloadJob.java
- *
- *			Modified: 18-Mar-2014 (16:26:36)
+ * 
+ *		The Modified MIT Licence (GPL v3 compatible)
+ * 			License terms are in a separate file (LICENCE.md)
+ * 
+ *		Project/File: Overcast/com.yagasoft.overcast.base.container.transfer/DownloadJob.java
+ * 
+ *			Modified: Apr 15, 2014 (9:24:26 AM)
  *			   Using: Eclipse J-EE / JDK 7 / Windows 8.1 x64
  */
 
@@ -15,6 +15,7 @@ package com.yagasoft.overcast.base.container.transfer;
 
 import java.nio.file.Paths;
 
+import com.yagasoft.logger.Logger;
 import com.yagasoft.overcast.base.container.File;
 import com.yagasoft.overcast.base.container.Folder;
 import com.yagasoft.overcast.base.container.local.LocalFile;
@@ -67,6 +68,7 @@ public abstract class DownloadJob<T> extends TransferJob<T>
 		localFile.setRemoteMapping(remoteFile);
 		remoteFile.setLocalMapping(localFile);
 		parent.add(localFile);
+		Logger.newEntry("downloaded successfully " + localFile.getPath());
 		notifyProgressListeners(TransferState.COMPLETED, 1.0f);
 	}
 	
@@ -77,9 +79,7 @@ public abstract class DownloadJob<T> extends TransferJob<T>
 	 *            the path
 	 */
 	public void success(String path)
-	{	
-		
-	}
+	{}
 	
 	/**
 	 * @see com.yagasoft.overcast.base.container.transfer.TransferJob#failure()

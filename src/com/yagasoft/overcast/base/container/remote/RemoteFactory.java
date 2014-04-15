@@ -1,12 +1,12 @@
-/*
+/* 
  * Copyright (C) 2011-2014 by Ahmed Osama el-Sawalhy
- *
- *		Modified MIT License (GPL v3 compatible)
- * 			License terms are in a separate file (license.txt)
- *
- *		Project/File: Overcast/com.yagasoft.overcast.container.remote/RemoteFactory.java
- *
- *			Modified: 27-Mar-2014 (16:13:08)
+ * 
+ *		The Modified MIT Licence (GPL v3 compatible)
+ * 			License terms are in a separate file (LICENCE.md)
+ * 
+ *		Project/File: Overcast/com.yagasoft.overcast.base.container.remote/RemoteFactory.java
+ * 
+ *			Modified: Apr 15, 2014 (9:14:17 AM)
  *			   Using: Eclipse J-EE / JDK 7 / Windows 8.1 x64
  */
 
@@ -16,6 +16,7 @@ package com.yagasoft.overcast.base.container.remote;
 import java.util.ArrayList;
 import java.util.Arrays;
 
+import com.yagasoft.logger.Logger;
 import com.yagasoft.overcast.base.container.Container;
 import com.yagasoft.overcast.base.csp.CSP;
 import com.yagasoft.overcast.exception.OperationException;
@@ -37,7 +38,6 @@ import com.yagasoft.overcast.exception.OperationException;
  *            The file type (file type from this API) must be passed to this class.<br />
  *            It's needed to assist in creating the {@link RemoteFile}.
  */
-// ...
 @SuppressWarnings("rawtypes")
 public abstract class RemoteFactory<FolderSourceType, FolderType extends RemoteFolder<FolderSourceType>, FileSourceType, FileType extends RemoteFile<FileSourceType>>
 {
@@ -124,7 +124,6 @@ public abstract class RemoteFactory<FolderSourceType, FolderType extends RemoteF
 	 * @param container
 	 *            the container created
 	 */
-	// this is an abstract class; we can't know the types implemented by future devs.
 	@SuppressWarnings("unchecked")
 	protected void postObjectCreation(Container<?> container)
 	{
@@ -255,6 +254,8 @@ public abstract class RemoteFactory<FolderSourceType, FolderType extends RemoteF
 		}
 		catch (InstantiationException | IllegalAccessException e)
 		{
+			Logger.post("problem creating folder object " + path);
+			
 			e.printStackTrace();
 		}
 		
@@ -281,6 +282,8 @@ public abstract class RemoteFactory<FolderSourceType, FolderType extends RemoteF
 		}
 		catch (InstantiationException | IllegalAccessException e)
 		{
+			Logger.post("problem creating the file object " + path);
+			
 			e.printStackTrace();
 		}
 		

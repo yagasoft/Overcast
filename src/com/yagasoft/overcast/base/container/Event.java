@@ -1,12 +1,12 @@
 /* 
  * Copyright (C) 2011-2014 by Ahmed Osama el-Sawalhy
  * 
- *		Modified MIT License (GPL v3 compatible)
- * 			License terms are in a separate file (license.txt)
+ *		The Modified MIT Licence (GPL v3 compatible)
+ * 			License terms are in a separate file (LICENCE.md)
  * 
- *		Project/File: Overcast/com.yagasoft.overcast.container/Event.java
+ *		Project/File: Overcast/com.yagasoft.overcast.base.container/Event.java
  * 
- *			Modified: 27-Mar-2014 (16:12:08)
+ *			Modified: Apr 14, 2014 (2:26:59 PM)
  *			   Using: Eclipse J-EE / JDK 7 / Windows 8.1 x64
  */
 
@@ -14,8 +14,7 @@ package com.yagasoft.overcast.base.container;
 
 
 /**
- * @author Ahmed
- * 
+ * This encapsulates the vital information needed to be known in case of a container event.
  */
 public abstract class Event
 {
@@ -23,6 +22,12 @@ public abstract class Event
 	/** The container. */
 	protected Container<?>	container;
 	
+	/**
+	 * Instantiates a new event.
+	 * 
+	 * @param container
+	 *            the container
+	 */
 	public Event(Container<?> container)
 	{
 		this.container = container;

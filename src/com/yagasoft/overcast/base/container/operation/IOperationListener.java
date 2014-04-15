@@ -1,12 +1,12 @@
-/*
+/* 
  * Copyright (C) 2011-2014 by Ahmed Osama el-Sawalhy
- *
- *		Modified MIT License (GPL v3 compatible)
- * 			License terms are in a separate file (license.txt)
- *
- *		Project/File: Overcast/com.yagasoft.overcast.container.operation/IOperationListener.java
- *
- *			Modified: 27-Mar-2014 (16:11:01)
+ * 
+ *		The Modified MIT Licence (GPL v3 compatible)
+ * 			License terms are in a separate file (LICENCE.md)
+ * 
+ *		Project/File: Overcast/com.yagasoft.overcast.base.container.operation/IOperationListener.java
+ * 
+ *			Modified: Apr 15, 2014 (9:06:07 AM)
  *			   Using: Eclipse J-EE / JDK 7 / Windows 8.1 x64
  */
 
@@ -28,7 +28,7 @@ public interface IOperationListener
 {
 	
 	/**
-	 * Progress has changed.
+	 * Progress has changed. It might also be invoked in case of success or failure.
 	 * 
 	 * @param event
 	 *            the event object containing info about the change.

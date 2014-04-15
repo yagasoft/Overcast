@@ -1,3 +1,6 @@
+
+package com.yagasoft.overcast.implement.dropbox.authorisation;
+
 /*
  * Copyright (c) 2012 Google Inc.
  *
@@ -11,9 +14,6 @@
  * or implied. See the License for the specific language governing permissions and limitations under
  * the License.
  */
-
-package com.yagasoft.overcast.implement.dropbox.authorisation;
-
 
 import java.io.IOException;
 import java.io.PrintWriter;

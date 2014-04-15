@@ -1,12 +1,12 @@
 /* 
  * Copyright (C) 2011-2014 by Ahmed Osama el-Sawalhy
  * 
- *		Modified MIT License (GPL v3 compatible)
- * 			License terms are in a separate file (license.txt)
+ *		The Modified MIT Licence (GPL v3 compatible)
+ * 			License terms are in a separate file (LICENCE.md)
  * 
- *		Project/File: Overcast/com.yagasoft.overcast.container.transfer/ITransferrable.java
+ *		Project/File: Overcast/com.yagasoft.overcast.base.container.transfer/ITransferrable.java
  * 
- *			Modified: 18-Mar-2014 (15:00:26)
+ *			Modified: Apr 15, 2014 (9:28:11 AM)
  *			   Using: Eclipse J-EE / JDK 7 / Windows 8.1 x64
  */
 

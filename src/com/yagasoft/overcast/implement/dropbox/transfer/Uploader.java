@@ -1,12 +1,12 @@
-/*
+/* 
  * Copyright (C) 2011-2014 by Ahmed Osama el-Sawalhy
- *
- *		Modified MIT License (GPL v3 compatible)
- * 			License terms are in a separate file (license.txt)
- *
- *		Project/File: Overcast/com.yagasoft.overcast.dropbox/Uploader.java
- *
- *			Modified: 11-Apr-2014 (23:20:03)
+ * 
+ *		The Modified MIT Licence (GPL v3 compatible)
+ * 			License terms are in a separate file (LICENCE.md)
+ * 
+ *		Project/File: Overcast/com.yagasoft.overcast.implement.dropbox.transfer/Uploader.java
+ * 
+ *			Modified: Apr 15, 2014 (1:20:57 PM)
  *			   Using: Eclipse J-EE / JDK 7 / Windows 8.1 x64
  */
 
@@ -32,26 +32,45 @@ import com.yagasoft.overcast.exception.TransferException;
 import com.yagasoft.overcast.implement.dropbox.Dropbox;
 
 
+/**
+ * Dropbox doesn't handle uploading files automatically, so this class encapsulates the methods required.
+ */
 public class Uploader
 {
 
+	/** The size. */
 	long							size;
+	
+	/** The chunk size. */
 	int								chunkSize	= 16 * 1024;
+	
+	/** The remote parent path. */
 	String							remoteParentPath;
+	
+	/** The local file path. */
 	String							localFilePath;
+	
+	/** The local file. */
 	Path							localFile;
+	
+	/** The upload job. */
 	UploadJob						uploadJob;
+	
+	/** flag to stop uploading. */
 	boolean							stop		= false;
 
+	/** The listeners to this upload. */
 	ArrayList<IProgressListener>	listeners	= new ArrayList<IProgressListener>();
 
 	/**
 	 * Instantiates a new uploader.
-	 *
-	 * @param remoteParent
-	 *            Remote parent.
+	 * 
+	 * @param remoteParentPath
+	 *            the remote parent path
 	 * @param localFilePath
 	 *            Local file path.
+	 * @param uploadJob
+	 *            the upload job
 	 * @throws TransferException
 	 *             the transfer exception
 	 */
@@ -65,6 +84,7 @@ public class Uploader
 
 		try
 		{
+			// fetch the file size to calculate upload completion.
 			size = Files.size(localFile);
 		}
 		catch (IOException e)
@@ -74,8 +94,18 @@ public class Uploader
 		}
 	}
 
+	/**
+	 * Start the upload based on the parameters set.
+	 * 
+	 * @return the file
+	 * @throws TransferException
+	 *             the transfer exception
+	 */
 	public File startUpload() throws TransferException
 	{
+		Logger.newEntry("started file upload ..." + localFilePath);
+		
+		// use buffers to read the file in case the file is too big for simpler API methods.
 		RandomAccessFile file = null;
 		FileChannel channel = null;
 
@@ -93,7 +123,9 @@ public class Uploader
 			buffer.flip();
 			notifyProgressListeners(TransferState.INITIALISED, 0.0f);
 			String uploadId = Dropbox.getDropboxService().chunkedUploadFirst(buffer.array());
-			Logger.newSection("Uploaded first chunk!");
+			
+			Logger.newEntry("uploaded first chunk!");
+			
 			offset += buffer.remaining();		// increment offset; used for remote marker.
 			notifyProgressListeners(TransferState.IN_PROGRESS, (offset / (float) size));
 			buffer.clear();
@@ -109,7 +141,7 @@ public class Uploader
 				buffer.flip();
 				Dropbox.getDropboxService().chunkedUploadAppend(uploadId, offset, buffer.array());
 				offset += buffer.remaining();
-				Logger.post("Uploaded " + (offset / chunkSize) + " / " + (size / chunkSize)
+				Logger.newEntry("uploaded " + (offset / chunkSize) + " / " + (size / chunkSize)
 						+ " => " + NumberFormat.getPercentInstance().format(offset / (double) size) + " done.");
 				notifyProgressListeners(TransferState.IN_PROGRESS, (offset / (float) size));
 				buffer.clear();
@@ -117,6 +149,8 @@ public class Uploader
 
 			if (stop)
 			{
+				Logger.newEntry("upload cancelled " + localFilePath);
+				
 				notifyProgressListeners(TransferState.CANCELLED, 0.0f);
 				return null;
 			}
@@ -127,6 +161,8 @@ public class Uploader
 		}
 		catch (IOException | DbxException e)
 		{
+			Logger.newEntry("problem with upload " + localFilePath);
+			
 			e.printStackTrace();
 			throw new TransferException("Failed to upload file! " + e.getMessage());
 		}
@@ -145,11 +181,25 @@ public class Uploader
 		}
 	}
 
+	/**
+	 * Adds the progress listener.
+	 * 
+	 * @param listener
+	 *            the listener
+	 */
 	public void addProgressListener(IProgressListener listener)
 	{
 		listeners.add(listener);
 	}
 
+	/**
+	 * Notify progress listeners.
+	 * 
+	 * @param state
+	 *            the state
+	 * @param progress
+	 *            the progress
+	 */
 	public void notifyProgressListeners(TransferState state, float progress)
 	{
 		for (IProgressListener listener : listeners)
@@ -158,16 +208,28 @@ public class Uploader
 		}
 	}
 
+	/**
+	 * Removes the progress listener.
+	 * 
+	 * @param listener
+	 *            the listener
+	 */
 	public void removeProgressListener(IProgressListener listener)
 	{
 		listeners.remove(listener);
 	}
 
+	/**
+	 * Clear progress listeners.
+	 */
 	public void clearProgressListeners()
 	{
 		listeners.clear();
 	}
 
+	/**
+	 * Cancel.
+	 */
 	public void cancel()
 	{
 		stop = true;

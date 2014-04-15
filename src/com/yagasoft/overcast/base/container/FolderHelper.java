@@ -1,12 +1,12 @@
 /* 
  * Copyright (C) 2011-2014 by Ahmed Osama el-Sawalhy
  * 
- *		Modified MIT License (GPL v3 compatible)
- * 			License terms are in a separate file (license.txt)
+ *		The Modified MIT Licence (GPL v3 compatible)
+ * 			License terms are in a separate file (LICENCE.md)
  * 
- *		Project/File: Overcast/com.yagasoft.overcast.container/FolderHelper.java
+ *		Project/File: Overcast/com.yagasoft.overcast.base.container/FolderHelper.java
  * 
- *			Modified: 27-Mar-2014 (16:12:30)
+ *			Modified: Apr 15, 2014 (8:06:38 AM)
  *			   Using: Eclipse J-EE / JDK 7 / Windows 8.1 x64
  */
 
@@ -67,9 +67,9 @@ import java.util.concurrent.atomic.AtomicLong;
 
 
 /**
- * The Class FolderHelper.
+ * Methods that perform operations related to folders.
  */
-public class FolderHelper
+public abstract class FolderHelper
 {
 	
 	// --------------------------------------------------------------------------------------

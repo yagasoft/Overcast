@@ -1,12 +1,12 @@
-/*
+/* 
  * Copyright (C) 2011-2014 by Ahmed Osama el-Sawalhy
- *
- *		Modified MIT License (GPL v3 compatible)
- * 			License terms are in a separate file (license.txt)
- *
- *		Project/File: Overcast/com.yagasoft.overcast.dropbox/UploadJob.java
- *
- *			Modified: 11-Apr-2014 (19:03:02)
+ * 
+ *		The Modified MIT Licence (GPL v3 compatible)
+ * 			License terms are in a separate file (LICENCE.md)
+ * 
+ *		Project/File: Overcast/com.yagasoft.overcast.implement.dropbox.transfer/UploadJob.java
+ * 
+ *			Modified: Apr 15, 2014 (1:50:16 PM)
  *			   Using: Eclipse J-EE / JDK 7 / Windows 8.1 x64
  */
 
@@ -19,9 +19,13 @@ import com.yagasoft.overcast.implement.dropbox.RemoteFile;
 import com.yagasoft.overcast.implement.dropbox.RemoteFolder;
 
 
+/**
+ * @see com.yagasoft.overcast.base.container.transfer.UploadJob
+ */
 public class UploadJob extends com.yagasoft.overcast.base.container.transfer.UploadJob<Uploader, File>
 {
 	
+	/** The canceller used to cancel the transfer. */
 	Uploader	canceller;
 	
 	/**

@@ -1,12 +1,12 @@
 /* 
  * Copyright (C) 2011-2014 by Ahmed Osama el-Sawalhy
  * 
- *		Modified MIT License (GPL v3 compatible)
- * 			License terms are in a separate file (license.txt)
+ *		The Modified MIT Licence (GPL v3 compatible)
+ * 			License terms are in a separate file (LICENCE.md)
  * 
- *		Project/File: Overcast/com.yagasoft.overcast.container.remote/RemoteFile.java
+ *		Project/File: Overcast/com.yagasoft.overcast.base.container.remote/RemoteFile.java
  * 
- *			Modified: 27-Mar-2014 (16:13:13)
+ *			Modified: Apr 15, 2014 (9:20:21 AM)
  *			   Using: Eclipse J-EE / JDK 7 / Windows 8.1 x64
  */
 
@@ -51,13 +51,11 @@ public abstract class RemoteFile<T> extends File<T>
 	 *            Whether to overwrite existing container on the local disk or not.
 	 * @param listener
 	 *            Object listening to the changes in the transfer state.
-	 * @param object
-	 *            Object passed by the initialiser to be passed back on state change. It can be used as a kind of "call-back" or
-	 *            something; the sender of this object can cast it back and use it as seen fit.
 	 * @return the download job
 	 * @throws TransferException
 	 *             A problem occurred during the transfer of the container.
 	 * @throws OperationException
+	 *             the operation exception
 	 */
 	public DownloadJob<?> download(LocalFolder parent, boolean overwrite, ITransferProgressListener listener)
 			throws TransferException, OperationException

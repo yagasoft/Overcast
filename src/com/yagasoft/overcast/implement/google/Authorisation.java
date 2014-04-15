@@ -1,12 +1,12 @@
-/*
+/* 
  * Copyright (C) 2011-2014 by Ahmed Osama el-Sawalhy
- *
- *		Modified MIT License (GPL v3 compatible)
- * 			License terms are in a separate file (license.txt)
- *
- *		Project/File: Overcast/com.yagasoft.overcast.google/Authorisation.java
- *
- *			Modified: 27-Mar-2014 (16:14:42)
+ * 
+ *		The Modified MIT Licence (GPL v3 compatible)
+ * 			License terms are in a separate file (LICENCE.md)
+ * 
+ *		Project/File: Overcast/com.yagasoft.overcast.implement.google/Authorisation.java
+ * 
+ *			Modified: Apr 15, 2014 (1:51:15 PM)
  *			   Using: Eclipse J-EE / JDK 7 / Windows 8.1 x64
  */
 
@@ -87,6 +87,8 @@ public class Authorisation extends OAuth
 	@Override
 	public void acquirePermission() throws AuthorisationException
 	{
+		Logger.newEntry("authorising ...");
+		
 		// authorise
 		try
 		{
@@ -106,8 +108,9 @@ public class Authorisation extends OAuth
 			// problem?!
 			if (clientId.startsWith("Enter") || clientSecret.startsWith("Enter"))
 			{
-				Logger.post("Enter Client ID and Secret from https://code.google.com/apis/console/?api=drive "
+				Logger.newEntry("Enter Client ID and Secret from https://code.google.com/apis/console/?api=drive "
 						+ "into google_secrets.json");
+				
 				throw new AuthorisationException("Failed to authorise!");
 			}
 
@@ -117,9 +120,13 @@ public class Authorisation extends OAuth
 					.setDataStoreFactory(dataStoreFactory).setAccessType("offline").build();
 
 			credential = new AuthorizationCodeInstalledApp(flow, new LocalServerReceiver()).authorize(userID);
+			
+			Logger.newEntry("authorisation successful");
 		}
 		catch (IOException e)
 		{
+			Logger.newEntry("authorisation failed!");
+			
 			e.printStackTrace();
 			throw new AuthorisationException("Failed to authorise! " + e.getMessage());
 		}

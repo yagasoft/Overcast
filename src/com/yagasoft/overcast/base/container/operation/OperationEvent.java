@@ -1,12 +1,12 @@
 /* 
  * Copyright (C) 2011-2014 by Ahmed Osama el-Sawalhy
  * 
- *		Modified MIT License (GPL v3 compatible)
- * 			License terms are in a separate file (license.txt)
+ *		The Modified MIT Licence (GPL v3 compatible)
+ * 			License terms are in a separate file (LICENCE.md)
  * 
- *		Project/File: Overcast/com.yagasoft.overcast.container.operation/OperationEvent.java
+ *		Project/File: Overcast/com.yagasoft.overcast.base.container.operation/OperationEvent.java
  * 
- *			Modified: 27-Mar-2014 (16:11:19)
+ *			Modified: Apr 15, 2014 (9:05:03 AM)
  *			   Using: Eclipse J-EE / JDK 7 / Windows 8.1 x64
  */
 
@@ -18,8 +18,7 @@ import com.yagasoft.overcast.base.container.Event;
 
 
 /**
- * @author Ahmed
- * 
+ * An event class containing all the vital information of an operation event.
  */
 public class OperationEvent extends Event
 {
@@ -33,6 +32,18 @@ public class OperationEvent extends Event
 	/** The progress. */
 	protected float	progress;
 	
+	/**
+	 * Instantiates a new operation event.
+	 * 
+	 * @param container
+	 *            the container relating to the event.
+	 * @param operation
+	 *            the operation enum
+	 * @param state
+	 *            the current state of the operation
+	 * @param progress
+	 *            the progress
+	 */
 	public OperationEvent(Container<?> container, Operation operation, OperationState state, float progress)
 	{
 		super(container);

@@ -1,12 +1,12 @@
-/*
+/* 
  * Copyright (C) 2011-2014 by Ahmed Osama el-Sawalhy
- *
- *		Modified MIT License (GPL v3 compatible)
- * 			License terms are in a separate file (license.txt)
- *
- *		Project/File: Overcast/com.yagasoft.overcast.dropbox/Downloader.java
- *
- *			Modified: 12-Apr-2014 (03:13:23)
+ * 
+ *		The Modified MIT Licence (GPL v3 compatible)
+ * 			License terms are in a separate file (LICENCE.md)
+ * 
+ *		Project/File: Overcast/com.yagasoft.overcast.implement.dropbox.transfer/Downloader.java
+ * 
+ *			Modified: Apr 15, 2014 (12:03:11 PM)
  *			   Using: Eclipse J-EE / JDK 7 / Windows 8.1 x64
  */
 
@@ -29,26 +29,45 @@ import com.yagasoft.overcast.exception.TransferException;
 import com.yagasoft.overcast.implement.dropbox.Dropbox;
 
 
+/**
+ * Dropbox doesn't handle downloading files automatically, so this class encapsulates the methods required.
+ */
 public class Downloader
 {
 
+	/** The size. */
 	long							size;
+	
+	/** The remote file path. */
 	String							remoteFilePath;
+	
+	/** The local parent path. */
 	String							localParentPath;
+	
+	/** The local file. */
 	Path							localFile;
+	
+	/** The download job. */
 	DownloadJob						downloadJob;
+	
+	/** The output stream to the local file. */
 	OutputStream					out;
+	
+	/** flag to stop the checking the downloaded amount, and to release resources. */
 	boolean done;
 
+	/** The listeners to this download. */
 	ArrayList<IProgressListener>	listeners	= new ArrayList<IProgressListener>();
 
 	/**
 	 * Instantiates a new downloader.
-	 *
-	 * @param remoteParent
-	 *            Remote parent.
-	 * @param localFilePath
-	 *            Local file path.
+	 * 
+	 * @param remoteFilePath
+	 *            the remote file path
+	 * @param localParentPath
+	 *            the local parent path
+	 * @param downloadJob
+	 *            the download job
 	 * @throws TransferException
 	 *             the transfer exception
 	 */
@@ -57,14 +76,27 @@ public class Downloader
 		this.remoteFilePath = remoteFilePath;
 		this.localParentPath = localParentPath;
 		this.downloadJob = downloadJob;
-		localFile = Paths.get(localParentPath + "\\" + downloadJob.getSourceFile().getName());
+		
+		localFile = Paths.get(localParentPath + "/" + downloadJob.getSourceFile().getName());
+		
+		// fetch the file size to calculate download completion.
 		size = downloadJob.getSourceFile().getSize();
 	}
 
+	/**
+	 * Start the download based on the parameters set.
+	 * 
+	 * @return the source object file.
+	 * @throws TransferException
+	 *             the transfer exception
+	 */
 	public File startDownload() throws TransferException
 	{
+		Logger.newEntry("started file download ..." + remoteFilePath);
+		
 		try
 		{
+			// prepare the local file stream.
 			out = Files.newOutputStream(localFile);
 
 			// a separate thread to check on file progress by reading the size of the downloaded file locally.
@@ -81,7 +113,7 @@ public class Downloader
 						try
 						{
 							downloaded = Files.size(localFile);
-							Logger.post("Downloaded " + NumberFormat.getPercentInstance().format(downloaded / (double) size)
+							Logger.newEntry("downloaded " + NumberFormat.getPercentInstance().format(downloaded / (double) size)
 									+ " done.");
 							notifyProgressListeners(TransferState.IN_PROGRESS, (downloaded / (float) size));
 							Thread.sleep(1000);
@@ -104,10 +136,14 @@ public class Downloader
 
 			if (!done)
 			{
+				Logger.newEntry("failed to download file " + remoteFilePath);
+				
 				throw new TransferException("Failed to download file! " + e.getMessage());
 			}
 			else
 			{
+				Logger.newEntry("cancelled download " + remoteFilePath);
+				
 				notifyProgressListeners(TransferState.CANCELLED, 0.0f);
 				return null;
 			}
@@ -127,11 +163,25 @@ public class Downloader
 		}
 	}
 
+	/**
+	 * Adds the progress listener.
+	 * 
+	 * @param listener
+	 *            the listener
+	 */
 	public void addProgressListener(IProgressListener listener)
 	{
 		listeners.add(listener);
 	}
 
+	/**
+	 * Notify progress listeners.
+	 * 
+	 * @param state
+	 *            the state
+	 * @param progress
+	 *            the progress
+	 */
 	public void notifyProgressListeners(TransferState state, float progress)
 	{
 		for (IProgressListener listener : listeners)
@@ -140,16 +190,28 @@ public class Downloader
 		}
 	}
 
+	/**
+	 * Removes the progress listener.
+	 * 
+	 * @param listener
+	 *            the listener
+	 */
 	public void removeProgressListener(IProgressListener listener)
 	{
 		listeners.remove(listener);
 	}
 
+	/**
+	 * Clear progress listeners.
+	 */
 	public void clearProgressListeners()
 	{
 		listeners.clear();
 	}
 
+	/**
+	 * Cancel.
+	 */
 	public void cancel()
 	{
 		try

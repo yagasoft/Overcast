@@ -1,18 +1,21 @@
 /* 
  * Copyright (C) 2011-2014 by Ahmed Osama el-Sawalhy
  * 
- *		Modified MIT License (GPL v3 compatible)
- * 			License terms are in a separate file (license.txt)
+ *		The Modified MIT Licence (GPL v3 compatible)
+ * 			License terms are in a separate file (LICENCE.md)
  * 
  *		Project/File: Overcast/com.yagasoft.overcast.exception/AuthorisationException.java
  * 
- *			Modified: 27-Mar-2014 (16:14:10)
+ *			Modified: Apr 14, 2014 (2:06:09 PM)
  *			   Using: Eclipse J-EE / JDK 7 / Windows 8.1 x64
  */
 
 package com.yagasoft.overcast.exception;
 
 
+/**
+ * Fired when there's a problem in the authorisation process.
+ */
 public class AuthorisationException extends Exception
 {
 	

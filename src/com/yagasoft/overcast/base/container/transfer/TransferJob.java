@@ -1,12 +1,12 @@
-/*
+/* 
  * Copyright (C) 2011-2014 by Ahmed Osama el-Sawalhy
- *
- *		Modified MIT License (GPL v3 compatible)
- * 			License terms are in a separate file (license.txt)
- *
- *		Project/File: Overcast/com.yagasoft.overcast.container.transfer/TransferJob.java
- *
- *			Modified: 18-Mar-2014 (19:22:29)
+ * 
+ *		The Modified MIT Licence (GPL v3 compatible)
+ * 			License terms are in a separate file (LICENCE.md)
+ * 
+ *		Project/File: Overcast/com.yagasoft.overcast.base.container.transfer/TransferJob.java
+ * 
+ *			Modified: Apr 15, 2014 (9:29:06 AM)
  *			   Using: Eclipse J-EE / JDK 7 / Windows 8.1 x64
  */
 
@@ -15,6 +15,7 @@ package com.yagasoft.overcast.base.container.transfer;
 
 import java.util.ArrayList;
 
+import com.yagasoft.logger.Logger;
 import com.yagasoft.overcast.base.container.File;
 import com.yagasoft.overcast.base.container.Folder;
 import com.yagasoft.overcast.base.container.local.LocalFile;
@@ -126,6 +127,8 @@ public abstract class TransferJob<T> implements ITransferrable
 	@Override
 	public void notifyProgressListeners(TransferState state, float progress)
 	{
+		Logger.newEntry("transfer event: " + state + " " + progress);
+		
 		for (ITransferProgressListener listener : progressListeners)
 		{
 			listener.transferProgressChanged(new TransferEvent(this, state, progress));

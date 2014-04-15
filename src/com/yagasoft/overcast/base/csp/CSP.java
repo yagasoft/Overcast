@@ -1,12 +1,12 @@
-/*
+/* 
  * Copyright (C) 2011-2014 by Ahmed Osama el-Sawalhy
- *
- *		Modified MIT License (GPL v3 compatible)
- * 			License terms are in a separate file (license.txt)
- *
- *		Project/File: Overcast/com.yagasoft.overcast/CSP.java
- *
- *			Modified: 11-Apr-2014 (19:26:51)
+ * 
+ *		The Modified MIT Licence (GPL v3 compatible)
+ * 			License terms are in a separate file (LICENCE.md)
+ * 
+ *		Project/File: Overcast/com.yagasoft.overcast.base.csp/CSP.java
+ * 
+ *			Modified: Apr 15, 2014 (9:33:52 AM)
  *			   Using: Eclipse J-EE / JDK 7 / Windows 8.1 x64
  */
 
@@ -41,7 +41,6 @@ import com.yagasoft.overcast.exception.TransferException;
 
 /**
  * The class representing the Cloud Storage Provider.<br />
- * It's abstract, and the upload and download must be implemented first.<br />
  * The constructors should throw a {@link CSPBuildException} if it can't go through to the end.
  * 
  * @param <SourceFileType>
@@ -55,7 +54,7 @@ import com.yagasoft.overcast.exception.TransferException;
 public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 {
 	
-	/** Name of the CSP. Can be used to display next to files in an application, for example. */
+	/** Name of the CSP. Can be used to be displayed next to files in an application, for example. */
 	protected String											name;
 	
 	/** Authorisation object. */
@@ -67,10 +66,10 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 	/** Root of the remote file tree. */
 	protected RemoteFolder<?>									remoteFileTree;
 	
-	/** Is the local file tree fully read in memory. */
+	/** Is the local file tree fully loaded in memory. */
 	protected boolean											fullLocalTreeLoaded;
 	
-	/** Is the remote file tree fully read in memory. */
+	/** Is the remote file tree fully loaded in memory. */
 	protected boolean											fullRemoteTreeLoaded;
 	
 	/** Remote free space. */
@@ -94,10 +93,13 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 	/** Current upload thread. */
 	protected Thread											currentUploadThread;
 	
-	// add a RemoteFactory object in the subclass.
+	// you should add a RemoteFactory object in the subclasses.
 	
 	/**
-	 * Initialises the tree -- only reads the root from the source, along with the contents (only single level).
+	 * Initialises the tree -- only reads the root's content from the source (only single level).
+	 * 
+	 * @throws OperationException
+	 *             the operation exception
 	 */
 	public abstract void initTree() throws OperationException;
 	
@@ -107,11 +109,10 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 	 * @param recursively
 	 *            If true, then build all the levels possible under the root.
 	 * @throws OperationException
+	 *             the operation exception
 	 */
 	public void buildFileTree(boolean recursively) throws OperationException
 	{
-		Logger.newSection();
-		
 		// make sure there's a root to access.
 		if (remoteFileTree == null)
 		{
@@ -121,7 +122,7 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 		// build more levels if required.
 		remoteFileTree.buildTree(recursively);
 		
-		Logger.endSection();
+		Logger.endSection(">>> Finished building the root tree.");
 	}
 	
 	/**
@@ -129,10 +130,14 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 	 * 
 	 * @param numberOfLevels
 	 *            How many levels to fetch -- 0 is root level only.
+	 * @throws OperationException
+	 *             the operation exception
 	 */
 	public void buildFileTree(int numberOfLevels) throws OperationException
 	{
 		remoteFileTree.buildTree(numberOfLevels);
+		
+		Logger.endSection(">>> Finished building the root tree up to level " + numberOfLevels);
 	}
 	
 	/**
@@ -140,6 +145,7 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 	 * 
 	 * @return the free space in bytes.
 	 * @throws OperationException
+	 *             the operation exception
 	 */
 	public abstract long calculateRemoteFreeSpace() throws OperationException;
 	
@@ -156,14 +162,20 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 	 * @param listener
 	 *            Object listening to the changes in the transfer state.
 	 * @return the download jobs
-	 * @throws OperationException
 	 * @throws TransferException
+	 *             the transfer exception
+	 * @throws OperationException
+	 *             the operation exception
 	 * @throws CreationException
+	 *             the creation exception
 	 */
 	@SuppressWarnings("rawtypes")
 	public DownloadJob<?>[] download(RemoteFolder<?> folder, LocalFolder parent, boolean overwrite
 			, ITransferProgressListener listener) throws TransferException, OperationException, CreationException
 	{
+		Logger.newTitledSection("downloading folder");
+		Logger.newEntry("downloading folder: " + folder.getPath());
+		
 		// make sure the folder doesn't exist at the destination.
 		Container<?> result = parent.searchByName(folder.getName(), false);
 		LocalFolder localFolder = null;
@@ -182,16 +194,18 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 				{}
 			});
 			
-			localFolder.updateFromSource(true, false);
+			localFolder.updateFromSource(true, false);		// update the folder info
 		}
 		else
 		{	// ... else, just use the one at the destination.
 			localFolder = (LocalFolder) result;
 		}
 		
+		// link the remote and local folders.
 		localFolder.setRemoteMapping(folder);
 		folder.setLocalMapping(localFolder);
 		
+		// collect the jobs in this array to be returned later.
 		ArrayList<DownloadJob> downloadJobs = new ArrayList<DownloadJob>();
 		
 		// add each file in the folder to the download queue.
@@ -207,11 +221,14 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 					overwrite, listener))));
 		}
 		
+		// return the jobs.
 		return downloadJobs.toArray(new DownloadJob[downloadJobs.size()]);
 	}
 	
 	/**
-	 * Download the file (passed) from the server.
+	 * Download the file (passed) from the server.<br />
+	 * This method should prepare a job only -- not start the download, and then add the job to the queue.<br />
+	 * Please, check the {@link DownloadJob} for what to do here.
 	 * 
 	 * @param file
 	 *            File to download.
@@ -225,6 +242,7 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 	 * @throws TransferException
 	 *             A problem occurred during the transfer of the file.
 	 * @throws OperationException
+	 *             the operation exception
 	 */
 	public abstract DownloadJob<?> download(RemoteFile<?> file, LocalFolder parent, boolean overwrite,
 			ITransferProgressListener listener)
@@ -233,7 +251,8 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 	/**
 	 * If the queue has a job, set it as the current one after removing it from the queue, and then start the job.<br />
 	 * <br />
-	 * This should be called using a separate thread so as not to block the program.
+	 * This uses a separate thread so as not to block the program, and to be able to accept more jobs.<br />
+	 * This method is automatically called after the job is done.
 	 */
 	public void nextDownloadJob()
 	{
@@ -242,6 +261,8 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 		{
 			// ... take one job from the queue ...
 			currentDownloadJob = downloadQueue.remove();
+			
+			Logger.newSection(">>> starting a new download: " + currentDownloadJob.getRemoteFile().getPath());
 			
 			currentDownloadThread = new Thread(new Runnable()
 			{
@@ -252,11 +273,15 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 					try
 					{	// start the transfer (starts when thread starts below).
 						initiateDownload();
+						
+						Logger.endSection("Finished download.");
 					}
 					catch (TransferException e)
 					{	// in case of failure, notify the listeners of the failure, and check for more jobs.
 						e.printStackTrace();
 						currentDownloadJob.failure();
+						
+						Logger.endSection("Download failed!");
 					}
 					finally
 					{
@@ -271,7 +296,11 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 	}
 	
 	/**
-	 * Starts the download.
+	 * Contains the procedure that will actually download the file after its associated thread triggers.<br />
+	 * The job's success method should be called here.
+	 * 
+	 * @throws TransferException
+	 *             the transfer exception
 	 */
 	protected abstract void initiateDownload() throws TransferException;
 	
@@ -279,8 +308,8 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 	 * Checks the download queue, if it's the same job passed, then call {@link #cancelCurrentDownload()};
 	 * if not, then simply remove it from the queue.
 	 * 
-	 * @param path
-	 *            Path.
+	 * @param job
+	 *            the job
 	 */
 	public void cancelDownload(TransferJob<?> job)
 	{
@@ -290,18 +319,25 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 		}
 		else
 		{
+			Logger.post("cancelling download: " + currentDownloadJob.getRemoteFile().getPath());
+			
 			downloadQueue.remove(job);
 		}
 	}
 	
 	/**
-	 * Cancel current download.
+	 * Cancel current running download.
 	 */
 	public void cancelCurrentDownload()
 	{
+		Logger.post("cancelling download: " + currentDownloadJob.getRemoteFile().getPath());
+		
 		currentDownloadJob.cancelTransfer();
 	}
 	
+	/**
+	 * Resets the download by removing the one running and adding the next one. It does NOT cancel the current download.
+	 */
 	public void resetDownload()
 	{
 		currentDownloadJob = null;
@@ -322,13 +358,19 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 	 *            Object listening to the changes in the transfer state.
 	 * @return the upload jobs
 	 * @throws TransferException
+	 *             the transfer exception
 	 * @throws OperationException
+	 *             the operation exception
 	 * @throws CreationException
+	 *             the creation exception
 	 */
 	@SuppressWarnings("rawtypes")
 	public UploadJob<?, ?>[] upload(LocalFolder folder, RemoteFolder<?> parent, boolean overwrite
 			, ITransferProgressListener listener) throws TransferException, OperationException, CreationException
 	{
+		Logger.newTitledSection("uploading folder");
+		Logger.newEntry("uploading folder: " + folder.getPath());
+		
 		// check if the folder exists at the CSP.
 		Container<?> result = parent.searchByName(folder.getName(), false);
 		RemoteFolder<?> remoteFolder = null;
@@ -390,6 +432,7 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 	 * @throws TransferException
 	 *             A problem occurred during the transfer of the file.
 	 * @throws OperationException
+	 *             the operation exception
 	 */
 	public abstract UploadJob<?, ?> upload(LocalFile file, RemoteFolder<?> parent, boolean overwrite,
 			ITransferProgressListener listener)
@@ -397,7 +440,7 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 	
 	/**
 	 * If the queue has a job, set it as the current one after removing it from the queue, and then start the job. <br />
-	 * This should be called using a separate thread so as not to block the program.
+	 * This uses a separate thread so as not to block the program.
 	 */
 	public void nextUploadJob()
 	{
@@ -405,6 +448,8 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 		if ((currentUploadJob == null) && !uploadQueue.isEmpty())
 		{
 			currentUploadJob = uploadQueue.remove();
+			
+			Logger.newSection(">>> starting a new upload: " + currentUploadJob.getLocalFile().getPath());
 			
 			currentUploadThread = new Thread(new Runnable()
 			{
@@ -416,11 +461,15 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 					{
 						// start the transfer (starts when thread starts below).
 						initiateUpload();
+						
+						Logger.endSection("Finished upload.");
 					}
-					catch (TransferException e)
+ 					catch (TransferException e)
 					{
 						e.printStackTrace();
 						currentUploadJob.failure();
+						
+						Logger.endSection("Upload failed!");
 					}
 					finally
 					{
@@ -436,6 +485,9 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 	
 	/**
 	 * Starts the upload and passes the result to the upload job to add to the file object.
+	 * 
+	 * @throws TransferException
+	 *             the transfer exception
 	 */
 	protected abstract void initiateUpload() throws TransferException;
 	
@@ -443,8 +495,8 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 	 * Checks the upload queue, if it's the same job passed, then call {@link #cancelCurrentUpload()};
 	 * if not, then simply remove it from the queue.
 	 * 
-	 * @param path
-	 *            Path.
+	 * @param job
+	 *            the job
 	 */
 	public void cancelUpload(TransferJob<?> job)
 	{
@@ -454,6 +506,8 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 		}
 		else
 		{
+			Logger.post("cancelling upload: " + currentUploadJob.getLocalFile().getPath());
+			
 			uploadQueue.remove(job);
 		}
 	}
@@ -463,17 +517,30 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 	 */
 	public void cancelCurrentUpload()
 	{
+		Logger.post("cancelling upload: " + currentUploadJob.getLocalFile().getPath());
+		
 		currentUploadJob.cancelTransfer();
 	}
 	
+	/**
+	 * Resets the upload by removing the one running and adding the next one. It does NOT cancel the current upload.
+	 */
 	public void resetUpload()
 	{
 		currentUploadJob = null;
 		nextUploadJob();
 	}
 	
+	/**
+	 * Returns the factory as an abstract one -- can't predict its type from here.
+	 * 
+	 * @return the abstract factory
+	 */
 	public abstract RemoteFactory<?, ?, ?, ?> getAbstractFactory();
 	
+	/**
+	 * Returns the name of the CSP.
+	 */
 	@Override
 	public String toString()
 	{

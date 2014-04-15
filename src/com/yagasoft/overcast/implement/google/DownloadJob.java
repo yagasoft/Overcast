@@ -1,12 +1,12 @@
 /* 
  * Copyright (C) 2011-2014 by Ahmed Osama el-Sawalhy
  * 
- *		Modified MIT License (GPL v3 compatible)
- * 			License terms are in a separate file (license.txt)
+ *		The Modified MIT Licence (GPL v3 compatible)
+ * 			License terms are in a separate file (LICENCE.md)
  * 
- *		Project/File: Overcast/com.yagasoft.overcast.google/DownloadJob.java
+ *		Project/File: Overcast/com.yagasoft.overcast.implement.google/DownloadJob.java
  * 
- *			Modified: 18-Mar-2014 (19:35:23)
+ *			Modified: Apr 15, 2014 (1:53:38 PM)
  *			   Using: Eclipse J-EE / JDK 7 / Windows 8.1 x64
  */
 
@@ -18,9 +18,13 @@ import com.yagasoft.overcast.base.container.local.LocalFolder;
 import com.yagasoft.overcast.base.container.transfer.TransferState;
 
 
+/**
+ * @see com.yagasoft.overcast.base.container.transfer.DownloadJob
+ */
 public class DownloadJob extends com.yagasoft.overcast.base.container.transfer.DownloadJob<MediaHttpDownloader>
 {
 	
+	/** The canceller of this transfer. */
 	Thread	canceller;
 	
 	/**

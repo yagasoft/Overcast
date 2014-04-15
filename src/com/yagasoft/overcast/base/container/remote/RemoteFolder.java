@@ -1,12 +1,12 @@
 /* 
  * Copyright (C) 2011-2014 by Ahmed Osama el-Sawalhy
  * 
- *		Modified MIT License (GPL v3 compatible)
- * 			License terms are in a separate file (license.txt)
+ *		The Modified MIT Licence (GPL v3 compatible)
+ * 			License terms are in a separate file (LICENCE.md)
  * 
- *		Project/File: Overcast/com.yagasoft.overcast.container.remote/RemoteFolder.java
+ *		Project/File: Overcast/com.yagasoft.overcast.base.container.remote/RemoteFolder.java
  * 
- *			Modified: 27-Mar-2014 (16:13:20)
+ *			Modified: Apr 15, 2014 (9:21:10 AM)
  *			   Using: Eclipse J-EE / JDK 7 / Windows 8.1 x64
  */
 
@@ -35,7 +35,7 @@ import com.yagasoft.overcast.exception.TransferException;
 public abstract class RemoteFolder<T> extends Folder<T>
 {
 	
-	/** Pointless for most CSPs! */
+	/** Pointless for most CSPs! Could be used to display to the user. */
 	protected URL			link;
 	
 	/** The {@link RemoteFolder} corresponding to this remote folder if applicable. */
@@ -51,14 +51,13 @@ public abstract class RemoteFolder<T> extends Folder<T>
 	 *            Whether to overwrite existing container on the local disk or not.
 	 * @param listener
 	 *            Object listening to the changes in the transfer state.
-	 * @param object
-	 *            Object passed by the initialiser to be passed back on state change. It can be used as a kind of "call-back" or
-	 *            something; the sender of this object can cast it back and use it as seen fit.
 	 * @return the download jobs
 	 * @throws TransferException
 	 *             A problem occurred during the transfer of the container.
-	 * @throws CreationException
 	 * @throws OperationException
+	 *             the operation exception
+	 * @throws CreationException
+	 *             the creation exception
 	 */
 	public DownloadJob<?>[] download(LocalFolder parent, boolean overwrite, ITransferProgressListener listener)
 			throws TransferException, OperationException, CreationException

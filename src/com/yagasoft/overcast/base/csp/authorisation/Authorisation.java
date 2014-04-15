@@ -1,12 +1,12 @@
-/*
+/* 
  * Copyright (C) 2011-2014 by Ahmed Osama el-Sawalhy
- *
- *		Modified MIT License (GPL v3 compatible)
- * 			License terms are in a separate file (license.txt)
- *
- *		Project/File: Overcast/com.yagasoft.overcast.authorisation/Authorisation.java
- *
- *			Modified: 11-Apr-2014 (12:34:32)
+ * 
+ *		The Modified MIT Licence (GPL v3 compatible)
+ * 			License terms are in a separate file (LICENCE.md)
+ * 
+ *		Project/File: Overcast/com.yagasoft.overcast.base.csp.authorisation/Authorisation.java
+ * 
+ *			Modified: Apr 15, 2014 (9:42:56 AM)
  *			   Using: Eclipse J-EE / JDK 7 / Windows 8.1 x64
  */
 
@@ -17,7 +17,7 @@ import com.yagasoft.overcast.exception.AuthorisationException;
 
 
 /**
- * The Class Authorisation.
+ * This class contains methods used to authorise access to a CSP.
  */
 public abstract class Authorisation
 {
@@ -27,16 +27,6 @@ public abstract class Authorisation
 
 	/** Password (if needed; most use OAuth anyway). */
 	protected String	password;
-
-	/**
-	 * Go through the authorisation process.<br />
-	 * Might get a token using OAuth, or use a user and pass to access FTP, ... etc.<br />
-	 * In case of OAuth, it should check if a token already exists/valid, and if not, then fetch a new one.
-	 *
-	 * @throws AuthorisationException
-	 *             the authorisation exception
-	 */
-	public abstract void authorise() throws AuthorisationException;
 
 	/**
 	 * Instantiates a new authorisation.
@@ -57,6 +47,17 @@ public abstract class Authorisation
 		this.userID = userID;
 		this.password = password;
 	}
+
+	/**
+	 * Go through the authorisation process.<br />
+	 * Might get a token using OAuth, or use a user and pass to access FTP, ... etc.<br />
+	 * In case of OAuth, it should check if a token already exists/valid, and if not, then fetch a new one.
+	 * Some of those operations can be deferred to methods in a sub-class.
+	 *
+	 * @throws AuthorisationException
+	 *             the authorisation exception
+	 */
+	public abstract void authorise() throws AuthorisationException;
 
 	/**
 	 * Gets the user id.

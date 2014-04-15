@@ -1,12 +1,12 @@
-/*
+/* 
  * Copyright (C) 2011-2014 by Ahmed Osama el-Sawalhy
- *
- *		Modified MIT License (GPL v3 compatible)
- * 			License terms are in a separate file (license.txt)
- *
- *		Project/File: Overcast/com.yagasoft.overcast.dropbox/Authorisation.java
- *
- *			Modified: 11-Apr-2014 (12:54:08)
+ * 
+ *		The Modified MIT Licence (GPL v3 compatible)
+ * 			License terms are in a separate file (LICENCE.md)
+ * 
+ *		Project/File: Overcast/com.yagasoft.overcast.implement.dropbox.authorisation/Authorisation.java
+ * 
+ *			Modified: Apr 15, 2014 (11:32:52 AM)
  *			   Using: Eclipse J-EE / JDK 7 / Windows 8.1 x64
  */
 
@@ -25,6 +25,7 @@ import com.dropbox.core.DbxAuthInfo;
 import com.dropbox.core.DbxClient;
 import com.dropbox.core.DbxException;
 import com.dropbox.core.json.JsonReader.FileLoadException;
+import com.yagasoft.logger.Logger;
 import com.yagasoft.overcast.base.csp.authorisation.OAuth;
 import com.yagasoft.overcast.exception.AuthorisationException;
 import com.yagasoft.overcast.implement.dropbox.Dropbox;
@@ -70,11 +71,16 @@ public class Authorisation extends OAuth
 	}
 	
 	/**
+	 * Instantiates a new authorisation.
+	 * 
 	 * @param userID
-	 * @param password
+	 *            the user id
 	 * @param infoFile
 	 *            Info file name
+	 * @param port
+	 *            the port
 	 * @throws AuthorisationException
+	 *             the authorisation exception
 	 */
 	public Authorisation(String userID, String infoFile, int port) throws AuthorisationException
 	{
@@ -118,6 +124,8 @@ public class Authorisation extends OAuth
 	@Override
 	public void acquirePermission() throws AuthorisationException
 	{
+		Logger.newEntry("authorising ...");
+		
 		try
 		{
 			// Read app info file (contains app key and app secret)
@@ -131,6 +139,8 @@ public class Authorisation extends OAuth
 			// problem with getting code from browser?
 			if (code == null)
 			{
+				Logger.newEntry("failed to get code");
+				
 				throw new AuthorisationException("Failed to authorise!");
 			}
 			
@@ -138,9 +148,13 @@ public class Authorisation extends OAuth
 			authFinish = webAuth.finish(code);		// get access token using access code.
 			
 			saveToken();
+			
+			Logger.newEntry("done authorising");
 		}
 		catch (FileLoadException | DbxException e)
 		{
+			Logger.newEntry("failed to get code");
+			
 			e.printStackTrace();
 			throw new AuthorisationException("Failed to authorise! " + e.getMessage());
 		}
@@ -153,6 +167,8 @@ public class Authorisation extends OAuth
 	@Override
 	public void reacquirePermission() throws AuthorisationException
 	{
+		Logger.newEntry("re-acquiring permission ...");
+		
 		try
 		{
 			// read the token from disk.
@@ -161,9 +177,13 @@ public class Authorisation extends OAuth
 			// make sure the token is valid.
 			DbxClient dbxClient = new DbxClient(Dropbox.getRequestConfig(), authInfo.accessToken, authInfo.host);
 			dbxClient.getAccountInfo();
+			
+			Logger.newEntry("done acquiring permission");
 		}
 		catch (FileLoadException | DbxException e)
 		{
+			Logger.newEntry("failed to re-acquire permission!");
+			
 			throw new AuthorisationException("Failed to authorise! " + e.getMessage());
 		}
 	}
@@ -174,6 +194,8 @@ public class Authorisation extends OAuth
 	@Override
 	protected void saveToken() throws AuthorisationException
 	{
+		Logger.newEntry("Saving token ...");
+		
 		try
 		{
 			// prepare access token to be saved to disk.
@@ -181,9 +203,12 @@ public class Authorisation extends OAuth
 			
 			// Save auth information to output file.
 			DbxAuthInfo.Writer.writeToFile(authInfo, new File(tokenParent.toFile(), "dropbox_token.dat"));
+			
+			Logger.newEntry("saved!");
 		}
 		catch (IOException e)
 		{
+			Logger.newEntry("problem saving token!");
 			e.printStackTrace();
 			throw new AuthorisationException("Failed to authorise! " + e.getMessage());
 		}
