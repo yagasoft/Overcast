@@ -86,7 +86,7 @@ public class Dropbox extends CSP<DbxEntry.File, Downloader, Uploader> implements
 		requestConfig = new DbxRequestConfig(userID, userLocale);
 		
 		// authenticate.
-		authorisation = new Authorisation(userID, "dropbox.json", port);
+		authorisation = new Authorisation(userID, "dropbox", port);
 		authorisation.authorise();
 		
 		// Create a DbxClient, which is what you use to make API calls.

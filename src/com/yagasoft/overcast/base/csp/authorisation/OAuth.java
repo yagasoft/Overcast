@@ -1,11 +1,11 @@
-/* 
+/*
  * Copyright (C) 2011-2014 by Ahmed Osama el-Sawalhy
- * 
+ *
  *		The Modified MIT Licence (GPL v3 compatible)
  * 			License terms are in a separate file (LICENCE.md)
- * 
+ *
  *		Project/File: Overcast/com.yagasoft.overcast.base.csp.authorisation/OAuth.java
- * 
+ *
  *			Modified: Apr 14, 2014 (10:32:53 AM)
  *			   Using: Eclipse J-EE / JDK 7 / Windows 8.1 x64
  */
@@ -13,9 +13,12 @@
 package com.yagasoft.overcast.base.csp.authorisation;
 
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import com.yagasoft.logger.Logger;
 import com.yagasoft.overcast.exception.AuthorisationException;
 
 
@@ -29,7 +32,7 @@ public abstract class OAuth extends Authorisation
 	private Path	infoParent	= Paths.get(System.getProperty("user.dir") + "/etc/secrets");
 
 	/** Parent folder to store tokens. */
-	protected Path	tokenParent	= Paths.get(System.getProperty("user.dir") + "/var");
+	protected Path	tokenParent	= Paths.get(System.getProperty("user.dir") + "/var/tokens");
 
 	/** Info file path. This file should contain the information required to identify the dev's account at the CSP.*/
 	protected Path	infoFile;
@@ -63,28 +66,45 @@ public abstract class OAuth extends Authorisation
 
 	/**
 	 * Instantiates a new OAuth.
-	 * 
+	 *
 	 * @param infoFile
 	 *            the info file path as a string, will be used to create its path object.
+	 * @throws AuthorisationException
 	 */
-	public OAuth(String infoFile)
+	public OAuth(String infoFile) throws AuthorisationException
 	{
 		this(null, null, infoFile);
 	}
 
 	/**
 	 * Instantiates a new OAuth.
-	 * 
+	 *
 	 * @param userID
 	 *            User id.
 	 * @param password
 	 *            Password.
 	 * @param infoFile
 	 *           the info file path as a string, will be used to create its path object.
+	 * @throws AuthorisationException
 	 */
-	public OAuth(String userID, String password, String infoFile)
+	public OAuth(String userID, String password, String infoFile) throws AuthorisationException
 	{
 		this(userID, password);
+
+		try
+		{
+			Files.createDirectories(infoParent);
+			Files.createDirectories(tokenParent);
+		}
+		catch (IOException e)
+		{
+			Logger.error("creating authorisation object -- creating folders: " + infoFile);
+			Logger.except(e);
+			e.printStackTrace();
+			
+			throw new AuthorisationException(e.getMessage());
+		}
+
 		this.infoFile = infoParent.resolve(infoFile);		// create a path object for the info file.
 	}
 
@@ -113,7 +133,7 @@ public abstract class OAuth extends Authorisation
 	 */
 	protected abstract void saveToken() throws AuthorisationException;
 
-	
+
 	// //////////////////////////////////////////////////////////////////////////////////////
 	// #region Getters and setters.
 	// ======================================================================================

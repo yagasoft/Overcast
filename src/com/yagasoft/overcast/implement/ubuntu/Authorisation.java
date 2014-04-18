@@ -35,11 +35,11 @@ import com.yagasoft.overcast.exception.AuthorisationException;
 
 public class Authorisation extends OAuth
 {
-	
+
 	private File			authFile;
 	private String			oauthData;
 	private OAuthAuthorizer	oauthAuthorizer;
-	
+
 	/**
 	 * @param userID
 	 * @param password
@@ -49,16 +49,16 @@ public class Authorisation extends OAuth
 	{
 		super(userID, password);
 	}
-	
+
 	@Override
 	public void authorise() throws AuthorisationException
 	{
-		
+
 		try
 		{
 			// See if we already have stored an OAuth token.
-			authFile = new File(tokenParent.toString(), "ubuntu_token.dat");
-			
+			authFile = new File(tokenParent.toString(), "ubuntu");
+
 			if (authFile.exists())
 			{
 				final Properties creds = new Properties();
@@ -70,10 +70,10 @@ public class Authorisation extends OAuth
 				acquirePermission();
 				saveToken();
 			}
-			
+
 			// OAuth data we received contains consumerKey, consumerSecret, tokenKey and tokenSecret.
 			setOauthAuthorizer(OAuthAuthorizer.getWithTokens(oauthData, new PlainTextMessageSigner()));
-			
+
 			// Make sure our time is not off too much.
 			OAuthAuthorizer.syncTimeWithU1(Ubuntu.httpClient);
 		}
@@ -88,9 +88,9 @@ public class Authorisation extends OAuth
 			e.printStackTrace();
 			throw new AuthorisationException("Failed to authorise!");
 		}
-		
+
 	}
-	
+
 	@Override
 	public void acquirePermission() throws AuthorisationException
 	{
@@ -126,37 +126,37 @@ public class Authorisation extends OAuth
 			throw new AuthorisationException("Failed to authorise!");
 		}
 	}
-	
+
 	private AuthenticateResponse authenticate() throws AuthenticationException, IOException, TimeDriftException, U1PingException
 	{
 		final BasicAuthorizer basicAuthorizer = new BasicAuthorizer(userID, password);
-		
+
 		final U1AuthAPI authApi = new U1AuthAPI(Ubuntu.class.getPackage().getName(), "1.0", Ubuntu.httpClient, basicAuthorizer);
-		
+
 		// Make sure your token name is in the format of 'Ubuntu One @ your_string"
 		final AuthenticateResponse response = authApi.authenticate("Ubuntu One @ Overcast");
 		authApi.setAuthorizer(new OAuthAuthorizer(response, new HmacSha1MessageSigner()));
-		
+
 		// Make sure our time is not off too much.
 		OAuthAuthorizer.syncTimeWithU1(Ubuntu.httpClient);
-		
+
 		// Single Sign On has the token, let Ubuntu One know about it.
 		authApi.pingUbuntuOne(userID);
-		
+
 		return response;
 	}
-	
+
 	@Override
 	public void reacquirePermission() throws AuthorisationException
 	{}
-	
+
 	@Override
 	public void saveToken()
 	{
-		
+
 		// Save the token for later reuse. Usually a safer place than a plain text file is strongly advised.
 		final Properties creds = new Properties();
-		
+
 		try
 		{
 			creds.put("oauth", oauthData);
@@ -166,9 +166,9 @@ public class Authorisation extends OAuth
 		{
 			e.printStackTrace();
 		}
-		
+
 	}
-	
+
 	/**
 	 * @return the oauthAuthorizer
 	 */
@@ -176,7 +176,7 @@ public class Authorisation extends OAuth
 	{
 		return oauthAuthorizer;
 	}
-	
+
 	/**
 	 * @param oauthAuthorizer
 	 *            the oauthAuthorizer to set
@@ -185,5 +185,5 @@ public class Authorisation extends OAuth
 	{
 		this.oauthAuthorizer = oauthAuthorizer;
 	}
-	
+
 }

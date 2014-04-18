@@ -204,7 +204,7 @@ public class Authorisation extends OAuth
 			authInfo = new DbxAuthInfo(authFinish.accessToken, appInfo.host);
 
 			// Save auth information to output file.
-			DbxAuthInfo.Writer.writeToFile(authInfo, new File(tokenParent.toFile(), "dropbox_token.dat"));
+			DbxAuthInfo.Writer.writeToFile(authInfo, new File(tokenParent.toFile(), "dropbox"));
 
 			Logger.info("saved token: Dropbox");
 		}

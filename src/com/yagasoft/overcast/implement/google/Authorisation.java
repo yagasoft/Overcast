@@ -1,12 +1,12 @@
-/* 
+/*
  * Copyright (C) 2011-2014 by Ahmed Osama el-Sawalhy
- * 
+ *
  *		The Modified MIT Licence (GPL v3 compatible)
- * 			License terms are in a separate file (LICENCE.md)
- * 
+ * 			Licence terms are in a separate file (LICENCE.md)
+ *
  *		Project/File: Overcast/com.yagasoft.overcast.implement.google/Authorisation.java
- * 
- *			Modified: Apr 15, 2014 (1:51:15 PM)
+ *
+ *			Modified: 18-Apr-2014 (23:43:02)
  *			   Using: Eclipse J-EE / JDK 7 / Windows 8.1 x64
  */
 
@@ -20,10 +20,12 @@ import java.nio.file.Path;
 import java.util.Collections;
 
 import com.google.api.client.auth.oauth2.Credential;
+import com.google.api.client.auth.oauth2.StoredCredential;
 import com.google.api.client.extensions.java6.auth.oauth2.AuthorizationCodeInstalledApp;
 import com.google.api.client.extensions.jetty.auth.oauth2.LocalServerReceiver;
 import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeFlow;
 import com.google.api.client.googleapis.auth.oauth2.GoogleClientSecrets;
+import com.google.api.client.util.store.DataStore;
 import com.google.api.client.util.store.DataStoreFactory;
 import com.google.api.client.util.store.FileDataStoreFactory;
 import com.google.api.services.drive.DriveScopes;
@@ -41,9 +43,7 @@ public class Authorisation extends OAuth
 	/** Directory to store user credentials. */
 	protected Path							dataStoreFolder;
 
-	/**
-	 * Global instance of the {@link DataStoreFactory}.
-	 */
+	/** Data store factory. */
 	protected FileDataStoreFactory			dataStoreFactory;
 
 	/** The credential. */
@@ -88,7 +88,7 @@ public class Authorisation extends OAuth
 	public void acquirePermission() throws AuthorisationException
 	{
 		Logger.info("authorising: Google");
-		
+
 		// authorise
 		try
 		{
@@ -110,17 +110,19 @@ public class Authorisation extends OAuth
 			{
 				Logger.error("Enter Client ID and Secret from https://code.google.com/apis/console/?api=drive "
 						+ "into google_secrets.json");
-				
+
 				throw new AuthorisationException("Failed to authorise!");
 			}
 
 			// set up authorisation code flow
 			flow = new GoogleAuthorizationCodeFlow.Builder(Google.httpTransport, Google.JSON_FACTORY, clientSecrets,
 					Collections.singleton(DriveScopes.DRIVE))
-					.setDataStoreFactory(dataStoreFactory).setAccessType("offline").build();
+					.setCredentialDataStore(getDataStore(dataStoreFactory, "google"))
+					.setAccessType("offline")
+					.build();
 
 			credential = new AuthorizationCodeInstalledApp(flow, new LocalServerReceiver()).authorize(userID);
-			
+
 			Logger.info("authorisation successful: Google");
 		}
 		catch (IOException e)
@@ -128,7 +130,7 @@ public class Authorisation extends OAuth
 			Logger.error("authorisation failed: Google");
 			Logger.except(e);
 			e.printStackTrace();
-			
+
 			throw new AuthorisationException("Failed to authorise! " + e.getMessage());
 		}
 
@@ -150,6 +152,40 @@ public class Authorisation extends OAuth
 	protected void saveToken() throws AuthorisationException
 	{
 		throw new UnsupportedOperationException("Google handles saving tokens automatically!");
+	}
+
+	/**
+	 * This method is taken from the Google API. I did so to be able to customise the name of the stored token file.<br />
+	 * <br />
+	 * <br />
+	 * Copyright (c) 2013 Google Inc.<br />
+	 * <br />
+	 * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except<br />
+	 * in compliance with the License. You may obtain a copy of the License at<br />
+	 * <br />
+	 * http://www.apache.org/licenses/LICENSE-2.0<br />
+	 * <br />
+	 * Unless required by applicable law or agreed to in writing, software distributed under the License<br />
+	 * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express<br />
+	 * or implied. See the License for the specific language governing permissions and limitations under<br />
+	 * the License.<br />
+	 * <br />
+	 *
+	 * @author Yaniv Inbar
+	 * @since 1.16
+	 *
+	 * @param dataStoreFactory
+	 *            Data store factory.
+	 * @param storeId
+	 *            Store id.
+	 * @return the data store
+	 * @throws IOException
+	 *             Signals that an I/O exception has occurred.
+	 */
+	public static DataStore<StoredCredential> getDataStore(DataStoreFactory dataStoreFactory, String storeId)
+			throws IOException
+	{
+		return dataStoreFactory.getDataStore(storeId);
 	}
 
 	/**

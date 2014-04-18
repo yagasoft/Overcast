@@ -99,7 +99,7 @@ public class Google extends CSP<File, MediaHttpDownloader, Drive.Files.Insert> i
 			httpTransport = GoogleNetHttpTransport.newTrustedTransport();
 			
 			// authenticate.
-			authorisation = new Authorisation(userID, "google.json");
+			authorisation = new Authorisation(userID, "google");
 			authorisation.authorise();
 			
 			// set up the global Drive instance
