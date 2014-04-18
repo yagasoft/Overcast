@@ -1,12 +1,12 @@
-/*
+/* 
  * Copyright (C) 2011-2014 by Ahmed Osama el-Sawalhy
- *
+ * 
  *		The Modified MIT Licence (GPL v3 compatible)
- * 			License terms are in a separate file (LICENCE.md)
- *
+ * 			Licence terms are in a separate file (LICENCE.md)
+ * 
  *		Project/File: Overcast/com.yagasoft.overcast.implement.dropbox/Dropbox.java
- *
- *			Modified: Apr 15, 2014 (9:50:20 AM)
+ * 
+ *			Modified: 18-Apr-2014 (21:33:57)
  *			   Using: Eclipse J-EE / JDK 7 / Windows 8.1 x64
  */
 
@@ -45,31 +45,31 @@ import com.yagasoft.overcast.implement.dropbox.transfer.Uploader;
  */
 public class Dropbox extends CSP<DbxEntry.File, Downloader, Uploader> implements IProgressListener
 {
-
+	
 	/** The Dropbox singleton. */
 	static private Dropbox	instance;
-
+	
 	/** Constant: application name. */
 	static final String		APPLICATION_NAME	= "Overcast";
-
+	
 	/** The authorisation object. */
 	static Authorisation	authorisation;
-
+	
 	/** The dropbox service object, which is used to call on any services. */
 	static DbxClient		dropboxService;
-
+	
 	/** The remote file/folder factory. */
 	static RemoteFactory	factory;
-
+	
 	/** User locale. */
 	static final String		userLocale			= Locale.getDefault().toString();
-
+	
 	/** Request config. */
 	static DbxRequestConfig	requestConfig;
-
+	
 	/**
 	 * Instantiates a new Dropbox object.
-	 *
+	 * 
 	 * @param userID
 	 *            User ID to identify this account.
 	 * @param port
@@ -82,35 +82,49 @@ public class Dropbox extends CSP<DbxEntry.File, Downloader, Uploader> implements
 	private Dropbox(String userID, int port) throws CSPBuildException, AuthorisationException
 	{
 		Logger.info("building dropbox object");
-
+		
 		requestConfig = new DbxRequestConfig(userID, userLocale);
-
+		
 		// authenticate.
 		authorisation = new Authorisation(userID, "dropbox.json", port);
 		authorisation.authorise();
-
+		
 		// Create a DbxClient, which is what you use to make API calls.
 		dropboxService = new DbxClient(requestConfig, authorisation.getAuthInfo().accessToken
 				, authorisation.getAuthInfo().host);
-
+		
 		// initialise the remote file factory.
 		factory = new RemoteFactory(this);
-
+		
 		name = "Dropbox";
-
+		
 		Logger.info("done building dropbox");
 	}
-
+	
+	/**
+	 * Gets the single instance of Dropbox.
+	 * 
+	 * @param userID
+	 *            User ID to identify this account.
+	 * @param port
+	 *            Port for server to receive access code -- any free port on localhost, but added to dev account.<br />
+	 *            Please, refer to {@link Authorisation} for more details.
+	 * @return single instance of Dropbox
+	 * @throws CSPBuildException
+	 *             the CSP build exception
+	 * @throws AuthorisationException
+	 *             the authorisation exception
+	 */
 	public static Dropbox getInstance(String userID, int port) throws CSPBuildException, AuthorisationException
 	{
 		if (instance == null)
 		{
 			instance = new Dropbox(userID, port);
 		}
-
+		
 		return instance;
 	}
-
+	
 	/**
 	 * @see com.yagasoft.overcast.base.csp.CSP#initTree()
 	 */
@@ -122,10 +136,10 @@ public class Dropbox extends CSP<DbxEntry.File, Downloader, Uploader> implements
 		remoteFileTree.updateFromSource();
 		buildFileTree(false);
 	}
-
+	
 	/**
 	 * Calculate remote free space.
-	 *
+	 * 
 	 * @return Long
 	 * @throws OperationException
 	 *             the operation exception
@@ -135,25 +149,25 @@ public class Dropbox extends CSP<DbxEntry.File, Downloader, Uploader> implements
 	public long calculateRemoteFreeSpace() throws OperationException
 	{
 		Logger.info("getting dropbox freespace");
-
+		
 		try
 		{
 			DbxAccountInfo info = dropboxService.getAccountInfo();
-
+			
 			Logger.info("got dropbox freespace");
-
-			return info.quota.normal;
+			
+			return (info.quota.total - (info.quota.normal + info.quota.shared));
 		}
 		catch (DbxException e)
 		{
 			Logger.error("failed to get free space: Dropbox");
 			Logger.except(e);
 			e.printStackTrace();
-
+			
 			throw new OperationException("Couldn't determine free space. " + e.getMessage());
 		}
 	}
-
+	
 	/**
 	 * @see com.yagasoft.overcast.base.csp.CSP#download(com.yagasoft.overcast.base.container.remote.RemoteFile,
 	 *      com.yagasoft.overcast.base.container.local.LocalFolder, boolean,
@@ -164,7 +178,7 @@ public class Dropbox extends CSP<DbxEntry.File, Downloader, Uploader> implements
 			, boolean overwrite, ITransferProgressListener listener) throws TransferException, OperationException
 	{
 		Logger.info("creating download job for " + file.getPath());
-
+		
 		// check for the file existence in the parent
 		for (com.yagasoft.overcast.base.container.File<?> child : parent.getFilesArray())
 		{
@@ -176,7 +190,7 @@ public class Dropbox extends CSP<DbxEntry.File, Downloader, Uploader> implements
 				{
 					child.delete(new IOperationListener()
 					{
-
+						
 						@Override
 						public void operationProgressChanged(OperationEvent event)
 						{}
@@ -189,7 +203,7 @@ public class Dropbox extends CSP<DbxEntry.File, Downloader, Uploader> implements
 				}
 			}
 		}
-
+		
 		// create a download job and add it to the queue.
 		DownloadJob downloadJob = new DownloadJob((RemoteFile) file, parent, overwrite, null, null);
 		Downloader downloader = new Downloader(file.getPath(), parent.getPath(), downloadJob);
@@ -199,25 +213,25 @@ public class Dropbox extends CSP<DbxEntry.File, Downloader, Uploader> implements
 		downloadJob.addProgressListener(listener);
 		downloadQueue.add(downloadJob);
 		nextDownloadJob();		// check if this job can be executed right away.
-
+		
 		Logger.info("created download job: " + file.getPath());
-
+		
 		return downloadJob;
 	}
-
+	
 	@Override
 	protected void initiateDownload() throws TransferException
 	{
 		// download the file.
 		DbxEntry.File file = currentDownloadJob.getCspTransferer().startDownload();
-
+		
 		// the operation wasn't cancelled ...
 		if (file != null)
 		{
 			currentDownloadJob.success();
 		}
 	}
-
+	
 	@Override
 	public void progressChanged(DownloadJob downloadJob, TransferState state, float progress)
 	{
@@ -226,20 +240,20 @@ public class Dropbox extends CSP<DbxEntry.File, Downloader, Uploader> implements
 			case INITIALISED:
 				currentDownloadJob.notifyProgressListeners(state, progress);
 				break;
-
+			
 			case IN_PROGRESS:
 				currentDownloadJob.progress(progress);
 				break;
-
+			
 			case CANCELLED:
 				currentDownloadJob.notifyProgressListeners(state, progress);
 				break;
-
+			
 			default:
 				break;
 		}
 	}
-
+	
 	/**
 	 * @see com.yagasoft.overcast.base.csp.CSP#upload(com.yagasoft.overcast.base.container.local.LocalFile,
 	 *      com.yagasoft.overcast.base.container.remote.RemoteFolder, boolean,
@@ -250,7 +264,7 @@ public class Dropbox extends CSP<DbxEntry.File, Downloader, Uploader> implements
 			, boolean overwrite, ITransferProgressListener listener) throws TransferException, OperationException
 	{
 		Logger.info("creating upload job for " + file.getPath());
-
+		
 		// overwrite if necessary.
 		for (com.yagasoft.overcast.base.container.File<?> child : parent.getFilesArray())
 		{
@@ -260,7 +274,7 @@ public class Dropbox extends CSP<DbxEntry.File, Downloader, Uploader> implements
 				{
 					child.delete(new IOperationListener()
 					{
-
+						
 						@Override
 						public void operationProgressChanged(OperationEvent event)
 						{}
@@ -273,10 +287,10 @@ public class Dropbox extends CSP<DbxEntry.File, Downloader, Uploader> implements
 				}
 			}
 		}
-
+		
 		// create an object for the file that's going to be uploaded to be linked to.
 		RemoteFile remoteFile = factory.createFile();
-
+		
 		// create an upload job.
 		UploadJob uploadJob = new UploadJob(file, remoteFile, (RemoteFolder) parent
 				, overwrite, null, null);
@@ -287,12 +301,12 @@ public class Dropbox extends CSP<DbxEntry.File, Downloader, Uploader> implements
 		uploadJob.addProgressListener(listener);
 		uploadQueue.add(uploadJob);		// add it to the queue.
 		nextUploadJob();		// check if it can be executed immediately.
-
+		
 		Logger.info("created upload job: " + file.getPath());
-
+		
 		return uploadJob;
 	}
-
+	
 	/**
 	 * @see com.yagasoft.overcast.base.csp.CSP#initiateUpload()
 	 */
@@ -301,14 +315,14 @@ public class Dropbox extends CSP<DbxEntry.File, Downloader, Uploader> implements
 	{
 		// upload the file and retrieve the result.
 		DbxEntry.File file = currentUploadJob.getCspTransferer().startUpload();
-
+		
 		// the operation wasn't cancelled ...
 		if (file != null)
 		{
 			currentUploadJob.success(file);
 		}
 	}
-
+	
 	/**
 	 * @see com.yagasoft.overcast.implement.dropbox.transfer.IProgressListener#progressChanged(com.yagasoft.overcast.implement.dropbox.transfer.UploadJob,
 	 *      com.yagasoft.overcast.base.container.transfer.TransferState, float)
@@ -321,20 +335,20 @@ public class Dropbox extends CSP<DbxEntry.File, Downloader, Uploader> implements
 			case INITIALISED:
 				currentUploadJob.notifyProgressListeners(state, progress);
 				break;
-
+			
 			case IN_PROGRESS:
 				currentUploadJob.progress(progress);
 				break;
-
+			
 			case CANCELLED:
 				currentUploadJob.notifyProgressListeners(state, progress);
 				break;
-
+			
 			default:
 				break;
 		}
 	}
-
+	
 	/**
 	 * @see com.yagasoft.overcast.base.csp.CSP#getAbstractFactory()
 	 */
@@ -343,21 +357,21 @@ public class Dropbox extends CSP<DbxEntry.File, Downloader, Uploader> implements
 	{
 		return factory;
 	}
-
+	
 	// //////////////////////////////////////////////////////////////////////////////////////
 	// #region Getters and setters.
 	// ======================================================================================
-
+	
 	/**
 	 * Gets the factory.
-	 *
+	 * 
 	 * @return the factory
 	 */
 	public static RemoteFactory getFactory()
 	{
 		return factory;
 	}
-
+	
 	/**
 	 * @return the authorisation
 	 */
@@ -366,7 +380,7 @@ public class Dropbox extends CSP<DbxEntry.File, Downloader, Uploader> implements
 	{
 		return authorisation;
 	}
-
+	
 	/**
 	 * @return the dropboxService
 	 */
@@ -374,7 +388,7 @@ public class Dropbox extends CSP<DbxEntry.File, Downloader, Uploader> implements
 	{
 		return dropboxService;
 	}
-
+	
 	/**
 	 * @return the requestConfig
 	 */
@@ -382,9 +396,9 @@ public class Dropbox extends CSP<DbxEntry.File, Downloader, Uploader> implements
 	{
 		return requestConfig;
 	}
-
+	
 	// ======================================================================================
 	// #endregion Getters and setters.
 	// //////////////////////////////////////////////////////////////////////////////////////
-
+	
 }

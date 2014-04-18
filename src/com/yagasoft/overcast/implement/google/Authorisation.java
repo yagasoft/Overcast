@@ -68,7 +68,7 @@ public class Authorisation extends OAuth
 	 */
 	public Authorisation(String userID, String infoFile) throws AuthorisationException
 	{
-		super(userID, infoFile);
+		super(userID, "", infoFile);
 	}
 
 	/**
