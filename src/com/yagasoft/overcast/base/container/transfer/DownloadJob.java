@@ -68,7 +68,7 @@ public abstract class DownloadJob<T> extends TransferJob<T>
 		localFile.setRemoteMapping(remoteFile);
 		remoteFile.setLocalMapping(localFile);
 		parent.add(localFile);
-		Logger.newEntry("downloaded successfully " + localFile.getPath());
+		Logger.info("downloaded successfully: " + localFile.getPath());
 		notifyProgressListeners(TransferState.COMPLETED, 1.0f);
 	}
 	

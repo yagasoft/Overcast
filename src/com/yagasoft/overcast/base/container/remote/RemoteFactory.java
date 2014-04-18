@@ -254,8 +254,8 @@ public abstract class RemoteFactory<FolderSourceType, FolderType extends RemoteF
 		}
 		catch (InstantiationException | IllegalAccessException e)
 		{
-			Logger.post("problem creating folder object " + path);
-			
+			Logger.error("creating folder object: " + path);
+			Logger.except(e);
 			e.printStackTrace();
 		}
 		
@@ -282,8 +282,8 @@ public abstract class RemoteFactory<FolderSourceType, FolderType extends RemoteF
 		}
 		catch (InstantiationException | IllegalAccessException e)
 		{
-			Logger.post("problem creating the file object " + path);
-			
+			Logger.error("creating file object: " + path);
+			Logger.except(e);
 			e.printStackTrace();
 		}
 		

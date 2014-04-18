@@ -1,11 +1,11 @@
-/* 
+/*
  * Copyright (C) 2011-2014 by Ahmed Osama el-Sawalhy
- * 
+ *
  *		The Modified MIT Licence (GPL v3 compatible)
  * 			License terms are in a separate file (LICENCE.md)
- * 
+ *
  *		Project/File: Overcast/com.yagasoft.overcast.implement.dropbox/Dropbox.java
- * 
+ *
  *			Modified: Apr 15, 2014 (9:50:20 AM)
  *			   Using: Eclipse J-EE / JDK 7 / Windows 8.1 x64
  */
@@ -81,9 +81,8 @@ public class Dropbox extends CSP<DbxEntry.File, Downloader, Uploader> implements
 	 */
 	private Dropbox(String userID, int port) throws CSPBuildException, AuthorisationException
 	{
-		Logger.newTitledSection("building csp");
-		Logger.newEntry("building dropbox object");
-		
+		Logger.info("building dropbox object");
+
 		requestConfig = new DbxRequestConfig(userID, userLocale);
 
 		// authenticate.
@@ -98,8 +97,8 @@ public class Dropbox extends CSP<DbxEntry.File, Downloader, Uploader> implements
 		factory = new RemoteFactory(this);
 
 		name = "Dropbox";
-		
-		Logger.endSection("done building dropbox");
+
+		Logger.info("done building dropbox");
 	}
 
 	public static Dropbox getInstance(String userID, int port) throws CSPBuildException, AuthorisationException
@@ -135,18 +134,22 @@ public class Dropbox extends CSP<DbxEntry.File, Downloader, Uploader> implements
 	@Override
 	public long calculateRemoteFreeSpace() throws OperationException
 	{
-		Logger.newSection("getting dropbox freespace");
-		
+		Logger.info("getting dropbox freespace");
+
 		try
 		{
 			DbxAccountInfo info = dropboxService.getAccountInfo();
+
+			Logger.info("got dropbox freespace");
+
 			return info.quota.normal;
 		}
 		catch (DbxException e)
 		{
-			Logger.newEntry("failed to get free space!");
-			
+			Logger.error("failed to get free space: Dropbox");
+			Logger.except(e);
 			e.printStackTrace();
+
 			throw new OperationException("Couldn't determine free space. " + e.getMessage());
 		}
 	}
@@ -160,8 +163,8 @@ public class Dropbox extends CSP<DbxEntry.File, Downloader, Uploader> implements
 	public DownloadJob download(com.yagasoft.overcast.base.container.remote.RemoteFile<?> file, LocalFolder parent
 			, boolean overwrite, ITransferProgressListener listener) throws TransferException, OperationException
 	{
-		Logger.newSection("creating download job for " + file.getPath());
-		
+		Logger.info("creating download job for " + file.getPath());
+
 		// check for the file existence in the parent
 		for (com.yagasoft.overcast.base.container.File<?> child : parent.getFilesArray())
 		{
@@ -181,6 +184,7 @@ public class Dropbox extends CSP<DbxEntry.File, Downloader, Uploader> implements
 				}
 				else
 				{
+					Logger.error("downloading, file exists: " + file.getPath() + ", in " + parent.getPath());
 					throw new OperationException("File exists!");
 				}
 			}
@@ -196,8 +200,8 @@ public class Dropbox extends CSP<DbxEntry.File, Downloader, Uploader> implements
 		downloadQueue.add(downloadJob);
 		nextDownloadJob();		// check if this job can be executed right away.
 
-		Logger.endSection("done!");
-		
+		Logger.info("created download job: " + file.getPath());
+
 		return downloadJob;
 	}
 
@@ -245,8 +249,8 @@ public class Dropbox extends CSP<DbxEntry.File, Downloader, Uploader> implements
 	public UploadJob upload(LocalFile file, com.yagasoft.overcast.base.container.remote.RemoteFolder<?> parent
 			, boolean overwrite, ITransferProgressListener listener) throws TransferException, OperationException
 	{
-		Logger.newSection("creating upload job for " + file.getPath());
-		
+		Logger.info("creating upload job for " + file.getPath());
+
 		// overwrite if necessary.
 		for (com.yagasoft.overcast.base.container.File<?> child : parent.getFilesArray())
 		{
@@ -264,6 +268,7 @@ public class Dropbox extends CSP<DbxEntry.File, Downloader, Uploader> implements
 				}
 				else
 				{
+					Logger.error("uploading, file exists: " + file.getPath() + ", in " + parent.getPath());
 					throw new OperationException("File exists!");
 				}
 			}
@@ -282,8 +287,8 @@ public class Dropbox extends CSP<DbxEntry.File, Downloader, Uploader> implements
 		uploadJob.addProgressListener(listener);
 		uploadQueue.add(uploadJob);		// add it to the queue.
 		nextUploadJob();		// check if it can be executed immediately.
-		
-		Logger.endSection("done!");
+
+		Logger.info("created upload job: " + file.getPath());
 
 		return uploadJob;
 	}

@@ -82,7 +82,7 @@ public abstract class UploadJob<T, S> extends TransferJob<T>
 		localFile.setRemoteMapping(remoteFile);
 		remoteFile.setLocalMapping(localFile);
 		parent.add(remoteFile);
-		Logger.newEntry("uploaded successfully " + remoteFile.getPath());
+		Logger.info("uploaded successfully: " + remoteFile.getPath());
 		notifyProgressListeners(TransferState.COMPLETED, 1.0f);
 	}
 	

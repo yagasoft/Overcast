@@ -87,7 +87,7 @@ public class Authorisation extends OAuth
 	@Override
 	public void acquirePermission() throws AuthorisationException
 	{
-		Logger.newEntry("authorising ...");
+		Logger.info("authorising: Google");
 		
 		// authorise
 		try
@@ -108,7 +108,7 @@ public class Authorisation extends OAuth
 			// problem?!
 			if (clientId.startsWith("Enter") || clientSecret.startsWith("Enter"))
 			{
-				Logger.newEntry("Enter Client ID and Secret from https://code.google.com/apis/console/?api=drive "
+				Logger.error("Enter Client ID and Secret from https://code.google.com/apis/console/?api=drive "
 						+ "into google_secrets.json");
 				
 				throw new AuthorisationException("Failed to authorise!");
@@ -121,13 +121,14 @@ public class Authorisation extends OAuth
 
 			credential = new AuthorizationCodeInstalledApp(flow, new LocalServerReceiver()).authorize(userID);
 			
-			Logger.newEntry("authorisation successful");
+			Logger.info("authorisation successful: Google");
 		}
 		catch (IOException e)
 		{
-			Logger.newEntry("authorisation failed!");
-			
+			Logger.error("authorisation failed: Google");
+			Logger.except(e);
 			e.printStackTrace();
+			
 			throw new AuthorisationException("Failed to authorise! " + e.getMessage());
 		}
 

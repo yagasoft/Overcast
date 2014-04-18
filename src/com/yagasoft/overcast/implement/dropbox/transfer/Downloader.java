@@ -92,7 +92,7 @@ public class Downloader
 	 */
 	public File startDownload() throws TransferException
 	{
-		Logger.newEntry("started file download ..." + remoteFilePath);
+		Logger.info("started file download: " + remoteFilePath);
 		
 		try
 		{
@@ -113,13 +113,14 @@ public class Downloader
 						try
 						{
 							downloaded = Files.size(localFile);
-							Logger.newEntry("downloaded " + NumberFormat.getPercentInstance().format(downloaded / (double) size)
-									+ " done.");
+							Logger.info("downloaded " + NumberFormat.getPercentInstance().format(downloaded / (double) size)
+									+ " done. " + remoteFilePath);
 							notifyProgressListeners(TransferState.IN_PROGRESS, (downloaded / (float) size));
 							Thread.sleep(1000);
 						}
 						catch (IOException | InterruptedException e)
 						{
+							Logger.except(e);
 							e.printStackTrace();
 						}
 					} while (!done);
@@ -136,13 +137,13 @@ public class Downloader
 
 			if (!done)
 			{
-				Logger.newEntry("failed to download file " + remoteFilePath);
+				Logger.error("failed to download file: " + remoteFilePath);
 				
 				throw new TransferException("Failed to download file! " + e.getMessage());
 			}
 			else
 			{
-				Logger.newEntry("cancelled download " + remoteFilePath);
+				Logger.info("cancelled download: " + remoteFilePath);
 				
 				notifyProgressListeners(TransferState.CANCELLED, 0.0f);
 				return null;

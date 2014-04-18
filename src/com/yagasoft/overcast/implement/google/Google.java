@@ -91,8 +91,7 @@ public class Google extends CSP<File, MediaHttpDownloader, Drive.Files.Insert> i
 	 */
 	private Google(String userID) throws CSPBuildException, AuthorisationException
 	{
-		Logger.newTitledSection("building csp");
-		Logger.newEntry("building google object");
+		Logger.info("building google object");
 		
 		try
 		{
@@ -112,11 +111,11 @@ public class Google extends CSP<File, MediaHttpDownloader, Drive.Files.Insert> i
 
 			name = "Google Drive";
 			
-			Logger.endSection("done building google");
+			Logger.info("done building google");
 		}
 		catch (IOException | GeneralSecurityException e)
 		{
-			Logger.endSection("failed in building google");
+			Logger.error("failed in building google");
 			
 			e.printStackTrace();
 			throw new CSPBuildException("Can't construct CSP object! " + e.getMessage());
@@ -151,19 +150,23 @@ public class Google extends CSP<File, MediaHttpDownloader, Drive.Files.Insert> i
 	@Override
 	public long calculateRemoteFreeSpace() throws OperationException
 	{
-		Logger.newSection("getting google freespace");
+		Logger.info("getting google freespace");
 		
 		try
 		{
 			About about = driveService.about().get().execute();
 			remoteFreeSpace = about.getQuotaBytesTotal() - about.getQuotaBytesUsed();
+			
+			Logger.info("got Google's free space");
+			
 			return remoteFreeSpace;
 		}
 		catch (IOException e)
 		{
-			Logger.newEntry("failed to get free space!");
-			
+			Logger.error("failed to get free space: Google");
+			Logger.except(e);
 			e.printStackTrace();
+			
 			throw new OperationException("Couldn't get free space! " + e.getMessage());
 		}
 	}
@@ -177,7 +180,7 @@ public class Google extends CSP<File, MediaHttpDownloader, Drive.Files.Insert> i
 	public DownloadJob download(com.yagasoft.overcast.base.container.remote.RemoteFile<?> file, LocalFolder parent
 			, boolean overwrite, ITransferProgressListener listener) throws TransferException, OperationException
 	{
-		Logger.newSection("creating download job for " + file.getPath());
+		Logger.info("creating download job for " + file.getPath());
 
 		// check for the file existence in the parent
 		for (com.yagasoft.overcast.base.container.File<?> child : parent.getFilesArray())
@@ -198,6 +201,7 @@ public class Google extends CSP<File, MediaHttpDownloader, Drive.Files.Insert> i
 				}
 				else
 				{
+					Logger.error("downloading, file exists: " + file.getPath() + ", in " + parent.getPath());
 					throw new OperationException("File exists!");
 				}
 			}
@@ -218,7 +222,7 @@ public class Google extends CSP<File, MediaHttpDownloader, Drive.Files.Insert> i
 		downloadJob.addProgressListener(listener);
 		nextDownloadJob();		// check if this job can be executed right away.
 
-		Logger.endSection("done!");
+		Logger.info("created download job: " + file.getPath());
 
 		return downloadJob;
 	}
@@ -242,7 +246,10 @@ public class Google extends CSP<File, MediaHttpDownloader, Drive.Files.Insert> i
 		}
 		catch (IOException e)
 		{
+			Logger.error("downloading: " + currentDownloadJob.getRemoteFile().getPath());
+			Logger.except(e);
 			e.printStackTrace();
+			
 			throw new TransferException("Failed to download file! " + e.getMessage());
 		}
 
@@ -277,7 +284,7 @@ public class Google extends CSP<File, MediaHttpDownloader, Drive.Files.Insert> i
 	public UploadJob upload(LocalFile file, com.yagasoft.overcast.base.container.remote.RemoteFolder<?> parent
 			, boolean overwrite, ITransferProgressListener listener) throws TransferException, OperationException
 	{
-		Logger.newSection("creating upload job for " + file.getPath());
+		Logger.info("creating upload job for " + file.getPath());
 		
 		// overwrite if necessary.
 		for (com.yagasoft.overcast.base.container.File<?> child : parent.getFilesArray())
@@ -296,6 +303,7 @@ public class Google extends CSP<File, MediaHttpDownloader, Drive.Files.Insert> i
 				}
 				else
 				{
+					Logger.error("uploading, file exists: " + file.getPath() + ", in " + parent.getPath());
 					throw new OperationException("File exists!");
 				}
 			}
@@ -331,15 +339,16 @@ public class Google extends CSP<File, MediaHttpDownloader, Drive.Files.Insert> i
 			uploadJob.addProgressListener(listener);
 			nextUploadJob();		// check if it can be executed immediately.
 			
-			Logger.endSection("done!");
+			Logger.info("created upload job: " + file.getPath());
 
 			return uploadJob;
 		}
 		catch (IOException e)
 		{
-			Logger.endSection("failed!");
-			
+			Logger.error("uploading: " + currentUploadJob.getLocalFile().getPath());
+			Logger.except(e);
 			e.printStackTrace();
+			
 			throw new TransferException("Failed to upload file! " + e.getMessage());
 		}
 	}
@@ -356,7 +365,10 @@ public class Google extends CSP<File, MediaHttpDownloader, Drive.Files.Insert> i
 		}
 		catch (IOException e)
 		{
+			Logger.error("uploading: " + currentUploadJob.getLocalFile().getPath());
+			Logger.except(e);
 			e.printStackTrace();
+			
 			throw new TransferException("Failed to upload file! " + e.getMessage());
 		}
 	}

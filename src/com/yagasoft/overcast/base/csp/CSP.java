@@ -122,7 +122,7 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 		// build more levels if required.
 		remoteFileTree.buildTree(recursively);
 		
-		Logger.endSection(">>> Finished building the root tree.");
+		Logger.info("finished building the root tree: " + name);
 	}
 	
 	/**
@@ -137,7 +137,7 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 	{
 		remoteFileTree.buildTree(numberOfLevels);
 		
-		Logger.endSection(">>> Finished building the root tree up to level " + numberOfLevels);
+		Logger.info("finished building the root tree (" + name + ") up to level: " + numberOfLevels);
 	}
 	
 	/**
@@ -173,8 +173,7 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 	public DownloadJob<?>[] download(RemoteFolder<?> folder, LocalFolder parent, boolean overwrite
 			, ITransferProgressListener listener) throws TransferException, OperationException, CreationException
 	{
-		Logger.newTitledSection("downloading folder");
-		Logger.newEntry("downloading folder: " + folder.getPath());
+		Logger.info("downloading folder: " + folder.getPath());
 		
 		// make sure the folder doesn't exist at the destination.
 		Container<?> result = parent.searchByName(folder.getName(), false);
@@ -262,7 +261,7 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 			// ... take one job from the queue ...
 			currentDownloadJob = downloadQueue.remove();
 			
-			Logger.newSection(">>> starting a new download: " + currentDownloadJob.getRemoteFile().getPath());
+			Logger.info("starting a new download (" + name + "): " + currentDownloadJob.getRemoteFile().getPath());
 			
 			currentDownloadThread = new Thread(new Runnable()
 			{
@@ -273,15 +272,12 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 					try
 					{	// start the transfer (starts when thread starts below).
 						initiateDownload();
-						
-						Logger.endSection("Finished download.");
+						Logger.info("finished download (" + name + "): " + currentDownloadJob.getRemoteFile().getPath());
 					}
 					catch (TransferException e)
 					{	// in case of failure, notify the listeners of the failure, and check for more jobs.
 						e.printStackTrace();
 						currentDownloadJob.failure();
-						
-						Logger.endSection("Download failed!");
 					}
 					finally
 					{
@@ -319,7 +315,7 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 		}
 		else
 		{
-			Logger.post("cancelling download: " + currentDownloadJob.getRemoteFile().getPath());
+			Logger.info("cancelling download: " + currentDownloadJob.getRemoteFile().getPath());
 			
 			downloadQueue.remove(job);
 		}
@@ -330,7 +326,7 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 	 */
 	public void cancelCurrentDownload()
 	{
-		Logger.post("cancelling download: " + currentDownloadJob.getRemoteFile().getPath());
+		Logger.info("cancelling download: " + currentDownloadJob.getRemoteFile().getPath());
 		
 		currentDownloadJob.cancelTransfer();
 	}
@@ -368,8 +364,7 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 	public UploadJob<?, ?>[] upload(LocalFolder folder, RemoteFolder<?> parent, boolean overwrite
 			, ITransferProgressListener listener) throws TransferException, OperationException, CreationException
 	{
-		Logger.newTitledSection("uploading folder");
-		Logger.newEntry("uploading folder: " + folder.getPath());
+		Logger.info("uploading folder: " + folder.getPath());
 		
 		// check if the folder exists at the CSP.
 		Container<?> result = parent.searchByName(folder.getName(), false);
@@ -449,7 +444,7 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 		{
 			currentUploadJob = uploadQueue.remove();
 			
-			Logger.newSection(">>> starting a new upload: " + currentUploadJob.getLocalFile().getPath());
+			Logger.info("starting a new upload (" + name + "): " + currentUploadJob.getLocalFile().getPath());
 			
 			currentUploadThread = new Thread(new Runnable()
 			{
@@ -462,14 +457,12 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 						// start the transfer (starts when thread starts below).
 						initiateUpload();
 						
-						Logger.endSection("Finished upload.");
+						Logger.info("finished upload (" + name + "): " + currentUploadJob.getLocalFile().getPath());
 					}
  					catch (TransferException e)
 					{
 						e.printStackTrace();
 						currentUploadJob.failure();
-						
-						Logger.endSection("Upload failed!");
 					}
 					finally
 					{
@@ -506,7 +499,7 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 		}
 		else
 		{
-			Logger.post("cancelling upload: " + currentUploadJob.getLocalFile().getPath());
+			Logger.info("cancelling upload: " + currentUploadJob.getLocalFile().getPath());
 			
 			uploadQueue.remove(job);
 		}
@@ -517,7 +510,7 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 	 */
 	public void cancelCurrentUpload()
 	{
-		Logger.post("cancelling upload: " + currentUploadJob.getLocalFile().getPath());
+		Logger.info("cancelling upload: " + currentUploadJob.getLocalFile().getPath());
 		
 		currentUploadJob.cancelTransfer();
 	}

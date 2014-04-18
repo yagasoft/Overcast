@@ -103,7 +103,7 @@ public class Uploader
 	 */
 	public File startUpload() throws TransferException
 	{
-		Logger.newEntry("started file upload ..." + localFilePath);
+		Logger.info("started file upload: " + localFilePath);
 		
 		// use buffers to read the file in case the file is too big for simpler API methods.
 		RandomAccessFile file = null;
@@ -124,7 +124,7 @@ public class Uploader
 			notifyProgressListeners(TransferState.INITIALISED, 0.0f);
 			String uploadId = Dropbox.getDropboxService().chunkedUploadFirst(buffer.array());
 			
-			Logger.newEntry("uploaded first chunk!");
+			Logger.info("uploaded first chunk!");
 			
 			offset += buffer.remaining();		// increment offset; used for remote marker.
 			notifyProgressListeners(TransferState.IN_PROGRESS, (offset / (float) size));
@@ -141,15 +141,15 @@ public class Uploader
 				buffer.flip();
 				Dropbox.getDropboxService().chunkedUploadAppend(uploadId, offset, buffer.array());
 				offset += buffer.remaining();
-				Logger.newEntry("uploaded " + (offset / chunkSize) + " / " + (size / chunkSize)
-						+ " => " + NumberFormat.getPercentInstance().format(offset / (double) size) + " done.");
+				Logger.info("uploaded " + (offset / chunkSize) + " / " + (size / chunkSize)
+						+ " => " + NumberFormat.getPercentInstance().format(offset / (double) size) + " done. " + localFilePath);
 				notifyProgressListeners(TransferState.IN_PROGRESS, (offset / (float) size));
 				buffer.clear();
 			}
 
 			if (stop)
 			{
-				Logger.newEntry("upload cancelled " + localFilePath);
+				Logger.info("upload cancelled: " + localFilePath);
 				
 				notifyProgressListeners(TransferState.CANCELLED, 0.0f);
 				return null;
@@ -161,9 +161,10 @@ public class Uploader
 		}
 		catch (IOException | DbxException e)
 		{
-			Logger.newEntry("problem with upload " + localFilePath);
-			
+			Logger.error("upload: " + localFilePath);
+			Logger.except(e);
 			e.printStackTrace();
+			
 			throw new TransferException("Failed to upload file! " + e.getMessage());
 		}
 		finally

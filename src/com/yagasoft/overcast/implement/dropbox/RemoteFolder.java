@@ -1,11 +1,11 @@
-/* 
+/*
  * Copyright (C) 2011-2014 by Ahmed Osama el-Sawalhy
- * 
+ *
  *		The Modified MIT Licence (GPL v3 compatible)
  * 			License terms are in a separate file (LICENCE.md)
- * 
+ *
  *		Project/File: Overcast/com.yagasoft.overcast.implement.dropbox/RemoteFolder.java
- * 
+ *
  *			Modified: Apr 15, 2014 (9:56:55 AM)
  *			   Using: Eclipse J-EE / JDK 7 / Windows 8.1 x64
  */
@@ -34,51 +34,59 @@ import com.yagasoft.overcast.exception.OperationException;
 
 /**
  * RemoteFolder of Dropbox.
- * 
+ *
  * @see com.yagasoft.overcast.base.container.remote.RemoteFolder
  */
 public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.RemoteFolder<DbxEntry.Folder>
 {
-	
+
 	/**
 	 * Better use the factory in Google class.
 	 */
 	public RemoteFolder()
 	{}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.base.container.Container#generateId()
 	 */
 	@Override
 	public void generateId()
 	{}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.base.container.Folder#create(com.yagasoft.overcast.base.container.Folder, IOperationListener)
 	 */
 	@Override
 	public synchronized void create(Folder<?> parent, IOperationListener listener) throws CreationException
 	{
+		Logger.info("creating folder: " + parent.getPath() + "/" + name);
+
 		addOperationListener(listener, Operation.CREATE);
-		
+
 		// check if the folder exists in the parent ...
 		RemoteFolder result = parent.searchByName(name, false);
-		
+
 		try
 		{
 			// if it exists, problem!
 			if (result != null)
 			{
+				Logger.error("creating folder -- already exists: " + parent.getPath() + "/" + name);
 				throw new CreationException("Folder already Exists!");
 			}
-			
+
 			sourceObject = Dropbox.dropboxService.createFolder(parent.getPath() + "/" + name);
 			parent.add(this);
 			notifyOperationListeners(Operation.CREATE, OperationState.COMPLETED, 1.0f);
+
+			Logger.info("finished creating folder: " + path);
 		}
 		catch (DbxException | CreationException e)
 		{
+			Logger.error("creating folder: " + parent.getPath() + "/" + name);
+			Logger.except(e);
 			e.printStackTrace();
+
 			notifyOperationListeners(Operation.CREATE, OperationState.FAILED, 0f);
 			throw new CreationException("Couldn't create folder! " + e.getMessage());
 		}
@@ -86,17 +94,17 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 		{
 			clearOperationListeners(Operation.CREATE);
 		}
-		
+
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.base.container.Container#isExist()
 	 */
 	@Override
 	public synchronized boolean isExist() throws AccessException
 	{
-		Logger.newSection("checking folder existence " + path);
-		
+		Logger.info("checking existence: " + path);
+
 		// if fetching meta-data of the file fails, then it doesn't exist, probably.
 		try
 		{
@@ -104,45 +112,43 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 		}
 		catch (DbxException e)
 		{
-			Logger.endSection("problem!");
-			
+			Logger.error("can't determine if folder exists or not: " + path);
+			Logger.except(e);
 			e.printStackTrace();
+
 			throw new AccessException("Couldn't determine existence! " + e.getMessage());
 		}
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.base.container.Folder#buildTree(int)
 	 */
 	@Override
-	public synchronized void buildTree(int numberOfLevels) throws OperationException
+	public synchronized void buildTree(final int numberOfLevels) throws OperationException
 	{
-		Logger.newTitledSection("building file tree");
-		Logger.newEntry("building tree of " + path);
-		
 		// no more levels to check.
 		if (numberOfLevels < 0)
 		{
 			return;
 		}
-		
+
 		try
 		{
 			// get folder list from Dropbox (metadata)
 			DbxEntry.WithChildren listing = Dropbox.dropboxService.getMetadataWithChildren(path);
-			
+
 			//
 			HashMap<String, DbxEntry> children = new HashMap<String, DbxEntry>();
-			
+
 			for (DbxEntry child : listing.children)
 			{
 				children.put(child.isFolder() ? child.path : ((DbxEntry.File) child).rev, child);
 			}
-			
+
 			// collect the children IDs and filter already existing and deleted ones.
 			ArrayList<String> childrenIds = new ArrayList<String>(children.keySet());
 			removeObsolete(childrenIds, true);
-			
+
 			// if there're new children on the server ...
 			if ( !childrenIds.isEmpty())
 			{
@@ -150,41 +156,71 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 				for (String child : childrenIds)
 				{
 					DbxEntry childAsEntry = children.get(child);
-					
+
 					// if the child is a folder ...
 					if (childAsEntry.isFolder())
 					{
 						// create an object for it using the factory.
 						RemoteFolder folder = Dropbox.factory.createFolder((DbxEntry.Folder) childAsEntry, false);
 						add(folder);	// add it to this parent.
-						
-						Logger.newEntry("found folder: " + folder.parent.getName() + "/" + folder.name + " => " + folder.id);
+
+						Logger.info("found folder: " + folder.getPath());
 					}
 					else
 					{
 						RemoteFile file = Dropbox.factory.createFile((DbxEntry.File) childAsEntry, false);
 						add(file);
-						
-						Logger.newEntry("found file: " + name + "/" + file.getName() + " => " + file.getId());
+
+						Logger.info("found file: " + file.getPath());
 					}
 				}
 			}
 		}
 		catch (DbxException e)
 		{
-			Logger.newEntry("problem!");
-			
+			Logger.error("building folder tree: " + path);
+			Logger.except(e);
 			e.printStackTrace();
+
 			throw new OperationException("Failed to build tree! " + e.getMessage());
 		}
-		
+
 		// load sub-folders up to the level.
-		for (Folder<?> folder : getFoldersArray())
+		for (final Folder<?> folder : getFoldersArray())
 		{
-			folder.buildTree(numberOfLevels - 1);
+			try
+			{
+				new Thread(new Runnable()
+				{
+
+					@Override
+					public void run()
+					{
+						try
+						{
+							slots.acquire();
+							folder.buildTree(numberOfLevels - 1);		// build recursively.
+							slots.release();
+						}
+						catch (InterruptedException | OperationException e)
+						{
+							e.printStackTrace();
+						}
+					}
+				}).start();
+			}
+			catch (RuntimeException e)
+			{
+				Logger.error("building folder tree: " + folder.getPath());
+				Logger.except(e);
+
+				throw new OperationException(e.getMessage());
+			}
 		}
+		
+		Logger.info("finished building tree: " + path);
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.base.container.Folder#calculateSize()
 	 */
@@ -193,42 +229,40 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 	{
 		return 0;
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.base.container.Folder#updateInfo(boolean, boolean)
 	 */
 	@Override
 	public synchronized void updateInfo(boolean folderContents, boolean recursively)
 	{
-		Logger.newSection("updating folder info " + path);
-		
 		id = sourceObject.path;
 		name = sourceObject.name;
 		path = (((parent == null) || parent.getPath().equals("/")) ? "/" : (parent.getPath() + "/")) + name;
 		// size = calculateSize(); // commented because it might be heavy, so better do it explicitly.
-		
-		Logger.newEntry("done!");
+
+		Logger.info("updated info: " + path);
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.base.container.Folder#updateFromSource(boolean, boolean)
 	 */
 	@Override
 	public synchronized void updateFromSource(boolean folderContents, final boolean recursively) throws OperationException
 	{
-		Logger.newSection("updating folder from csp " + path);
-		
+		Logger.info("updating info from source: " + path);
+
 		if (folderContents)
 		{
 			buildTree(recursively);
 		}
-		
+
 		try
 		{
 			// re-fetch the meta-data from the server.
 			sourceObject = Dropbox.dropboxService.getMetadata((sourceObject == null) ? path : sourceObject.path).asFolder();
 			updateInfo();
-			
+
 			try
 			{
 				// get link if available.
@@ -238,29 +272,33 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 			{
 				link = null;
 			}
+
+			Logger.info("finished updating info from source: " + path);
 		}
 		catch (DbxException e)
 		{
-			Logger.newEntry("problem!");
-			
+			Logger.error("updating info from source: " + path);
+			Logger.except(e);
 			e.printStackTrace();
+
 			throw new OperationException("Couldn't update info! " + e.getMessage());
 		}
 	}
-	
+
 	/**
-	 * @see com.yagasoft.overcast.base.container.Container#copy(com.yagasoft.overcast.base.container.Folder, boolean, IOperationListener)
+	 * @see com.yagasoft.overcast.base.container.Container#copy(com.yagasoft.overcast.base.container.Folder, boolean,
+	 *      IOperationListener)
 	 */
 	@Override
 	public synchronized Container<?> copy(Folder<?> destination, boolean overwrite, IOperationListener listener)
 			throws OperationException
 	{
-		Logger.newSection("copying folder " + path);
-		
+		Logger.info("copying folder: " + path);
+
 		addOperationListener(listener, Operation.COPY);
-		
+
 		Container<?> existingFile = destination.searchByName(name, false);
-		
+
 		try
 		{
 			if ((existingFile != null) && (existingFile instanceof RemoteFile))
@@ -269,7 +307,7 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 				{
 					existingFile.delete(new IOperationListener()
 					{
-						
+
 						@Override
 						public void operationProgressChanged(OperationEvent event)
 						{}
@@ -277,24 +315,26 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 				}
 				else
 				{
+					Logger.error("copying folder -- already exists: " + path);
 					throw new OperationException("Folder already exists!");
 				}
 			}
-			
+
 			Dropbox.dropboxService.copy(path, destination.getPath() + "/" + name);
 			RemoteFolder file = Dropbox.getFactory().createFolder(sourceObject, false);
 			destination.add(file);
 			notifyOperationListeners(Operation.COPY, OperationState.COMPLETED, 1.0f);
-			
-			Logger.newEntry("done!");
-			
+
+			Logger.info("finished copying to: " + destination.getPath());
+
 			return file;
 		}
 		catch (DbxException | OperationException e)
 		{
-			Logger.newEntry("problem!");
-			
+			Logger.error("copying folder: " + path);
+			Logger.except(e);
 			e.printStackTrace();
+
 			notifyOperationListeners(Operation.COPY, OperationState.FAILED, 0.0f);
 			throw new OperationException("Copy of folder failed! " + e.getMessage());
 		}
@@ -303,20 +343,21 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 			clearOperationListeners(Operation.COPY);
 		}
 	}
-	
+
 	/**
-	 * @see com.yagasoft.overcast.base.container.Container#move(com.yagasoft.overcast.base.container.Folder, boolean, IOperationListener)
+	 * @see com.yagasoft.overcast.base.container.Container#move(com.yagasoft.overcast.base.container.Folder, boolean,
+	 *      IOperationListener)
 	 */
 	@Override
 	public synchronized void move(Folder<?> destination, boolean overwrite, IOperationListener listener)
 			throws OperationException
 	{
-		Logger.newSection("moving file " + path);
-		
+		Logger.info("moving folder: " + path);
+
 		addOperationListener(listener, Operation.MOVE);
-		
+
 		Container<?> existingFile = destination.searchByName(name, false);
-		
+
 		try
 		{
 			if ((existingFile != null) && (existingFile instanceof RemoteFile))
@@ -325,7 +366,7 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 				{
 					existingFile.delete(new IOperationListener()
 					{
-						
+
 						@Override
 						public void operationProgressChanged(OperationEvent event)
 						{}
@@ -333,22 +374,24 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 				}
 				else
 				{
+					Logger.error("moving folder -- already exists: " + path);
 					throw new OperationException("Folder already exists.");
 				}
 			}
-			
+
 			Dropbox.dropboxService.move(path, destination.getPath() + "/" + name);
 			parent.remove(this);
 			destination.add(this);
 			notifyOperationListeners(Operation.MOVE, OperationState.COMPLETED, 1.0f);
-			
-			Logger.newEntry("done!");
+
+			Logger.info("finished moving to: " + destination.getPath());
 		}
 		catch (DbxException | OperationException e)
 		{
-			Logger.newEntry("problem!");
-			
+			Logger.error("moving folder: " + path);
+			Logger.except(e);
 			e.printStackTrace();
+
 			notifyOperationListeners(Operation.MOVE, OperationState.FAILED, 0.0f);
 			throw new OperationException("Move of folder failed! " + e.getMessage());
 		}
@@ -357,36 +400,38 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 			clearOperationListeners(Operation.MOVE);
 		}
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.base.container.Container#rename(java.lang.String, IOperationListener)
 	 */
 	@Override
 	public synchronized void rename(String newName, IOperationListener listener) throws OperationException
 	{
-		Logger.newSection("renaming file " + path);
-		
+		Logger.info("renaming folder: " + path);
+
 		addOperationListener(listener, Operation.RENAME);
-		
+
 		Container<?> existingFile = parent.searchByName(newName, false);
-		
+
 		try
 		{
 			if ((existingFile != null) && (existingFile instanceof RemoteFile))
 			{
+				Logger.error("renaming folder -- already exists: " + path);
 				throw new OperationException("Folder already exists!");
 			}
-			
+
 			Dropbox.dropboxService.move(path, parent.getPath() + "/" + newName);
 			notifyOperationListeners(Operation.RENAME, OperationState.COMPLETED, 1.0f);
-			
-			Logger.newEntry("done!");
+
+			Logger.info("finished renaming folder: " + path);
 		}
 		catch (DbxException | OperationException e)
 		{
-			Logger.newEntry("problem!");
-			
+			Logger.error("renaming folder: " + path);
+			Logger.except(e);
 			e.printStackTrace();
+
 			notifyOperationListeners(Operation.RENAME, OperationState.FAILED, 0.0f);
 			throw new OperationException("Couldn't rename folder! " + e.getMessage());
 		}
@@ -395,30 +440,31 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 			clearOperationListeners(Operation.RENAME);
 		}
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.base.container.Container#delete(IOperationListener)
 	 */
 	@Override
 	public synchronized void delete(IOperationListener listener) throws OperationException
 	{
-		Logger.newSection("deleting file " + path);
-		
+		Logger.info("deleting folder: " + path);
+
 		addOperationListener(listener, Operation.DELETE);
-		
+
 		try
 		{
 			Dropbox.dropboxService.delete(path);
 			parent.remove(this);
 			notifyOperationListeners(Operation.DELETE, OperationState.COMPLETED, 1.0f);
-			
-			Logger.newEntry("done!");
+
+			Logger.info("finished deleting folder: " + path);
 		}
 		catch (DbxException e)
 		{
-			Logger.newEntry("problem!");
-			
+			Logger.error("deleting folder: " + path);
+			Logger.except(e);
 			e.printStackTrace();
+
 			notifyOperationListeners(Operation.DELETE, OperationState.FAILED, 0.0f);
 			throw new OperationException("Couldn't delete folder! " + e.getMessage());
 		}
@@ -426,9 +472,9 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 		{
 			clearOperationListeners(Operation.DELETE);
 		}
-		
+
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.base.container.Container#updateInfo()
 	 */
@@ -437,7 +483,7 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 	{
 		updateInfo(false, false);
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.base.container.Container#updateFromSource()
 	 */
@@ -446,5 +492,5 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 	{
 		updateFromSource(false, false);
 	}
-	
+
 }

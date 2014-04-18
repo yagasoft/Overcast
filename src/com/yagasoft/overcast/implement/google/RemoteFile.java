@@ -1,11 +1,11 @@
-/* 
+/*
  * Copyright (C) 2011-2014 by Ahmed Osama el-Sawalhy
- * 
+ *
  *		The Modified MIT Licence (GPL v3 compatible)
  * 			License terms are in a separate file (LICENCE.md)
- * 
+ *
  *		Project/File: Overcast/com.yagasoft.overcast.implement.google/RemoteFile.java
- * 
+ *
  *			Modified: Apr 15, 2014 (2:02:31 PM)
  *			   Using: Eclipse J-EE / JDK 7 / Windows 8.1 x64
  */
@@ -56,17 +56,18 @@ public class RemoteFile extends com.yagasoft.overcast.base.container.remote.Remo
 	@Override
 	public synchronized boolean isExist() throws OperationException
 	{
-		Logger.newSection("checking existence of " + path);
-		
+		Logger.info("checking existence: " + path);
+
 		try
 		{
 			return (Google.driveService.files().get((sourceObject == null) ? id : sourceObject.getId()).execute() != null);
 		}
 		catch (IOException e)
 		{
-			Logger.newEntry("problem!");
-			
+			Logger.error("checking existence: " + path);
+			Logger.except(e);
 			e.printStackTrace();
+
 			return false;
 		}
 	}
@@ -77,8 +78,6 @@ public class RemoteFile extends com.yagasoft.overcast.base.container.remote.Remo
 	@Override
 	public synchronized void updateInfo()
 	{
-		Logger.newSection("updating file info " + path);
-		
 		id = sourceObject.getId();
 		name = sourceObject.getTitle();
 		type = sourceObject.getMimeType();
@@ -101,8 +100,8 @@ public class RemoteFile extends com.yagasoft.overcast.base.container.remote.Remo
 		{
 			link = null;
 		}
-		
-		Logger.newEntry("done!");
+
+		Logger.info("updated info: " + path);
 	}
 
 	/**
@@ -111,33 +110,35 @@ public class RemoteFile extends com.yagasoft.overcast.base.container.remote.Remo
 	@Override
 	public synchronized void updateFromSource() throws OperationException
 	{
-		Logger.newSection("updating file info from the csp " + path);
-		
+		Logger.info("updating info from source: " + path);
+
 		try
 		{
 			sourceObject = Google.driveService.files().get((sourceObject == null) ? id : sourceObject.getId()).execute();
 			updateInfo();
-			
-			Logger.newEntry("done!");
+
+			Logger.info("finished updating info from source: " + path);
 		}
 		catch (IOException e)
 		{
-			Logger.newEntry("problem!");
-			
+			Logger.error("updating info from source: " + path);
+			Logger.except(e);
 			e.printStackTrace();
+
 			throw new OperationException("Couldn't update info! " + e.getMessage());
 		}
 	}
 
 	/**
-	 * @see com.yagasoft.overcast.base.container.Container#copy(com.yagasoft.overcast.base.container.Folder, boolean, IOperationListener)
+	 * @see com.yagasoft.overcast.base.container.Container#copy(com.yagasoft.overcast.base.container.Folder, boolean,
+	 *      IOperationListener)
 	 */
 	@Override
 	public synchronized Container<?> copy(Folder<?> destination, boolean overwrite, IOperationListener listener)
 			throws OperationException
 	{
-		Logger.newSection("copying file " + path);
-		
+		Logger.info("copying file: " + path);
+
 		addOperationListener(listener, Operation.COPY);
 
 		Container<?> existingFile = destination.searchByName(name, false);
@@ -158,6 +159,7 @@ public class RemoteFile extends com.yagasoft.overcast.base.container.remote.Remo
 				}
 				else
 				{
+					Logger.error("copying file -- already exists: " + path);
 					throw new OperationException("File already exists!");
 				}
 			}
@@ -166,16 +168,17 @@ public class RemoteFile extends com.yagasoft.overcast.base.container.remote.Remo
 			RemoteFile file = Google.getFactory().createFile(sourceObject, false);
 			destination.add(file);
 			notifyOperationListeners(Operation.COPY, OperationState.COMPLETED, 1.0f);
-			
-			Logger.newEntry("done!");
-			
+
+			Logger.info("finished copying to: " + destination.getPath());
+
 			return file;
 		}
 		catch (IOException | OperationException e)
 		{
-			Logger.newEntry("problem!");
-			
+			Logger.error("copying file: " + path);
+			Logger.except(e);
 			e.printStackTrace();
+
 			notifyOperationListeners(Operation.COPY, OperationState.FAILED, 0.0f);
 			throw new OperationException("Copy of file failed! " + e.getMessage());
 		}
@@ -186,14 +189,15 @@ public class RemoteFile extends com.yagasoft.overcast.base.container.remote.Remo
 	}
 
 	/**
-	 * @see com.yagasoft.overcast.base.container.Container#move(com.yagasoft.overcast.base.container.Folder, boolean, IOperationListener)
+	 * @see com.yagasoft.overcast.base.container.Container#move(com.yagasoft.overcast.base.container.Folder, boolean,
+	 *      IOperationListener)
 	 */
 	@Override
 	public synchronized void move(Folder<?> destination, boolean overwrite, IOperationListener listener)
 			throws OperationException
 	{
-		Logger.newSection("moving file " + path);
-		
+		Logger.info("moving file: " + path);
+
 		addOperationListener(listener, Operation.MOVE);
 
 		Container<?> existingFile = destination.searchByName(name, false);
@@ -214,6 +218,7 @@ public class RemoteFile extends com.yagasoft.overcast.base.container.remote.Remo
 				}
 				else
 				{
+					Logger.error("moving file -- already exists: " + path);
 					throw new OperationException("File already exists.");
 				}
 			}
@@ -223,14 +228,15 @@ public class RemoteFile extends com.yagasoft.overcast.base.container.remote.Remo
 			parent.remove(this);
 			destination.add(this);
 			notifyOperationListeners(Operation.MOVE, OperationState.COMPLETED, 1.0f);
-			
-			Logger.newEntry("done!");
+
+			Logger.info("finished moving to: " + destination.getPath());
 		}
 		catch (IOException | OperationException e)
 		{
-			Logger.newEntry("problem!");
-			
+			Logger.error("moving file: " + path);
+			Logger.except(e);
 			e.printStackTrace();
+
 			notifyOperationListeners(Operation.MOVE, OperationState.FAILED, 0.0f);
 			throw new OperationException("Move of file failed! " + e.getMessage());
 		}
@@ -246,8 +252,8 @@ public class RemoteFile extends com.yagasoft.overcast.base.container.remote.Remo
 	@Override
 	public synchronized void rename(String newName, IOperationListener listener) throws OperationException
 	{
-		Logger.newSection("renaming file " + path);
-		
+		Logger.info("renaming file: " + path);
+
 		addOperationListener(listener, Operation.RENAME);
 
 		Container<?> existingFile = parent.searchByName(newName, false);
@@ -256,20 +262,22 @@ public class RemoteFile extends com.yagasoft.overcast.base.container.remote.Remo
 		{
 			if ((existingFile != null) && (existingFile instanceof RemoteFile))
 			{
+				Logger.error("renaming file -- already exists: " + path);
 				throw new OperationException("File already exists!");
 			}
 
 			sourceObject.setTitle(newName);
 			Google.driveService.files().patch(id, sourceObject);
 			notifyOperationListeners(Operation.RENAME, OperationState.COMPLETED, 1.0f);
-			
-			Logger.newEntry("done!");
+
+			Logger.info("finished renaming file: " + path);
 		}
 		catch (IOException | OperationException e)
 		{
-			Logger.newEntry("problem!");
-			
+			Logger.error("renaming file: " + path);
+			Logger.except(e);
 			e.printStackTrace();
+
 			notifyOperationListeners(Operation.RENAME, OperationState.FAILED, 0.0f);
 			throw new OperationException("Couldn't rename file! " + e.getMessage());
 		}
@@ -285,8 +293,8 @@ public class RemoteFile extends com.yagasoft.overcast.base.container.remote.Remo
 	@Override
 	public synchronized void delete(IOperationListener listener) throws OperationException
 	{
-		Logger.newSection("deleting file " + path);
-		
+		Logger.info("deleting file: " + path);
+
 		addOperationListener(listener, Operation.DELETE);
 
 		try
@@ -294,14 +302,15 @@ public class RemoteFile extends com.yagasoft.overcast.base.container.remote.Remo
 			Google.getDriveService().children().delete(parent.getId(), id).execute();
 			parent.remove(this);
 			notifyOperationListeners(Operation.DELETE, OperationState.COMPLETED, 1.0f);
-			
-			Logger.newEntry("done!");
+
+			Logger.info("finished deleting file: " + path);
 		}
 		catch (IOException e)
 		{
-			Logger.newEntry("problem!");
-			
+			Logger.error("deleting file: " + path);
+			Logger.except(e);
 			e.printStackTrace();
+
 			notifyOperationListeners(Operation.DELETE, OperationState.FAILED, 0.0f);
 			throw new OperationException("Couldn't delete file! " + e.getMessage());
 		}
