@@ -248,10 +248,10 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 	}
 
 	/**
-	 * @see com.yagasoft.overcast.base.container.Folder#updateInfo(boolean, boolean)
+	 * @see com.yagasoft.overcast.base.container.Folder#updateInfo()
 	 */
 	@Override
-	public synchronized void updateInfo(boolean folderContents, boolean recursively)
+	public synchronized void updateInfo()
 	{
 		id = sourceObject.getId();
 		name = sourceObject.getTitle();
@@ -276,6 +276,15 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 	@Override
 	public synchronized void updateFromSource(boolean folderContents, final boolean recursively) throws OperationException
 	{
+		// go through all the children. This is done first thing so that it doesn't load the tree recursively!
+		if (recursively)
+		{
+			for (Folder<?> folder : getFoldersArray())
+			{
+				folder.updateFromSource(folderContents, recursively);
+			}
+		}
+
 		Logger.info("updating info from source: " + path);
 
 		// refresh children list.
@@ -290,15 +299,6 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 			updateInfo();
 
 			Logger.info("finished updating info from source: " + path);
-
-			// refresh folder info without fetching the children list.
-			if (recursively)
-			{
-				for (Folder<?> folder : getFoldersArray())
-				{
-					folder.updateFromSource(folderContents, recursively);
-				}
-			}
 		}
 		catch (IOException e)
 		{
@@ -308,6 +308,15 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 
 			throw new OperationException("Couldn't update info! " + e.getMessage());
 		}
+	}
+
+	/**
+	 * @see com.yagasoft.overcast.base.container.Container#updateFromSource()
+	 */
+	@Override
+	public synchronized void updateFromSource() throws OperationException
+	{
+		updateFromSource(true, false);
 	}
 
 	/**
@@ -501,24 +510,6 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 		{
 			clearOperationListeners(Operation.DELETE);
 		}
-	}
-
-	/**
-	 * @see com.yagasoft.overcast.base.container.Container#updateInfo()
-	 */
-	@Override
-	public synchronized void updateInfo()
-	{
-		updateInfo(false, false);
-	}
-
-	/**
-	 * @see com.yagasoft.overcast.base.container.Container#updateFromSource()
-	 */
-	@Override
-	public synchronized void updateFromSource() throws OperationException
-	{
-		updateFromSource(false, false);
 	}
 
 }

@@ -220,10 +220,10 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 	}
 
 	/**
-	 * @see com.yagasoft.overcast.base.container.Folder#updateInfo(boolean, boolean)
+	 * @see com.yagasoft.overcast.base.container.Folder#updateInfo()
 	 */
 	@Override
-	public synchronized void updateInfo(boolean folderContents, boolean recursively)
+	public synchronized void updateInfo()
 	{
 		id = sourceObject.getKey();
 		name = sourceObject.getName();
@@ -236,9 +236,18 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 	@Override
 	public synchronized void updateFromSource(boolean folderContents, boolean recursively) throws OperationException
 	{
+		// go through all the children. This is done first thing so that it doesn't load the tree recursively!
+		if (recursively)
+		{
+			for (Folder<?> folder : getFoldersArray())
+			{
+				folder.updateFromSource(folderContents, recursively);
+			}
+		}
+
 		if (folderContents)
 		{
-			buildTree(recursively);
+			buildTree(false);
 		}
 
 		Ubuntu.ubuntuService.getNode((sourceObject == null) ? getUbuntuPath() : sourceObject.getResourcePath(),
@@ -268,21 +277,12 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 	}
 
 	/**
-	 * @see com.yagasoft.overcast.base.container.Container#updateInfo()
-	 */
-	@Override
-	public synchronized void updateInfo()
-	{
-		updateInfo(false, false);
-	}
-
-	/**
 	 * @see com.yagasoft.overcast.base.container.Container#updateFromSource()
 	 */
 	@Override
 	public synchronized void updateFromSource() throws OperationException
 	{
-		updateFromSource(false, false);
+		updateFromSource(true, false);
 	}
 
 	/**

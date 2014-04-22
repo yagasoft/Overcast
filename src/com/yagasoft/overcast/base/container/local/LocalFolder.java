@@ -2,11 +2,11 @@
  * Copyright (C) 2011-2014 by Ahmed Osama el-Sawalhy
  *
  *		The Modified MIT Licence (GPL v3 compatible)
- * 			License terms are in a separate file (LICENCE.md)
+ * 			Licence terms are in a separate file (LICENCE.md)
  *
  *		Project/File: Overcast/com.yagasoft.overcast.base.container.local/LocalFolder.java
  *
- *			Modified: Apr 15, 2014 (8:40:14 AM)
+ *			Modified: 22-Apr-2014 (15:24:00)
  *			   Using: Eclipse J-EE / JDK 7 / Windows 8.1 x64
  */
 
@@ -121,7 +121,7 @@ public class LocalFolder extends Folder<Path>
 
 			Logger.info("finished creating folder: " + path);
 		}
-		catch (IOException e)
+		catch (IOException | OperationException e)
 		{
 			Logger.error("creating folder: " + parentPath + "/" + name);
 			Logger.except(e);
@@ -302,14 +302,14 @@ public class LocalFolder extends Folder<Path>
 	}
 
 	/**
-	 * @see com.yagasoft.overcast.base.container.Folder#updateInfo(boolean, boolean)
+	 * @see com.yagasoft.overcast.base.container.Folder#updateInfo()
 	 */
 	@Override
-	public synchronized void updateInfo(boolean folderContents, boolean recursively)
+	public synchronized void updateInfo()
 	{
 		try
 		{
-			updateFromSource(folderContents, recursively);		// updating the info locally costs nothing, so do it automatically.
+			updateFromSource();		// updating the info locally costs nothing, so do it automatically.
 
 			Logger.info("updated info: " + path);
 		}
@@ -333,7 +333,7 @@ public class LocalFolder extends Folder<Path>
 
 		if (folderContents)
 		{
-			buildTree(recursively);
+			buildTree(false);
 		}
 
 		name = sourceObject.getFileName().toString();
@@ -355,6 +355,15 @@ public class LocalFolder extends Folder<Path>
 		generateId();
 
 		Logger.info("finished updating info from source: " + path);
+	}
+
+	/**
+	 * @see com.yagasoft.overcast.base.container.Container#updateFromSource()
+	 */
+	@Override
+	public void updateFromSource() throws OperationException
+	{
+		updateFromSource(true, false);
 	}
 
 	/**
@@ -519,26 +528,6 @@ public class LocalFolder extends Folder<Path>
 
 			throw new OperationException("Couldn't determine free space! " + e.getMessage());
 		}
-	}
-
-	/**
-	 * Not supported; DO NOT use!<br />
-	 * Use {@link #updateInfo(boolean, boolean)} instead.
-	 */
-	@Override
-	public void updateInfo()
-	{
-		throw new UnsupportedOperationException();
-	}
-
-	/**
-	 * Not supported; DO NOT use!<br />
-	 * Use {@link #updateFromSource(boolean, boolean)} instead.
-	 */
-	@Override
-	public void updateFromSource()
-	{
-		throw new UnsupportedOperationException();
 	}
 
 	// //////////////////////////////////////////////////////////////////////////////////////

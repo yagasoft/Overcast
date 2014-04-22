@@ -307,17 +307,6 @@ public abstract class Folder<T> extends Container<T>
 	}
 	
 	/**
-	 * Update the fields (class attributes) in this folder object from the in-memory info (nothing is done outside the program).
-	 * Can update the folder contents' attributes as well, and can do so recursively (tree).
-	 * 
-	 * @param folderContents
-	 *            Update folder contents.
-	 * @param recursively
-	 *            Recursively or not.
-	 */
-	public abstract void updateInfo(boolean folderContents, boolean recursively);
-	
-	/**
 	 * Update from where the folder resides. It updates the info of the folder from the source itself
 	 * , and can be done recursively (tree). It refreshes the children list if 'contents' flag is true.
 	 * 

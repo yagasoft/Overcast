@@ -89,7 +89,7 @@ public abstract class Container<T> implements IOperable, Comparable<Container<T>
 	
 	/**
 	 * Update from where the container resides. It reads the meta of the container.<br />
-	 * It might go online to do it.
+	 * For folders, it reads the children list. It might go online to do both.
 	 * 
 	 * @throws OperationException
 	 *             the operation exception
