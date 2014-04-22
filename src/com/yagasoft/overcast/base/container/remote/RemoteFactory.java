@@ -13,9 +13,6 @@
 package com.yagasoft.overcast.base.container.remote;
 
 
-import java.util.ArrayList;
-import java.util.Arrays;
-
 import com.yagasoft.logger.Logger;
 import com.yagasoft.overcast.base.container.Container;
 import com.yagasoft.overcast.base.csp.CSP;
@@ -25,7 +22,7 @@ import com.yagasoft.overcast.exception.OperationException;
 
 /**
  * A factory for creating remote files and folders objects.
- *
+ * 
  * @param <FolderSourceType>
  *            The source folder type (folder type from the original CSP API) must be passed to this class.<br />
  *            It's needed to assist in creating the {@link RemoteFile}.
@@ -42,25 +39,25 @@ import com.yagasoft.overcast.exception.OperationException;
 @SuppressWarnings("rawtypes")
 public abstract class RemoteFactory<FolderSourceType, FolderType extends RemoteFolder<FolderSourceType>, FileSourceType, FileType extends RemoteFile<FileSourceType>>
 {
-
+	
 	/** CSP object to be passed to created files and folders. */
 	protected CSP				csp;
-
+	
 	/**
 	 * Folder type as passed during creation of this factory.<br />
 	 * Will be used to create folders -- set their type.
 	 */
 	protected Class<FolderType>	folderType;
-
+	
 	/**
 	 * File type as passed during creation of this factory.<br />
 	 * Will be used to create files -- set their type.
 	 */
 	protected Class<FileType>	fileType;
-
+	
 	/**
 	 * Instantiates a new remote factory.
-	 *
+	 * 
 	 * @param folderType
 	 *            Folder type from this API.
 	 * @param fileType
@@ -71,13 +68,13 @@ public abstract class RemoteFactory<FolderSourceType, FolderType extends RemoteF
 		this.folderType = folderType;
 		this.fileType = fileType;
 	}
-
+	
 	// --------------------------------------------------------------------------------------
 	// #region Create basic.
-
+	
 	/**
 	 * Creates a new remote folder object.
-	 *
+	 * 
 	 * @return the folder object
 	 * @throws CreationException
 	 */
@@ -87,7 +84,7 @@ public abstract class RemoteFactory<FolderSourceType, FolderType extends RemoteF
 		{
 			FolderType folder = folderType.newInstance();	// new RemoteFolder()
 			postObjectCreation(folder);		// init object.
-
+			
 			return folder;
 		}
 		catch (InstantiationException | IllegalAccessException e)
@@ -95,14 +92,14 @@ public abstract class RemoteFactory<FolderSourceType, FolderType extends RemoteF
 			Logger.error("creating folder object");
 			Logger.except(e);
 			e.printStackTrace();
-
+			
 			throw new CreationException("Couldn't create object in factory.");
 		}
 	}
-
+	
 	/**
 	 * Creates a new remote file object.
-	 *
+	 * 
 	 * @return the file object
 	 * @throws CreationException
 	 */
@@ -112,7 +109,7 @@ public abstract class RemoteFactory<FolderSourceType, FolderType extends RemoteF
 		{
 			FileType file = fileType.newInstance();		// new RemoteFile()
 			postObjectCreation(file);		// init object.
-
+			
 			return file;
 		}
 		catch (InstantiationException | IllegalAccessException e)
@@ -120,14 +117,14 @@ public abstract class RemoteFactory<FolderSourceType, FolderType extends RemoteF
 			Logger.error("creating file object");
 			Logger.except(e);
 			e.printStackTrace();
-
+			
 			throw new CreationException("Couldn't create object in factory.");
 		}
 	}
-
+	
 	/**
 	 * Do stuff after object creation.
-	 *
+	 * 
 	 * @param container
 	 *            the container created
 	 */
@@ -136,16 +133,16 @@ public abstract class RemoteFactory<FolderSourceType, FolderType extends RemoteF
 	{
 		container.setCsp(csp);
 	}
-
+	
 	// #endregion Create basic.
 	// --------------------------------------------------------------------------------------
-
+	
 	// --------------------------------------------------------------------------------------
 	// #region Create out of sent sourceObject.
-
+	
 	/**
 	 * Creates a new remote folder object.
-	 *
+	 * 
 	 * @param sourceObject
 	 *            the folder object given by the original CSP API.
 	 * @param fetchInfoOnline
@@ -158,13 +155,13 @@ public abstract class RemoteFactory<FolderSourceType, FolderType extends RemoteF
 		FolderType folder = createFolder();		// get the basic folder object
 		folder.setSourceObject(sourceObject);	// add the CSP folder object to it
 		updateContainer(folder, fetchInfoOnline);		// update folder meta info
-
+		
 		return folder;
 	}
-
+	
 	/**
 	 * Creates a new remote file object.
-	 *
+	 * 
 	 * @param sourceObject
 	 *            the file object given by the original CSP API.
 	 * @param fetchInfoOnline
@@ -177,13 +174,13 @@ public abstract class RemoteFactory<FolderSourceType, FolderType extends RemoteF
 		FileType file = createFile();
 		file.setSourceObject(sourceObject);
 		updateContainer(file, fetchInfoOnline);
-
+		
 		return file;
 	}
-
+	
 	/**
 	 * Update container's meta info.
-	 *
+	 * 
 	 * @param container
 	 *            the container
 	 * @param online
@@ -208,10 +205,10 @@ public abstract class RemoteFactory<FolderSourceType, FolderType extends RemoteF
 			container.updateInfo();
 		}
 	}
-
+	
 	// #endregion Create out of sent sourceObject.
 	// --------------------------------------------------------------------------------------
-
+	
 //	//--------------------------------------------------------------------------------------
 //	// #region Create using the sent ID.
 //
@@ -239,13 +236,13 @@ public abstract class RemoteFactory<FolderSourceType, FolderType extends RemoteF
 //
 //	// #endregion Create using the sent ID.
 //	//--------------------------------------------------------------------------------------
-
+	
 	// --------------------------------------------------------------------------------------
 	// #region Create using the sent path.
-
+	
 	/**
 	 * Creates a new remote folder object.
-	 *
+	 * 
 	 * @param path
 	 *            the path to the folder on the server including its name
 	 * @return the folder object
@@ -256,12 +253,10 @@ public abstract class RemoteFactory<FolderSourceType, FolderType extends RemoteF
 	{
 		try
 		{
-			ArrayList<String> splitPath = splitPath(path);		// get each node in the path alone.
-
 			FolderType container = folderType.newInstance();	// new folder()
-
+			
 			// post creation stuff, and make sure it doesn't already exist
-			return (FolderType) postObjectCreationByPath(container, splitPath);
+			return (FolderType) postObjectCreationByPath(container, path);
 		}
 		catch (InstantiationException | IllegalAccessException e)
 		{
@@ -269,13 +264,13 @@ public abstract class RemoteFactory<FolderSourceType, FolderType extends RemoteF
 			Logger.except(e);
 			e.printStackTrace();
 		}
-
+		
 		return null;
 	}
-
+	
 	/**
 	 * Creates a new remote file object.
-	 *
+	 * 
 	 * @param path
 	 *            the path to the file on the server including its name
 	 * @return the file object
@@ -286,11 +281,10 @@ public abstract class RemoteFactory<FolderSourceType, FolderType extends RemoteF
 	{
 		try
 		{
-			ArrayList<String> splitPath = splitPath(path);
-
-			FileType container = fileType.newInstance();
-
-			return (FileType) postObjectCreationByPath(container, splitPath);
+			FileType container = fileType.newInstance();	// new file()
+			
+			// post creation stuff, and make sure it doesn't already exist
+			return (FileType) postObjectCreationByPath(container, path);
 		}
 		catch (InstantiationException | IllegalAccessException e)
 		{
@@ -298,13 +292,13 @@ public abstract class RemoteFactory<FolderSourceType, FolderType extends RemoteF
 			Logger.except(e);
 			e.printStackTrace();
 		}
-
+		
 		return null;
 	}
-
+	
 	/**
 	 * Do stuff after creating the component.
-	 *
+	 * 
 	 * @param container
 	 *            the container
 	 * @param splitPath
@@ -312,82 +306,30 @@ public abstract class RemoteFactory<FolderSourceType, FolderType extends RemoteF
 	 * @return the container. It might be the same one passed, or one created previously if found in the file tree
 	 * @throws OperationException
 	 */
-	protected Container<?> postObjectCreationByPath(Container<?> container, ArrayList<String> splitPath) throws OperationException
+	protected Container<?> postObjectCreationByPath(Container<?> container, String path) throws OperationException
 	{
-		container.setName(splitPath.remove(splitPath.size() - 1));		// get the name from the last entry in the path
-
+		Container<?> result;
+		
 		// look for the container in file tree.
-		Container<?> result = searchForContainer(splitPath, container.getName());
-
-		// if nothing is found, or the result has a type doesn't match with the one passed ...
-		if ((result == null)
-				|| !(result.isFolder() && (container instanceof RemoteFolder))
-				|| !( !result.isFolder() && (container instanceof RemoteFile)))
+		if (container instanceof RemoteFolder)
 		{
-			return container;		// ... then just return the new one.
+			result = csp.searchFolderByPath(path);
+		}
+		else if (container instanceof RemoteFile)
+		{
+			result = csp.searchFileByPath(path);
 		}
 		else
 		{
-			return result;			// ... else, return the old one.
+			return container;
 		}
+		
+		return result != null ? result : container;
 	}
-
-	/**
-	 * Split the path into individual nodes.
-	 *
-	 * @param path
-	 *            the path
-	 * @return the array list of nodes in the path
-	 */
-	protected ArrayList<String> splitPath(String path)
-	{
-		ArrayList<String> splitPath = new ArrayList<String>(Arrays.asList(path.split("/")));
-
-		// if the path starts with '/' it will cause the first entry to be empty!
-		if (splitPath.get(0).equals(""))
-		{
-			splitPath.remove(0);
-		}
-
-		return splitPath;
-	}
-
-	/**
-	 * Search for the container in the file tree in-memory.
-	 *
-	 * @param splitPath
-	 *            the path divided into separate nodes.
-	 * @param name
-	 *            the name of the file.
-	 * @return the container found, or null if nothing is found.
-	 * @throws OperationException
-	 */
-	protected Container<?> searchForContainer(ArrayList<String> splitPath, String name) throws OperationException
-	{
-		RemoteFolder<?> result = csp.getRemoteFileTree();		// search the file tree.
-
-		// search for each entry in the path ...
-		while ((result != null) && (splitPath.size() > 0))
-		{
-			result.updateFromSource(true, false);
-			result = result.searchByName(splitPath.remove(0), false);
-		} // ..., until either it reaches the end of the path successfully, or not.
-
-		// if part of the path is not found ...
-		if ((splitPath.size() > 0) || (result == null))
-		{
-			return null;		// ... return nothing.
-		}
-		else
-		{	// ... or search for the file in the end node. Might return null.
-			return result.searchByName(name, false);
-		}
-
-	}
-
+	
 	// #endregion Create using the sent path.
 	// --------------------------------------------------------------------------------------
-
+	
 	/**
 	 * @return the csp
 	 */
@@ -395,7 +337,7 @@ public abstract class RemoteFactory<FolderSourceType, FolderType extends RemoteF
 	{
 		return csp;
 	}
-
+	
 	/**
 	 * @param csp
 	 *            the csp to set
@@ -404,5 +346,5 @@ public abstract class RemoteFactory<FolderSourceType, FolderType extends RemoteF
 	{
 		this.csp = csp;
 	}
-
+	
 }

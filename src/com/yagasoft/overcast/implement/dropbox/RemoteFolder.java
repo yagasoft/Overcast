@@ -66,12 +66,12 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 		addOperationListener(listener, Operation.CREATE);
 
 		// check if the folder exists in the parent ...
-		RemoteFolder result = parent.searchByName(name, false);
+		Container<?> result = parent.searchByName(name, false)[0];
 
 		try
 		{
 			// if it exists, problem!
-			if (result != null)
+			if ((result != null) && result.isFolder())
 			{
 				Logger.error("creating folder -- already exists: " + parent.getPath() + "/" + name);
 				throw new CreationException("Folder already Exists!");
@@ -309,15 +309,15 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 
 		addOperationListener(listener, Operation.COPY);
 
-		Container<?> existingFile = destination.searchByName(name, false);
+		Container<?> existingFolder = destination.searchByName(name, false)[0];
 
 		try
 		{
-			if ((existingFile != null) && (existingFile instanceof RemoteFile))
+			if ((existingFolder != null) && existingFolder.isFolder())
 			{
 				if (overwrite)
 				{
-					existingFile.delete(new IOperationListener()
+					existingFolder.delete(new IOperationListener()
 					{
 
 						@Override
@@ -368,15 +368,15 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 
 		addOperationListener(listener, Operation.MOVE);
 
-		Container<?> existingFile = destination.searchByName(name, false);
+		Container<?> existingFolder = destination.searchByName(name, false)[0];
 
 		try
 		{
-			if ((existingFile != null) && (existingFile instanceof RemoteFile))
+			if ((existingFolder != null) && existingFolder.isFolder())
 			{
 				if (overwrite)
 				{
-					existingFile.delete(new IOperationListener()
+					existingFolder.delete(new IOperationListener()
 					{
 
 						@Override
@@ -423,11 +423,11 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 
 		addOperationListener(listener, Operation.RENAME);
 
-		Container<?> existingFile = parent.searchByName(newName, false);
+		Container<?> existingFolder = parent.searchByName(newName, false)[0];
 
 		try
 		{
-			if ((existingFile != null) && (existingFile instanceof RemoteFile))
+			if ((existingFolder != null) && existingFolder.isFolder())
 			{
 				Logger.error("renaming folder -- already exists: " + path);
 				throw new OperationException("Folder already exists!");

@@ -96,7 +96,7 @@ public abstract class Folder<T> extends Container<T>
 			try
 			{
 				parent.buildTree(false);		// slows, but removes chance of errors.
-				result = (RemoteFolder) parent.searchByName(splitPath.get(0), false);
+				result = (RemoteFolder) parent.searchByName(splitPath.get(0), false)[0];
 			}
 			catch (OperationException e)
 			{
@@ -122,7 +122,7 @@ public abstract class Folder<T> extends Container<T>
 					try
 					{
 						parent.buildTree(false);
-						result = (RemoteFolder) parent.searchByName(splitPath.get(0), false);
+						result = (RemoteFolder) parent.searchByName(splitPath.get(0), false)[0];
 					}
 					catch (OperationException e)
 					{
@@ -152,7 +152,7 @@ public abstract class Folder<T> extends Container<T>
 		}
 		
 		// done with creating/traversing the path, now search if this folder exists in the last node ...
-		RemoteFolder result = (RemoteFolder) parent.searchByName(name, false);
+		RemoteFolder result = (RemoteFolder) parent.searchByName(name, false)[0];
 		
 		// ... if so, then it already exists.
 		if (result != null)
@@ -335,22 +335,6 @@ public abstract class Folder<T> extends Container<T>
 	// ======================================================================================
 	
 	/**
-	 * Checks if this file/folder exists in this folder, and whether to search recursively.
-	 * 
-	 * @param <S>
-	 *            capture the type of the container passed to return it after searching is done.
-	 * @param container
-	 *            File/folder to look for.
-	 * @param recursively
-	 *            Recursively or not.
-	 * @return The container
-	 */
-	public <S extends Container<?>> S searchById(S container, boolean recursively)
-	{
-		return (S) searchById(container.id, recursively);		// capture the ID (as it's unique) and call the appropriate method.
-	}
-	
-	/**
 	 * Checks if this file/folder exists in this folder (searches by ID), and whether to do it recursively.
 	 * 
 	 * @param <S>
@@ -395,42 +379,27 @@ public abstract class Folder<T> extends Container<T>
 	}
 	
 	/**
-	 * Checks if the file/folder exists in this folder (searches by name), and whether to do it recursively.
-	 * 
-	 * @param <S>
-	 *            capture the type of the container passed to return it after searching is done.
-	 * @param container
-	 *            Container to look for.
-	 * @param recursively
-	 *            Recursively or not.
-	 * @return The container
-	 */
-	public <S extends Container<?>> S searchByName(S container, boolean recursively)
-	{
-		return (S) searchByName(container.name, recursively);
-	}
-	
-	/**
 	 * Search by name.
 	 * 
-	 * @param <S>
-	 *            capture the type of the container passed to return it after searching is done.
 	 * @param name
 	 *            Name of the container to search for.
 	 * @param recursively
 	 *            Recursively or not.
-	 * @return The container
+	 * @return The container list found
 	 */
-	public <S extends Container<?>> S searchByName(String name, boolean recursively)
+	public Container<?>[] searchByName(String name, boolean recursively)
 	{
 		Logger.info("searching " + name + " in " + path);
+		
+		ArrayList<Container<?>> result = new ArrayList<Container<?>>();
 		
 		// same as 'searchById' ...
 		for (Container<?> container : getChildrenArray())
 		{
 			if (name.equals(container.name))
 			{
-				return (S) container;
+				Logger.info("found: " + container.path + ", in: " + path);
+				result.add(container);
 			}
 		}
 		
@@ -438,17 +407,11 @@ public abstract class Folder<T> extends Container<T>
 		{
 			for (Folder<?> folder : folders.values())
 			{
-				Container<?> container = folder.searchByName(name, recursively);
-				
-				if (container != null)
-				{
-					Logger.info("found: " + container.path + ", in: " + path);
-					return (S) container;
-				}
+				result.addAll(Arrays.asList(folder.searchByName(name, recursively)));
 			}
 		}
 		
-		return null;
+		return result.toArray(new Container<?>[result.size()]);
 	}
 	
 	// ======================================================================================

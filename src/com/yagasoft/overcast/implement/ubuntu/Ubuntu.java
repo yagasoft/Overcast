@@ -1,17 +1,20 @@
 /*
  * Copyright (C) 2011-2014 by Ahmed Osama el-Sawalhy
  *
- *		Modified MIT License (GPL v3 compatible)
- * 			License terms are in a separate file (license.txt)
+ *		The Modified MIT Licence (GPL v3 compatible)
+ * 			Licence terms are in a separate file (LICENCE.md)
  *
- *		Project/File: Overcast/com.yagasoft.overcast.ubuntu/Ubuntu.java
+ *		Project/File: Overcast/com.yagasoft.overcast.implement.ubuntu/Ubuntu.java
  *
- *			Modified: 11-Apr-2014 (19:34:20)
+ *			Modified: 22-Apr-2014 (13:38:36)
  *			   Using: Eclipse J-EE / JDK 7 / Windows 8.1 x64
  */
 
 package com.yagasoft.overcast.implement.ubuntu;
 
+
+import java.util.ArrayList;
+import java.util.Arrays;
 
 import org.apache.http.client.HttpClient;
 import org.apache.http.impl.client.DefaultHttpClient;
@@ -45,36 +48,36 @@ import com.yagasoft.overcast.exception.TransferException;
  */
 public class Ubuntu extends CSP<U1File, U1DownloadListener, U1UploadListener>
 {
-
+	
 	static private Ubuntu	instance;
-
+	
 	/** The authorisation. */
 	private Authorisation	authorisation;
-
+	
 	/** The http client. */
 	static HttpClient		httpClient;
-
+	
 	/** Files API instance. */
 	static U1FileAPI		ubuntuService;
-
+	
 	/** The remote file factory. */
 	static RemoteFactory	factory;
-
+	
 	private boolean			operationSuccess	= false;
-
+	
 	/**
 	 * Instantiates a new Ubuntu.
-	 *
+	 * 
 	 * @throws CSPBuildException
 	 */
 	public Ubuntu(String username, String password) throws CSPBuildException
 	{
 		// get the communication medium.
 		httpClient = new DefaultHttpClient(new ThreadSafeClientConnManager());
-
+		
 		// authorise using the username and password.
 		authorisation = new Authorisation(username, password);
-
+		
 		try
 		{
 			authorisation.authorise();
@@ -84,10 +87,10 @@ public class Ubuntu extends CSP<U1File, U1DownloadListener, U1UploadListener>
 			e1.printStackTrace();
 			throw new CSPBuildException("Can't construct CSP object!");
 		}
-
+		
 		// create the Ubuntu One service to be used for all operations.
 		ubuntuService = new U1FileAPI(Ubuntu.class.getPackage().getName(), "1.0", httpClient, authorisation.getOauthAuthorizer());
-
+		
 //		ubuntuService.getNode("/~/Ubuntu One", new U1NodeListener()
 //		{
 //
@@ -109,7 +112,7 @@ public class Ubuntu extends CSP<U1File, U1DownloadListener, U1UploadListener>
 //				System.err.println("General error: " + failure.getMessage());
 //			}
 //		});
-
+		
 //		ubuntuService.listDirectory("/~/Ubuntu One", new U1NodeRequestListener()
 //		{
 //
@@ -139,23 +142,23 @@ public class Ubuntu extends CSP<U1File, U1DownloadListener, U1UploadListener>
 //				System.err.println("General failure: " + failure);
 //			}
 //		});
-
+		
 		// create the factory.
 		factory = new RemoteFactory(this);
-
+		
 		name = "Ubuntu One";
 	}
-
+	
 	public static Ubuntu getInstance(String username, String password) throws CSPBuildException, AuthorisationException
 	{
 		if (instance == null)
 		{
 			instance = new Ubuntu(username, password);
 		}
-
+		
 		return instance;
 	}
-
+	
 	@Override
 	public void initTree() throws OperationException
 	{
@@ -171,13 +174,13 @@ public class Ubuntu extends CSP<U1File, U1DownloadListener, U1UploadListener>
 			e.printStackTrace();
 		}
 	}
-
+	
 //	@Override
 //	public void buildFileTree(boolean recursively)
 //	{
 //		remoteFileTree.buildTree(recursively);
 //	}
-
+	
 	/**
 	 * @see com.yagasoft.overcast.base.csp.CSP#download(com.yagasoft.overcast.base.container.remote.RemoteFile,
 	 *      com.yagasoft.overcast.base.container.local.LocalFolder, boolean,
@@ -199,7 +202,7 @@ public class Ubuntu extends CSP<U1File, U1DownloadListener, U1UploadListener>
 					{
 						child.delete(new IOperationListener()
 						{
-
+							
 							@Override
 							public void operationProgressChanged(OperationEvent event)
 							{}
@@ -216,49 +219,49 @@ public class Ubuntu extends CSP<U1File, U1DownloadListener, U1UploadListener>
 				}
 			}
 		}
-
+		
 		DownloadJob downloadJob = new DownloadJob((RemoteFile) file, parent, overwrite
 				, new U1DownloadListener()
 				{
-
+					
 					@Override
 					public void onStart()
 					{
 						currentDownloadJob.notifyProgressListeners(TransferState.INITIALISED, 0.0f);
 					}
-
+					
 					@Override
 					public void onProgress(long bytes, long total)
 					{
 						currentDownloadJob.progress(bytes / (float) total);
 					}
-
+					
 					@Override
 					public void onSuccess()
 					{
 						currentDownloadJob.success();
 					}
-
+					
 					@Override
 					public void onUbuntuOneFailure(U1Failure failure)
 					{
 						currentDownloadJob.failure();
 						System.err.println("Ubuntu One failure: " + failure);
 					}
-
+					
 					@Override
 					public void onFailure(U1Failure failure)
 					{
 						currentDownloadJob.failure();
 						System.err.println("Generic failure: " + failure);
 					}
-
+					
 					@Override
 					public void onCancel()
 					{
 						System.err.println("Upload canceled!");
 					}
-
+					
 					@Override
 					public void onFinish()
 					{
@@ -268,14 +271,14 @@ public class Ubuntu extends CSP<U1File, U1DownloadListener, U1UploadListener>
 				}
 				, new U1CancelTrigger());
 		downloadQueue.add(downloadJob);		// add to queue.
-
+		
 		downloadJob.addProgressListener(listener);
-
+		
 		nextDownloadJob();		// check if immediate execution is possible.
-
+		
 		return downloadJob;
 	}
-
+	
 	@Override
 	protected void initiateDownload() throws TransferException
 	{
@@ -284,7 +287,7 @@ public class Ubuntu extends CSP<U1File, U1DownloadListener, U1UploadListener>
 				, currentDownloadJob.getLocalFile().getPath()
 				, currentDownloadJob.getCspTransferer(), null);
 	}
-
+	
 	/**
 	 * Cancel current download.
 	 */
@@ -293,7 +296,7 @@ public class Ubuntu extends CSP<U1File, U1DownloadListener, U1UploadListener>
 	{
 		currentDownloadJob.cancelTransfer();
 	}
-
+	
 	/**
 	 * @see com.yagasoft.overcast.base.csp.CSP#upload(com.yagasoft.overcast.base.container.local.LocalFile,
 	 *      com.yagasoft.overcast.base.container.remote.RemoteFolder, boolean,
@@ -314,7 +317,7 @@ public class Ubuntu extends CSP<U1File, U1DownloadListener, U1UploadListener>
 					{
 						child.delete(new IOperationListener()
 						{
-
+							
 							@Override
 							public void operationProgressChanged(OperationEvent event)
 							{}
@@ -331,7 +334,7 @@ public class Ubuntu extends CSP<U1File, U1DownloadListener, U1UploadListener>
 				}
 			}
 		}
-
+		
 		RemoteFile remoteFile;
 		try
 		{
@@ -342,50 +345,50 @@ public class Ubuntu extends CSP<U1File, U1DownloadListener, U1UploadListener>
 			e.printStackTrace();
 			throw new TransferException("Problem!");
 		}
-
+		
 		UploadJob uploadJob = new UploadJob(
 				file, remoteFile, (RemoteFolder) parent, overwrite
 				, new U1UploadListener()
 				{
-
+					
 					@Override
 					public void onStart()
 					{
 						currentUploadJob.notifyProgressListeners(TransferState.INITIALISED, 0.0f);
 					}
-
+					
 					@Override
 					public void onProgress(long bytes, long total)
 					{
 						currentUploadJob.progress(bytes / (float) total);
 					}
-
+					
 					@Override
 					public void onSuccess(U1Node node)
 					{
 						currentUploadJob.success((U1File) node);
 					}
-
+					
 					@Override
 					public void onUbuntuOneFailure(U1Failure failure)
 					{
 						currentUploadJob.failure();
 						System.err.println("Ubuntu One failure: " + failure);
 					}
-
+					
 					@Override
 					public void onFailure(U1Failure failure)
 					{
 						currentUploadJob.failure();
 						System.err.println("Generic failure: " + failure);
 					}
-
+					
 					@Override
 					public void onCancel()
 					{
 						System.err.println("Upload canceled!");
 					}
-
+					
 					@Override
 					public void onFinish()
 					{
@@ -394,14 +397,14 @@ public class Ubuntu extends CSP<U1File, U1DownloadListener, U1UploadListener>
 				}
 				, new U1CancelTrigger());
 		uploadQueue.add(uploadJob);
-
+		
 		uploadJob.addProgressListener(listener);
-
+		
 		nextUploadJob();
-
+		
 		return uploadJob;
 	}
-
+	
 	/**
 	 * @see com.yagasoft.overcast.base.csp.CSP#initiateUpload()
 	 */
@@ -414,7 +417,7 @@ public class Ubuntu extends CSP<U1File, U1DownloadListener, U1UploadListener>
 				false
 				, currentUploadJob.getCspTransferer(), ((UploadJob) currentUploadJob).getCanceller());
 	}
-
+	
 	/**
 	 * Cancel current upload.
 	 */
@@ -423,7 +426,7 @@ public class Ubuntu extends CSP<U1File, U1DownloadListener, U1UploadListener>
 	{
 		currentUploadJob.cancelTransfer();
 	}
-
+	
 	/**
 	 * @see com.yagasoft.overcast.base.csp.CSP#calculateRemoteFreeSpace()
 	 */
@@ -431,34 +434,34 @@ public class Ubuntu extends CSP<U1File, U1DownloadListener, U1UploadListener>
 	public long calculateRemoteFreeSpace() throws OperationException
 	{
 		operationSuccess = false;
-
+		
 		ubuntuService.getUser(new U1UserRequestListener()
 		{
-
+			
 			@Override
 			public void onStart()
 			{}
-
+			
 			@Override
 			public void onSuccess(U1User result)
 			{
 				remoteFreeSpace = result.getMaxBytes() - result.getUsedBytes();
 				operationSuccess = true;
 			}
-
+			
 			@Override
 			public void onUbuntuOneFailure(U1Failure failure)
 			{}
-
+			
 			@Override
 			public void onFailure(U1Failure failure)
 			{}
-
+			
 			@Override
 			public void onFinish()
 			{}
 		});
-
+		
 		if ( !operationSuccess)
 		{
 			throw new OperationException("Failed to get free space.");
@@ -466,20 +469,50 @@ public class Ubuntu extends CSP<U1File, U1DownloadListener, U1UploadListener>
 		else
 		{
 			operationSuccess = false;
-
+			
 			return remoteFreeSpace;
 		}
 	}
-
+	
+	/**
+	 * Overrides splitting the path in {@link CSP} to remove the prefix.
+	 * 
+	 * @param path
+	 *            Path.
+	 * @return Array list
+	 */
+	@Override
+	public ArrayList<String> splitPath(String path)
+	{
+		ArrayList<String> splitPath = new ArrayList<String>(Arrays.asList(path.split("/")));
+		
+		if (splitPath.get(0).equals(""))
+		{
+			splitPath.remove(0);
+		}
+		
+		if (splitPath.get(0).equals("~"))
+		{
+			splitPath.remove(0);
+		}
+		
+		if (splitPath.get(0).equals("Ubuntu One"))
+		{
+			splitPath.remove(0);
+		}
+		
+		return splitPath;
+	}
+	
 	@Override
 	public com.yagasoft.overcast.base.container.remote.RemoteFactory<?, ?, ?, ?> getAbstractFactory()
 	{
 		return factory;
 	}
-
+	
 	// --------------------------------------------------------------------------------------
 	// #region Getters and setters.
-
+	
 	/**
 	 * @return the ubuntuService
 	 */
@@ -487,7 +520,7 @@ public class Ubuntu extends CSP<U1File, U1DownloadListener, U1UploadListener>
 	{
 		return ubuntuService;
 	}
-
+	
 	/**
 	 * @param ubuntuService
 	 *            the ubuntuService to set
@@ -496,7 +529,7 @@ public class Ubuntu extends CSP<U1File, U1DownloadListener, U1UploadListener>
 	{
 		Ubuntu.ubuntuService = ubuntuService;
 	}
-
+	
 	/**
 	 * @return the factory
 	 */
@@ -504,7 +537,7 @@ public class Ubuntu extends CSP<U1File, U1DownloadListener, U1UploadListener>
 	{
 		return factory;
 	}
-
+	
 	/**
 	 * @param factory
 	 *            the factory to set
@@ -513,7 +546,7 @@ public class Ubuntu extends CSP<U1File, U1DownloadListener, U1UploadListener>
 	{
 		Ubuntu.factory = factory;
 	}
-
+	
 	/**
 	 * @return the httpClient
 	 */
@@ -521,7 +554,7 @@ public class Ubuntu extends CSP<U1File, U1DownloadListener, U1UploadListener>
 	{
 		return httpClient;
 	}
-
+	
 	/**
 	 * @param httpClient
 	 *            the httpClient to set
@@ -530,8 +563,8 @@ public class Ubuntu extends CSP<U1File, U1DownloadListener, U1UploadListener>
 	{
 		Ubuntu.httpClient = httpClient;
 	}
-
+	
 	// #endregion Getters and setters.
 	// --------------------------------------------------------------------------------------
-
+	
 }

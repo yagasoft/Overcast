@@ -2,11 +2,11 @@
  * Copyright (C) 2011-2014 by Ahmed Osama el-Sawalhy
  *
  *		The Modified MIT Licence (GPL v3 compatible)
- * 			License terms are in a separate file (LICENCE.md)
+ * 			Licence terms are in a separate file (LICENCE.md)
  *
  *		Project/File: Overcast/com.yagasoft.overcast.base.csp/CSP.java
  *
- *			Modified: Apr 15, 2014 (9:33:52 AM)
+ *			Modified: 22-Apr-2014 (13:16:14)
  *			   Using: Eclipse J-EE / JDK 7 / Windows 8.1 x64
  */
 
@@ -177,7 +177,7 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 		Logger.info("downloading folder: " + folder.getPath());
 
 		// make sure the folder doesn't exist at the destination.
-		Container<?> result = parent.searchByName(folder.getName(), false);
+		Container<?> result = parent.searchByName(folder.getName(), false)[0];
 		LocalFolder localFolder = null;
 
 		// if it doesn't exist ...
@@ -217,8 +217,8 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 		// call the download method for each sub-folder.
 		for (Folder<?> childFolder : folder.getFoldersArray())
 		{
-			downloadJobs.addAll(new ArrayList<DownloadJob>(Arrays.asList(download((RemoteFolder) childFolder, localFolder,
-					overwrite, listener))));
+			downloadJobs.addAll(Arrays.asList(download((RemoteFolder) childFolder, localFolder,
+					overwrite, listener)));
 		}
 
 		// return the jobs.
@@ -366,7 +366,7 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 		Logger.info("uploading folder: " + folder.getPath());
 
 		// check if the folder exists at the CSP.
-		Container<?> result = parent.searchByName(folder.getName(), false);
+		Container<?> result = parent.searchByName(folder.getName(), false)[0];
 		RemoteFolder<?> remoteFolder = null;
 
 		// if it doesn't exist, create it.
@@ -404,8 +404,8 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 		// check sub-folders as well.
 		for (Folder childFolder : folder.getFoldersArray())
 		{
-			uploadJobs.addAll(new ArrayList<UploadJob>(Arrays.asList(upload((LocalFolder) childFolder, remoteFolder,
-					overwrite, listener))));
+			uploadJobs.addAll(Arrays.asList(upload((LocalFolder) childFolder, remoteFolder,
+					overwrite, listener)));
 		}
 
 		return uploadJobs.toArray(new UploadJob[uploadJobs.size()]);
@@ -519,6 +519,126 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 	{
 		currentUploadJob = null;
 		nextUploadJob();
+	}
+
+	// //////////////////////////////////////////////////////////////////////////////////////
+	// #region Search by path.
+	// ======================================================================================
+
+	/**
+	 * Search for folder by path.
+	 *
+	 * @param path
+	 *            Path.
+	 * @return Remote folder
+	 * @throws OperationException
+	 *             the operation exception
+	 */
+	public RemoteFolder<?> searchFolderByPath(String path) throws OperationException
+	{
+		Container<?> result = searchContainerPath(path);
+
+		// if nothing is found, or the result has a type doesn't match with the one required ...
+		if ((result != null) && result.isFolder())
+		{
+			return (RemoteFolder<?>) result;		// ... then result found.
+		}
+		else
+		{
+			return null;			// ... else, return nothing.
+		}
+	}
+
+	/**
+	 * Search for file by path.
+	 *
+	 * @param path
+	 *            Path.
+	 * @return Remote file
+	 * @throws OperationException
+	 *             the operation exception
+	 */
+	public RemoteFile<?> searchFileByPath(String path) throws OperationException
+	{
+		Container<?> result = searchContainerPath(path);
+
+		// if nothing is found, or the result has a type doesn't match with the one required ...
+		if ((result != null) && !result.isFolder())
+		{
+			return (RemoteFile<?>) result;		// ... then result found.
+		}
+		else
+		{
+			return null;			// ... else, return nothing.
+		}
+	}
+
+	/**
+	 * Search for the container in the file tree online using the path passed.
+	 *
+	 * @param path
+	 *            the path to look through for the container.
+	 * @return the container found, or null if nothing is found.
+	 * @throws OperationException
+	 */
+	public Container<?> searchContainerPath(String path) throws OperationException
+	{
+		ArrayList<String> splitPath = splitPath(path);
+		// get the name from the last entry in the path.
+		String containerName = splitPath.remove(splitPath.size() - 1);
+
+		// save intermediate nodes
+		Container<?> result = remoteFileTree;
+
+		// search for each entry in the path ...
+		while ((result != null) && (splitPath.size() > 0))
+		{
+			if (!result.isFolder())
+			{	// found a file in the middle of the path -- not what we're looking for.
+				Logger.error("failed to search " + path);
+				throw new OperationException("Couldn't complete search: " + path);
+			}
+			else
+			{	// search for the next node in this node.
+				((RemoteFolder<?>) result).updateFromSource(true, false);
+				result = ((RemoteFolder<?>) result).searchByName(splitPath.remove(0), false)[0];
+			}
+		}
+
+		// if part of the path is not found ...
+		if ((splitPath.size() > 0) || (result == null))
+		{
+			return null;		// ... return nothing.
+		}
+		else
+		{	// ... or search for the file in the end node. Might return null.
+			return ((RemoteFolder<?>) result).searchByName(containerName, false)[0];
+		}
+
+	}
+
+	// ======================================================================================
+	// #endregion Search by path.
+	// //////////////////////////////////////////////////////////////////////////////////////
+
+	/**
+	 * Split the path into individual nodes.
+	 *
+	 * @param path
+	 *            the path
+	 * @return the array list of nodes in the path
+	 */
+	public ArrayList<String> splitPath(String path)
+	{
+		ArrayList<String> splitPath = new ArrayList<String>(Arrays.asList(path.split("/")));
+
+		// if the path starts with '/' it will cause the first entry to be empty!
+		if (splitPath.get(0).equals(""))
+		{
+			splitPath.remove(0);
+		}
+
+		return splitPath;
 	}
 
 	/**
