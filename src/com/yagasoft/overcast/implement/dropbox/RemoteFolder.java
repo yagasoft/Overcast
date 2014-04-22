@@ -250,14 +250,14 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 	 * @see com.yagasoft.overcast.base.container.Folder#updateFromSource(boolean, boolean)
 	 */
 	@Override
-	public synchronized void updateFromSource(boolean folderContents, final boolean recursively) throws OperationException
+	public synchronized void updateFromSource(boolean folderContents, boolean recursively) throws OperationException
 	{
 		Logger.info("updating info from source: " + path);
 
 		// refresh children list.
 		if (folderContents)
 		{
-			buildTree(recursively);
+			buildTree(false);
 		}
 
 		try
@@ -279,7 +279,7 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 			Logger.info("finished updating info from source: " + path);
 
 			// refresh folder info without fetching the children list.
-			if (recursively && !folderContents)
+			if (recursively)
 			{
 				for (Folder<?> folder : getFoldersArray())
 				{

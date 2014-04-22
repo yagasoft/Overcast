@@ -322,7 +322,7 @@ public abstract class Folder<T> extends Container<T>
 	 * , and can be done recursively (tree). It refreshes the children list if 'contents' flag is true.
 	 * 
 	 * @param folderContents
-	 *            Update folder contents.
+	 *            Update children list.
 	 * @param recursively
 	 *            Recursive or not.
 	 * @throws OperationException
@@ -348,6 +348,17 @@ public abstract class Folder<T> extends Container<T>
 	public <S extends Container<?>> S searchById(String id, boolean recursively)
 	{
 		Logger.info("searching: " + id + ", in: " + path);
+		
+		try
+		{
+			updateFromSource(true, false);
+		}
+		catch (OperationException e)
+		{
+			Logger.error("failed to update from source " + id + ", searching from memory ...");
+			Logger.except(e);
+			e.printStackTrace();
+		}
 		
 		// if the folders list contains the passed ID (mapped), return it.
 		if (folders.containsKey(id))
@@ -390,6 +401,17 @@ public abstract class Folder<T> extends Container<T>
 	public Container<?>[] searchByName(String name, boolean recursively)
 	{
 		Logger.info("searching " + name + " in " + path);
+		
+		try
+		{
+			updateFromSource(true, false);
+		}
+		catch (OperationException e)
+		{
+			Logger.error("failed to update from source " + id + ", searching from memory ...");
+			Logger.except(e);
+			e.printStackTrace();
+		}
 		
 		ArrayList<Container<?>> result = new ArrayList<Container<?>>();
 		
