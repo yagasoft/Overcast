@@ -51,7 +51,9 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 	 */
 	@Override
 	public void generateId()
-	{}
+	{
+		// TODO generate id
+	}
 
 	/**
 	 * @see com.yagasoft.overcast.base.container.Folder#create(com.yagasoft.overcast.base.container.Folder, IOperationListener)
@@ -176,7 +178,7 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 				}
 			}
 		}
-		catch (DbxException e)
+		catch (DbxException | CreationException e)
 		{
 			Logger.error("building folder tree: " + path);
 			Logger.except(e);
@@ -217,7 +219,7 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 				throw new OperationException(e.getMessage());
 			}
 		}
-		
+
 		Logger.info("finished building tree: " + path);
 	}
 
@@ -252,6 +254,7 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 	{
 		Logger.info("updating info from source: " + path);
 
+		// refresh children list.
 		if (folderContents)
 		{
 			buildTree(recursively);
@@ -274,6 +277,15 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 			}
 
 			Logger.info("finished updating info from source: " + path);
+
+			// refresh folder info without fetching the children list.
+			if (recursively && !folderContents)
+			{
+				for (Folder<?> folder : getFoldersArray())
+				{
+					folder.updateFromSource(folderContents, recursively);
+				}
+			}
 		}
 		catch (DbxException e)
 		{
@@ -329,7 +341,7 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 
 			return file;
 		}
-		catch (DbxException | OperationException e)
+		catch (DbxException | OperationException | CreationException e)
 		{
 			Logger.error("copying folder: " + path);
 			Logger.except(e);

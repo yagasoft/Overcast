@@ -90,8 +90,22 @@ public abstract class Folder<T> extends Container<T>
 		// if there're sub-folders in the path
 		if (splitPath.size() > 0)
 		{
+			RemoteFolder result;
+			
 			// search for the first sub-folder.
-			RemoteFolder result = (RemoteFolder) parent.searchByName(splitPath.get(0), false);
+			try
+			{
+				parent.buildTree(false);		// slows, but removes chance of errors.
+				result = (RemoteFolder) parent.searchByName(splitPath.get(0), false);
+			}
+			catch (OperationException e)
+			{
+				e.printStackTrace();
+				Logger.error("refreshing folder in path: " + parent.getPath());
+				
+				notifyOperationListeners(Operation.CREATE, OperationState.FAILED, 0f);
+				throw new CreationException("Can't refresh path.");
+			}
 			
 			// if it's found, and there're more sub-folders ...
 			// (if it's found but not sub-folders, then it's the parent we want to create in)
@@ -105,7 +119,19 @@ public abstract class Folder<T> extends Container<T>
 				if (splitPath.size() > 0)
 				{
 					// check for the next node in the current parent.
-					result = (RemoteFolder) parent.searchByName(splitPath.get(0), false);
+					try
+					{
+						parent.buildTree(false);
+						result = (RemoteFolder) parent.searchByName(splitPath.get(0), false);
+					}
+					catch (OperationException e)
+					{
+						e.printStackTrace();
+						Logger.error("refreshing folder in path: " + parent.getPath());
+						
+						notifyOperationListeners(Operation.CREATE, OperationState.FAILED, 0f);
+						throw new CreationException("Can't refresh path.");
+					}
 				}
 				else
 				{	// no more sub-folders, this is the parent for now.
@@ -180,7 +206,11 @@ public abstract class Folder<T> extends Container<T>
 	 */
 	public void remove(Folder<?> folder)
 	{
-		folders.remove(folder.id);
+		// remove folder, and if it existed, then remove the parent (this) pointer from it as well.
+		if (folders.remove(folder.id) != null)
+		{
+			folder.parent = null;
+		}
 		
 		Logger.info("removed folder: " + folder.path + ", from parent: " + path);
 	}
@@ -193,7 +223,11 @@ public abstract class Folder<T> extends Container<T>
 	 */
 	public void remove(File<?> file)
 	{
-		files.remove(file.id);
+		// remove file, and if it existed, then remove the parent (this) pointer from it as well.
+		if (files.remove(file.id) != null)
+		{
+			file.parent = null;
+		}
 		
 		Logger.info("removed file: " + file.path + ", from parent: " + path);
 	}
@@ -207,8 +241,18 @@ public abstract class Folder<T> extends Container<T>
 	public void remove(String id)
 	{
 		// try to remove from both lists, it will fail quietly if it doesn't exist in either.
-		folders.remove(id);
-		files.remove(id);
+		Folder<?> folder = folders.remove(id);
+		File<?> file = files.remove(id);
+		
+		// remove parent pointer from both.
+		if (folder != null)
+		{
+			folder.parent = null;
+		}
+		else if (file != null)
+		{
+			file.parent = null;
+		}
 		
 		Logger.info("removed file/folder: " + id);
 	}
@@ -275,7 +319,7 @@ public abstract class Folder<T> extends Container<T>
 	
 	/**
 	 * Update from where the folder resides. It updates the info of the folder from the source itself
-	 * , and can be done recursively (tree).
+	 * , and can be done recursively (tree). It refreshes the children list if 'contents' flag is true.
 	 * 
 	 * @param folderContents
 	 *            Update folder contents.

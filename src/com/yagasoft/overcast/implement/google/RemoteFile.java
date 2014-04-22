@@ -26,6 +26,7 @@ import com.yagasoft.overcast.base.container.operation.IOperationListener;
 import com.yagasoft.overcast.base.container.operation.Operation;
 import com.yagasoft.overcast.base.container.operation.OperationEvent;
 import com.yagasoft.overcast.base.container.operation.OperationState;
+import com.yagasoft.overcast.exception.CreationException;
 import com.yagasoft.overcast.exception.OperationException;
 
 
@@ -47,7 +48,7 @@ public class RemoteFile extends com.yagasoft.overcast.base.container.remote.Remo
 	@Override
 	public void generateId()
 	{
-
+		// TODO generate id
 	}
 
 	/**
@@ -173,7 +174,7 @@ public class RemoteFile extends com.yagasoft.overcast.base.container.remote.Remo
 
 			return file;
 		}
-		catch (IOException | OperationException e)
+		catch (IOException | OperationException | CreationException e)
 		{
 			Logger.error("copying file: " + path);
 			Logger.except(e);
