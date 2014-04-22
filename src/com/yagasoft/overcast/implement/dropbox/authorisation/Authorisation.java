@@ -172,7 +172,7 @@ public class Authorisation extends OAuth
 		try
 		{
 			// read the token from disk.
-			authInfo = DbxAuthInfo.Reader.readFromFile(new File(tokenParent.toFile(), "dropbox_token.dat"));
+			authInfo = DbxAuthInfo.Reader.readFromFile(new File(tokenParent.toFile(), "dropbox"));
 
 			// make sure the token is valid.
 			DbxClient dbxClient = new DbxClient(Dropbox.getRequestConfig(), authInfo.accessToken, authInfo.host);
