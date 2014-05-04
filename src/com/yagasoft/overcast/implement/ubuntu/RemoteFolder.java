@@ -224,10 +224,15 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 	@Override
 	public synchronized void updateInfo()
 	{
-		super.updateInfo();
-
 		id = getSourceObject().getKey();
 		name = getSourceObject().getName();
+
+		if (name == null)
+		{
+			name = "";
+		}
+
+		path = ((parent == null || parent.getPath().equals("/")) ? "/" : (parent.getPath() + "/")) + name;
 	}
 
 	/**

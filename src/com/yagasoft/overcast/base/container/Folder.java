@@ -87,7 +87,7 @@ public abstract class Folder<T> extends Container<T> implements IContentManager
 		ArrayList<String> splitPath = new ArrayList<String>(Arrays.asList(parentPath.split("/")));
 
 		// remove the first node as it's the root
-		if (splitPath.get(0).equals(""))
+		if (splitPath.size() > 0 && splitPath.get(0).equals(""))
 		{
 			splitPath.remove(0);
 		}

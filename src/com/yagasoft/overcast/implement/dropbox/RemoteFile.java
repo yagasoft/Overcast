@@ -82,12 +82,17 @@ public class RemoteFile extends com.yagasoft.overcast.base.container.remote.Remo
 	@Override
 	public synchronized void updateInfo()
 	{
-		super.updateInfo();
-
 		if (getSourceObject() != null)
 		{
 			id = getSourceObject().rev;
 			name = getSourceObject().name;
+
+			if (name == null)
+			{
+				name = "";
+			}
+
+			path = ((parent == null || parent.getPath().equals("/")) ? "/" : (parent.getPath() + "/")) + name;
 
 			try
 			{
@@ -100,6 +105,8 @@ public class RemoteFile extends com.yagasoft.overcast.base.container.remote.Remo
 		}
 
 		type = null;
+
+		notifyUpdateListeners();
 
 		Logger.info("updated info: " + path);
 	}
@@ -232,7 +239,7 @@ public class RemoteFile extends com.yagasoft.overcast.base.container.remote.Remo
 				}
 			}
 
-			Dropbox.dropboxService.move(path, destination.getPath() + "/" + name);
+			setSourceObject(Dropbox.dropboxService.move(path, destination.getPath() + "/" + name).asFile());
 			getParent().remove(this);
 			destination.add(this);
 			notifyOperationListeners(Operation.MOVE, OperationState.COMPLETED, 1.0f);
@@ -274,9 +281,8 @@ public class RemoteFile extends com.yagasoft.overcast.base.container.remote.Remo
 				throw new OperationException("File already exists!");
 			}
 
-			Dropbox.dropboxService.move(path, getParent().getPath() + "/" + newName);
+			setSourceObject(Dropbox.dropboxService.move(path, getParent().getPath() + "/" + newName).asFile());
 			notifyOperationListeners(Operation.RENAME, OperationState.COMPLETED, 1.0f);
-			notifyUpdateListeners();
 
 			Logger.info("finished renaming file: " + path);
 		}

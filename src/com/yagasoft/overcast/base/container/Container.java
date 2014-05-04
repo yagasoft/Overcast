@@ -90,22 +90,9 @@ public abstract class Container<T> implements IOperable, IUpdatable, Comparable<
 	public abstract boolean isFolder();
 
 	/**
-	 * Update the fields (class attributes) in this file object from the in-memory info (nothing is done outside the program).<br />
-	 * Call the one from {@link Container} before your implementation.<br />
-	 * That one sets the path, so I advise you not to set it manually, and to use a different field if you want a custom path.<br />
-	 * In the override, don't use the setters and getters.
+	 * Update the fields (class attributes) in this file object from the in-memory info (nothing is done outside the program).
 	 */
-	public void updateInfo()
-	{
-		if (name == null)
-		{
-			name = "";
-		}
-
-		path = ((parent == null || parent.path.equals("/")) ? "/" : (parent.getPath() + "/")) + name;
-
-		notifyUpdateListeners();
-	}
+	public abstract void updateInfo();
 
 	/**
 	 * Update from where the container resides. It reads the meta of the container.<br />
@@ -316,7 +303,7 @@ public abstract class Container<T> implements IOperable, IUpdatable, Comparable<
 	@Override
 	public int compareTo(Container<T> container)
 	{
-		return name.compareTo(container.name);
+		return path.toLowerCase().compareTo(container.path.toLowerCase());
 	}
 
 	/**

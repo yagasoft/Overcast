@@ -79,13 +79,18 @@ public class RemoteFile extends com.yagasoft.overcast.base.container.remote.Remo
 	@Override
 	public synchronized void updateInfo()
 	{
-		super.updateInfo();
-
 		if (getSourceObject() != null)
 		{
 			id = getSourceObject().getId();
 			name = getSourceObject().getTitle();
 			type = getSourceObject().getMimeType();
+
+			if (name == null)
+			{
+				name = "";
+			}
+
+			path = ((parent == null || parent.getPath().equals("/")) ? "/" : (parent.getPath() + "/")) + name;
 
 			try
 			{
@@ -105,6 +110,8 @@ public class RemoteFile extends com.yagasoft.overcast.base.container.remote.Remo
 				link = null;
 			}
 		}
+
+		notifyUpdateListeners();
 
 		Logger.info("updated info: " + path);
 	}
@@ -228,8 +235,8 @@ public class RemoteFile extends com.yagasoft.overcast.base.container.remote.Remo
 				}
 			}
 
-			Google.driveService.parents().delete(id, getParent().getId());
 			Google.driveService.parents().insert(id, new ParentReference().setId(((RemoteFolder) destination).getId())).execute();
+			Google.driveService.parents().delete(id, getParent().getId());
 			getParent().remove(this);
 			destination.add(this);
 			notifyOperationListeners(Operation.MOVE, OperationState.COMPLETED, 1.0f);
@@ -272,7 +279,8 @@ public class RemoteFile extends com.yagasoft.overcast.base.container.remote.Remo
 			}
 
 			getSourceObject().setTitle(newName);
-			Google.driveService.files().patch(id, getSourceObject());
+			Google.driveService.files().patch(id, getSourceObject()).execute();
+			updateInfo();
 			notifyOperationListeners(Operation.RENAME, OperationState.COMPLETED, 1.0f);
 			notifyUpdateListeners();
 

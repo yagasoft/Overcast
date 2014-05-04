@@ -307,7 +307,13 @@ public class LocalFolder extends Folder<Path>
 	@Override
 	public synchronized void updateInfo()
 	{
-		super.updateInfo();
+		if (name == null)
+		{
+			name = "";
+		}
+
+		path = ((parent == null || parent.getPath().equals("/")) ? "/" : (parent.getPath() + "/")) + name;
+		
 		Logger.info("updated info: " + path);
 	}
 

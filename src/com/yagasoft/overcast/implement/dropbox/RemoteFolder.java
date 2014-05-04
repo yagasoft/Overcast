@@ -238,14 +238,20 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 	@Override
 	public synchronized void updateInfo()
 	{
-		super.updateInfo();
-
 		if (getSourceObject() != null)
 		{
 			id = getSourceObject().path;
 			name = getSourceObject().name;
+			if (name == null)
+			{
+				name = "";
+			}
+
+			path = ((parent == null || parent.getPath().equals("/")) ? "/" : (parent.getPath() + "/")) + name;
 		}
 		// size = calculateSize(); // commented because it might be heavy, so better do it explicitly.
+
+		notifyUpdateListeners();
 
 		Logger.info("updated info: " + path);
 	}
@@ -404,7 +410,7 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 				}
 			}
 
-			Dropbox.dropboxService.move(path, destination.getPath() + "/" + name);
+			setSourceObject(Dropbox.dropboxService.move(path, destination.getPath() + "/" + name).asFolder());
 			getParent().remove(this);
 			destination.add(this);
 			notifyOperationListeners(Operation.MOVE, OperationState.COMPLETED, 1.0f);
@@ -446,9 +452,8 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 				throw new OperationException("Folder already exists!");
 			}
 
-			Dropbox.dropboxService.move(path, getParent().getPath() + "/" + newName);
+			setSourceObject(Dropbox.dropboxService.move(path, getParent().getPath() + "/" + newName).asFolder());
 			notifyOperationListeners(Operation.RENAME, OperationState.COMPLETED, 1.0f);
-			notifyUpdateListeners();
 
 			Logger.info("finished renaming folder: " + path);
 		}

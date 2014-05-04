@@ -68,11 +68,16 @@ public class RemoteFile extends com.yagasoft.overcast.base.container.remote.Remo
 	@Override
 	public synchronized void updateInfo()
 	{
-		super.updateInfo();
-
 		id = getSourceObject().getKey();
 		name = getSourceObject().getName();
 		type = getSourceObject().getKind().toString();
+
+		if (name == null)
+		{
+			name = "";
+		}
+
+		path = ((parent == null || parent.getPath().equals("/")) ? "/" : (parent.getPath() + "/")) + name;
 
 		try
 		{
