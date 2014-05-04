@@ -66,12 +66,12 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 		addOperationListener(listener, Operation.CREATE);
 
 		// check if the folder exists in the parent ...
-		Container<?> result = parent.searchByName(name, false)[0];
+		Container<?>[] result = parent.searchByName(name, false);
 
 		try
 		{
 			// if it exists, problem!
-			if ((result != null) && result.isFolder())
+			if ((result.length >= 1) && result[0].isFolder())
 			{
 				Logger.error("creating folder -- already exists: " + parent.getPath() + "/" + name);
 				throw new CreationException("Folder already Exists!");
@@ -240,8 +240,11 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 	{
 		super.updateInfo();
 
-		id = getSourceObject().path;
-		name = getSourceObject().name;
+		if (getSourceObject() != null)
+		{
+			id = getSourceObject().path;
+			name = getSourceObject().name;
+		}
 		// size = calculateSize(); // commented because it might be heavy, so better do it explicitly.
 
 		Logger.info("updated info: " + path);

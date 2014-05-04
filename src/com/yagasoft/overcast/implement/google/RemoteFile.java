@@ -81,26 +81,29 @@ public class RemoteFile extends com.yagasoft.overcast.base.container.remote.Remo
 	{
 		super.updateInfo();
 
-		id = getSourceObject().getId();
-		name = getSourceObject().getTitle();
-		type = getSourceObject().getMimeType();
+		if (getSourceObject() != null)
+		{
+			id = getSourceObject().getId();
+			name = getSourceObject().getTitle();
+			type = getSourceObject().getMimeType();
 
-		try
-		{
-			size = getSourceObject().getFileSize();
-		}
-		catch (Exception e)
-		{
-			size = 0;
-		}
+			try
+			{
+				size = getSourceObject().getFileSize();
+			}
+			catch (Exception e)
+			{
+				size = 0;
+			}
 
-		try
-		{
-			link = new URL(getSourceObject().getDownloadUrl());
-		}
-		catch (MalformedURLException e)
-		{
-			link = null;
+			try
+			{
+				link = new URL(getSourceObject().getDownloadUrl());
+			}
+			catch (MalformedURLException e)
+			{
+				link = null;
+			}
 		}
 
 		Logger.info("updated info: " + path);

@@ -63,35 +63,35 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 	@Override
 	public synchronized void create(Folder<?> parent, IOperationListener listener) throws CreationException
 	{
-		Logger.info("creating folder: " + getParent().getPath() + "/" + name);
+		Logger.info("creating folder: " + parent.getPath() + "/" + name);
 
 		addOperationListener(listener, Operation.CREATE);
 
-		Container<?> result = getParent().searchByName(name, false)[0];
+		Container<?>[] result = parent.searchByName(name, false);
 
 		try
 		{
-			if ((result != null) && result.isFolder())
+			if ((result.length >= 1) && result[0].isFolder())
 			{
-				Logger.error("creating folder -- already exists: " + getParent().getPath() + "/" + name);
+				Logger.error("creating folder -- already exists: " + parent.getPath() + "/" + name);
 				throw new CreationException("Folder already Exists!");
 			}
 
 			File metadata = new File();
 			metadata.setTitle(name);
 			metadata.setMimeType("application/vnd.google-apps.folder");
-			metadata.setParents(Arrays.asList(new ParentReference().setId(getParent().getId())));
+			metadata.setParents(Arrays.asList(new ParentReference().setId(parent.getId())));
 
 			Drive.Files.Insert insert = Google.driveService.files().insert(metadata);
 			setSourceObject(insert.execute());
-			getParent().add(this);
+			parent.add(this);
 			notifyOperationListeners(Operation.CREATE, OperationState.COMPLETED, 1.0f);
 
 			Logger.info("finished creating folder: " + path);
 		}
 		catch (IOException | CreationException e)
 		{
-			Logger.error("creating folder: " + getParent().getPath() + "/" + name);
+			Logger.error("creating folder: " + parent.getPath() + "/" + name);
 			Logger.except(e);
 			e.printStackTrace();
 
@@ -255,18 +255,22 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 	{
 		super.updateInfo();
 
-		id = getSourceObject().getId();
-		name = getSourceObject().getTitle();
-		// size = calculateSize(); // might be too heavy, so don't do it automatically.
+		if (getSourceObject() != null)
+		{
+			id = getSourceObject().getId();
+			name = getSourceObject().getTitle();
 
-		try
-		{
-			link = new URL(getSourceObject().getSelfLink());
+			try
+			{
+				link = new URL(getSourceObject().getSelfLink());
+			}
+			catch (MalformedURLException e)
+			{
+				link = null;
+			}
 		}
-		catch (MalformedURLException e)
-		{
-			link = null;
-		}
+
+		// size = calculateSize(); // might be too heavy, so don't do it automatically.
 
 		Logger.info("updated info: " + path);
 	}

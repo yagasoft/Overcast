@@ -83,19 +83,23 @@ public class RemoteFile extends com.yagasoft.overcast.base.container.remote.Remo
 	public synchronized void updateInfo()
 	{
 		super.updateInfo();
-		
-		id = getSourceObject().rev;
-		name = getSourceObject().name;
-		type = null;
 
-		try
+		if (getSourceObject() != null)
 		{
-			size = getSourceObject().numBytes;
+			id = getSourceObject().rev;
+			name = getSourceObject().name;
+
+			try
+			{
+				size = getSourceObject().numBytes;
+			}
+			catch (Exception e)
+			{
+				size = 0;
+			}
 		}
-		catch (Exception e)
-		{
-			size = 0;
-		}
+
+		type = null;
 
 		Logger.info("updated info: " + path);
 	}
