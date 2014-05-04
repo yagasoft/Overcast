@@ -60,7 +60,7 @@ public class LocalFile extends File<Path>
 	 */
 	public LocalFile(Path file)
 	{
-		sourceObject = file;
+		setSourceObject(file);
 		updateInfo();		// updating the info locally costs nothing, so do it automatically.
 	}
 
@@ -94,13 +94,13 @@ public class LocalFile extends File<Path>
 
 		// if the Java library says the file doesn't exist, and at same time it says the file doesn't 'not exist', then ...
 		// obviously a problem.
-		if ( !Files.exists(sourceObject) && !Files.notExists(sourceObject))
+		if ( !Files.exists(getSourceObject()) && !Files.notExists(getSourceObject()))
 		{
 			Logger.error("determine if file exists or not: " + path);
 			throw new AccessException("Can't determine if file exists or not!");
 		}
 
-		return Files.exists(sourceObject);
+		return Files.exists(getSourceObject());
 	}
 
 	/**
@@ -131,13 +131,13 @@ public class LocalFile extends File<Path>
 	{
 		Logger.info("updating info from source: " + path);
 
-		name = sourceObject.getFileName().toString();
-		path = sourceObject.toAbsolutePath().toString();
+		name = getSourceObject().getFileName().toString();
+		path = getSourceObject().toAbsolutePath().toString();
 		type = URLConnection.guessContentTypeFromName(path);		// guess type of file (MIME)
 
 		try
 		{
-			size = Files.size(sourceObject);
+			size = Files.size(getSourceObject());
 		}
 		catch (IOException e)
 		{
@@ -147,6 +147,8 @@ public class LocalFile extends File<Path>
 		}
 
 		generateId();
+
+		notifyUpdateListeners();
 
 		Logger.info("updating info from source: " + path);
 	}
@@ -164,9 +166,9 @@ public class LocalFile extends File<Path>
 		try
 		{
 			return new LocalFile(Files.copy(
-					sourceObject
+					getSourceObject()
 					// get destination path, and add to it this file's name to form complete path.
-					, ((Path) destination.getSourceObject()).resolve(sourceObject.getFileName())
+					, ((Path) destination.getSourceObject()).resolve(getSourceObject().getFileName())
 					, overwrite ?
 							new CopyOption[] { REPLACE_EXISTING, COPY_ATTRIBUTES }
 							:
@@ -195,17 +197,17 @@ public class LocalFile extends File<Path>
 
 		try
 		{
-			sourceObject = Files.move(
-					sourceObject
-					, ((Path) destination.getSourceObject()).resolve(sourceObject.getFileName())
+			setSourceObject(Files.move(
+					getSourceObject()
+					, ((Path) destination.getSourceObject()).resolve(getSourceObject().getFileName())
 					, overwrite ?
 							new CopyOption[] { REPLACE_EXISTING }
 							:
-							new CopyOption[0]);
+							new CopyOption[0]));
 
 			updateFromSource();		// need to update new path.
 
-			Logger.info("finished moving to: " + destination.getPath() + "/" + name);
+			Logger.info("finished moving to: " + destination.getPath() + "/" + getName());
 		}
 		catch (IOException e)
 		{
@@ -228,7 +230,7 @@ public class LocalFile extends File<Path>
 		try
 		{
 			// renaming is effectively moving under a new name.
-			sourceObject = Files.move(sourceObject, sourceObject.resolveSibling(newName));
+			setSourceObject(Files.move(getSourceObject(), getSourceObject().resolveSibling(newName)));
 			updateFromSource();
 
 			Logger.info("finished renaming file: " + path);
@@ -253,12 +255,12 @@ public class LocalFile extends File<Path>
 
 		try
 		{
-			Files.deleteIfExists(sourceObject);
+			Files.deleteIfExists(getSourceObject());
 
 			// file is obsolete after delete, so remove from parent.
-			if (parent != null)
+			if (getParent() != null)
 			{
-				parent.remove(this);
+				getParent().remove(this);
 			}
 
 			Logger.info("finished deleting file: " + path);
@@ -310,6 +312,7 @@ public class LocalFile extends File<Path>
 	{
 		this.remoteMapping = remoteMapping;
 	}
+
 
 	@Override
 	public CSP<Path, ?, ?> getCsp()

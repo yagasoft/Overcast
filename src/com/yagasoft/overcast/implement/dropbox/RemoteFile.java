@@ -64,7 +64,7 @@ public class RemoteFile extends com.yagasoft.overcast.base.container.remote.Remo
 		// if fetching meta-data of the file fails, then it doesn't exist, probably.
 		try
 		{
-			return (Dropbox.dropboxService.getMetadata((sourceObject == null) ? path : sourceObject.path) != null);
+			return (Dropbox.dropboxService.getMetadata((getSourceObject() == null) ? path : getSourceObject().path) != null);
 		}
 		catch (DbxException e)
 		{
@@ -82,14 +82,15 @@ public class RemoteFile extends com.yagasoft.overcast.base.container.remote.Remo
 	@Override
 	public synchronized void updateInfo()
 	{
-		id = sourceObject.rev;
-		name = sourceObject.name;
+		super.updateInfo();
+		
+		id = getSourceObject().rev;
+		name = getSourceObject().name;
 		type = null;
-		path = (((parent == null) || parent.getPath().equals("/")) ? "/" : (parent.getPath() + "/")) + name;
 
 		try
 		{
-			size = sourceObject.numBytes;
+			size = getSourceObject().numBytes;
 		}
 		catch (Exception e)
 		{
@@ -109,12 +110,12 @@ public class RemoteFile extends com.yagasoft.overcast.base.container.remote.Remo
 
 		try
 		{
-			sourceObject = Dropbox.dropboxService.getMetadata((sourceObject == null) ? path : sourceObject.path).asFile();
-			updateInfo();
+			setSourceObject(Dropbox.dropboxService.getMetadata((getSourceObject() == null) ? path : getSourceObject().path)
+					.asFile());
 
 			try
 			{
-				link = new URL(Dropbox.dropboxService.createTemporaryDirectUrl(sourceObject.path).url);
+				link = new URL(Dropbox.dropboxService.createTemporaryDirectUrl(getSourceObject().path).url);
 			}
 			catch (MalformedURLException | DbxException | NullPointerException e)
 			{
@@ -169,7 +170,7 @@ public class RemoteFile extends com.yagasoft.overcast.base.container.remote.Remo
 			}
 
 			Dropbox.dropboxService.copy(path, destination.getPath() + "/" + name);
-			RemoteFile file = Dropbox.getFactory().createFile(sourceObject, false);
+			RemoteFile file = Dropbox.getFactory().createFile(getSourceObject(), false);
 			destination.add(file);
 			notifyOperationListeners(Operation.COPY, OperationState.COMPLETED, 1.0f);
 
@@ -228,7 +229,7 @@ public class RemoteFile extends com.yagasoft.overcast.base.container.remote.Remo
 			}
 
 			Dropbox.dropboxService.move(path, destination.getPath() + "/" + name);
-			parent.remove(this);
+			getParent().remove(this);
 			destination.add(this);
 			notifyOperationListeners(Operation.MOVE, OperationState.COMPLETED, 1.0f);
 
@@ -259,7 +260,7 @@ public class RemoteFile extends com.yagasoft.overcast.base.container.remote.Remo
 
 		addOperationListener(listener, Operation.RENAME);
 
-		Container<?> existingFile = parent.searchByName(newName, false)[0];
+		Container<?> existingFile = getParent().searchByName(newName, false)[0];
 
 		try
 		{
@@ -269,8 +270,9 @@ public class RemoteFile extends com.yagasoft.overcast.base.container.remote.Remo
 				throw new OperationException("File already exists!");
 			}
 
-			Dropbox.dropboxService.move(path, parent.getPath() + "/" + newName);
+			Dropbox.dropboxService.move(path, getParent().getPath() + "/" + newName);
 			notifyOperationListeners(Operation.RENAME, OperationState.COMPLETED, 1.0f);
+			notifyUpdateListeners();
 
 			Logger.info("finished renaming file: " + path);
 		}
@@ -302,7 +304,7 @@ public class RemoteFile extends com.yagasoft.overcast.base.container.remote.Remo
 		try
 		{
 			Dropbox.dropboxService.delete(path);
-			parent.remove(this);
+			getParent().remove(this);
 			notifyOperationListeners(Operation.DELETE, OperationState.COMPLETED, 1.0f);
 
 			Logger.info("finished deleting file: " + path);

@@ -69,7 +69,7 @@ public class LocalFolder extends Folder<Path>
 	public LocalFolder(Path file) throws OperationException
 	{
 		this();
-		sourceObject = file;
+		setSourceObject(file);
 		updateFromSource(false, false);		// updating the info locally costs nothing, so do it automatically.
 	}
 
@@ -146,13 +146,13 @@ public class LocalFolder extends Folder<Path>
 
 		// if the Java library says the folder doesn't exist, and at same time it says the folder doesn't 'not exist', then ...
 		// obviously a problem.
-		if ( !Files.exists(sourceObject) && !Files.notExists(sourceObject))
+		if ( !Files.exists(getSourceObject()) && !Files.notExists(getSourceObject()))
 		{
 			Logger.error("can't determine if folder exists or not: " + path);
 			throw new AccessException("Can't determine if folder exists or not!");
 		}
 
-		return Files.exists(sourceObject);
+		return Files.exists(getSourceObject());
 	}
 
 	/**
@@ -173,7 +173,7 @@ public class LocalFolder extends Folder<Path>
 		ArrayList<String> pathsString = new ArrayList<String>();	// will be used to filter children.
 
 		// read children of the folder from the disk.
-		try (DirectoryStream<Path> stream = Files.newDirectoryStream(sourceObject))
+		try (DirectoryStream<Path> stream = Files.newDirectoryStream(getSourceObject()))
 		{
 			for (Path file : stream)
 			{
@@ -237,7 +237,7 @@ public class LocalFolder extends Folder<Path>
 				}
 
 				folders.put(folder.id, folder);
-				folder.parent = this;
+				folder.setParent(this);
 
 				Logger.info("found folder: " + folder.path);
 			}
@@ -336,23 +336,25 @@ public class LocalFolder extends Folder<Path>
 			buildTree(false);
 		}
 
-		name = sourceObject.getFileName().toString();
-		path = sourceObject.toAbsolutePath().toString();
+		name = getSourceObject().getFileName().toString();
+		path = getSourceObject().toAbsolutePath().toString();
 		localFreeSpace = calculateLocalFreeSpace();
 
-		String parentString = sourceObject.getParent().toString();
+		String parentString = getSourceObject().getParent().toString();
 
-		if (parentString.equals(sourceObject.getRoot().toString()))
+		if (parentString.equals(getSourceObject().getRoot().toString()))
 		{
-			parent = new LocalFolder();
-			parent.setName("root");
+			setParent(new LocalFolder());
+			getParent().setName("root");
 		}
 		else
 		{
-			parent = new LocalFolder(parentString);
+			setParent(new LocalFolder(parentString));
 		}
 
 		generateId();
+
+		notifyUpdateListeners();
 
 		Logger.info("finished updating info from source: " + path);
 	}
@@ -377,13 +379,13 @@ public class LocalFolder extends Folder<Path>
 		Logger.info("copying folder: " + path);
 
 		// call Oracle's copier.
-		TreeCopier treeCopier = new TreeCopier(sourceObject, (Path) destination.getSourceObject(), !overwrite, true);
+		TreeCopier treeCopier = new TreeCopier(getSourceObject(), (Path) destination.getSourceObject(), !overwrite, true);
 
 		try
 		{
-			Files.walkFileTree(sourceObject, treeCopier);
+			Files.walkFileTree(getSourceObject(), treeCopier);
 			Logger.info("finished copying to: " + destination.getPath());
-			return new LocalFolder(((Path) destination.getSourceObject()).resolve(sourceObject.getFileName()));
+			return new LocalFolder(((Path) destination.getSourceObject()).resolve(getSourceObject().getFileName()));
 		}
 		catch (IOException e)
 		{
@@ -406,12 +408,12 @@ public class LocalFolder extends Folder<Path>
 		Logger.info("moving folder: " + path);
 
 		// call my modification to Oracle's copier.
-		TreeMover treeMover = new TreeMover(sourceObject, (Path) destination.getSourceObject(), !overwrite);
+		TreeMover treeMover = new TreeMover(getSourceObject(), (Path) destination.getSourceObject(), !overwrite);
 
 		try
 		{
-			Files.walkFileTree(sourceObject, treeMover);
-			sourceObject = ((Path) destination.getSourceObject()).resolve(sourceObject.getFileName());
+			Files.walkFileTree(getSourceObject(), treeMover);
+			setSourceObject(((Path) destination.getSourceObject()).resolve(getSourceObject().getFileName()));
 			updateFromSource();
 
 			Logger.info("finished moving to: " + destination.getPath());
@@ -437,7 +439,7 @@ public class LocalFolder extends Folder<Path>
 		try
 		{
 			// renaming is effectively moving under a new name.
-			sourceObject = Files.move(sourceObject, sourceObject.resolveSibling(newName));
+			setSourceObject(Files.move(getSourceObject(), getSourceObject().resolveSibling(newName)));
 			updateFromSource();
 
 			Logger.info("finished renaming folder: " + path);
@@ -464,12 +466,12 @@ public class LocalFolder extends Folder<Path>
 
 		try
 		{
-			Files.walkFileTree(sourceObject, treeDeleter);		// delete the content first recursively (must!).
+			Files.walkFileTree(getSourceObject(), treeDeleter);		// delete the content first recursively (must!).
 
 			// folder is obsolete after delete, so remove from parent.
-			if (parent != null)
+			if (getParent() != null)
 			{
-				parent.remove(this);
+				getParent().remove(this);
 			}
 
 			Logger.info("finished deleting folder: " + path);
@@ -518,7 +520,7 @@ public class LocalFolder extends Folder<Path>
 
 		try
 		{
-			return localFreeSpace = Files.getFileStore(sourceObject.getRoot()).getUnallocatedSpace();
+			return localFreeSpace = Files.getFileStore(getSourceObject().getRoot()).getUnallocatedSpace();
 		}
 		catch (IOException e)
 		{
@@ -550,6 +552,7 @@ public class LocalFolder extends Folder<Path>
 	{
 		this.remoteMapping = remoteMapping;
 	}
+
 
 	@Override
 	public CSP<Path, ?, ?> getCsp()

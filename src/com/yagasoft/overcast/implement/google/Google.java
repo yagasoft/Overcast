@@ -34,6 +34,7 @@ import com.google.api.services.drive.model.About;
 import com.google.api.services.drive.model.File;
 import com.google.api.services.drive.model.ParentReference;
 import com.yagasoft.logger.Logger;
+import com.yagasoft.overcast.base.container.content.IContentListener;
 import com.yagasoft.overcast.base.container.local.LocalFile;
 import com.yagasoft.overcast.base.container.local.LocalFolder;
 import com.yagasoft.overcast.base.container.operation.IOperationListener;
@@ -145,17 +146,23 @@ public class Google extends CSP<File, MediaHttpDownloader, Drive.Files.Insert> i
 	}
 
 	/**
-	 * @see com.yagasoft.overcast.base.csp.CSP#initTree()
+	 * @see com.yagasoft.overcast.base.csp.CSP#initTree(IContentListener)
 	 */
 	@Override
-	public void initTree() throws OperationException
+	public void initTree(IContentListener listener) throws OperationException
 	{
 		try
 		{
 			remoteFileTree = factory.createFolder();
 			remoteFileTree.setId("root");
-			remoteFileTree.updateFromSource();
-			buildFileTree(false);
+			remoteFileTree.updateFromSource(false, false);
+
+			if (listener != null)
+			{
+				remoteFileTree.addContentListener(listener);
+			}
+
+//			buildFileTree(false);
 		}
 		catch (CreationException e)
 		{

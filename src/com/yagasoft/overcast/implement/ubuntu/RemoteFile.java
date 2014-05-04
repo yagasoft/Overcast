@@ -68,14 +68,15 @@ public class RemoteFile extends com.yagasoft.overcast.base.container.remote.Remo
 	@Override
 	public synchronized void updateInfo()
 	{
-		id = sourceObject.getKey();
-		name = sourceObject.getName();
-		path = sourceObject.getResourcePath().replace("/~/Ubuntu One", "");
-		type = sourceObject.getKind().toString();
+		super.updateInfo();
+
+		id = getSourceObject().getKey();
+		name = getSourceObject().getName();
+		type = getSourceObject().getKind().toString();
 
 		try
 		{
-			size = sourceObject.size;
+			size = getSourceObject().size;
 		}
 		catch (Exception e)
 		{
@@ -84,7 +85,7 @@ public class RemoteFile extends com.yagasoft.overcast.base.container.remote.Remo
 
 		try
 		{
-			link = new URL("https://files.one.ubuntu.com/" + sourceObject.getKey());
+			link = new URL("https://files.one.ubuntu.com/" + getSourceObject().getKey());
 		}
 		catch (MalformedURLException e)
 		{
@@ -98,13 +99,13 @@ public class RemoteFile extends com.yagasoft.overcast.base.container.remote.Remo
 	@Override
 	public synchronized void updateFromSource()
 	{
-		Ubuntu.ubuntuService.getNode((sourceObject == null) ? getUbuntuPath() : sourceObject.getResourcePath(), new U1NodeListener()
+		Ubuntu.ubuntuService.getNode((getSourceObject() == null) ? getUbuntuPath() : getSourceObject().getResourcePath(), new U1NodeListener()
 		{
 
 			@Override
 			public void onSuccess(U1Node node)
 			{
-				sourceObject = (U1File) node;
+				setSourceObject((U1File) node);
 			}
 
 			@Override
@@ -229,7 +230,7 @@ public class RemoteFile extends com.yagasoft.overcast.base.container.remote.Remo
 						if (event.getState() == TransferState.COMPLETED)
 						{
 							notifyOperationListeners(Operation.MOVE, OperationState.COMPLETED, 1.0f);
-							RemoteFile.this.parent.remove(RemoteFile.this);
+							RemoteFile.this.getParent().remove(RemoteFile.this);
 						}
 					}
 				}).getRemoteFile();
@@ -250,7 +251,7 @@ public class RemoteFile extends com.yagasoft.overcast.base.container.remote.Remo
 		{
 			clearOperationListeners(Operation.MOVE);
 		}
-		
+
 //		Container<?> existingFile = destination.searchByName(name, false);
 //
 //		if (existingFile != null && existingFile instanceof RemoteFile)
@@ -297,7 +298,7 @@ public class RemoteFile extends com.yagasoft.overcast.base.container.remote.Remo
 //				@Override
 //				public void onSuccess(U1Node result)
 //				{
-//					sourceObject = (U1File) result;
+//					setSourceObject((U1File) result;
 //					updateInfo();
 //					notifyOperationListeners(Operation.MOVE, OperationState.COMPLETED, 1.0f);
 //				}
@@ -339,13 +340,13 @@ public class RemoteFile extends com.yagasoft.overcast.base.container.remote.Remo
 	public synchronized void rename(String newName, IOperationListener listener) throws OperationException
 	{
 		addOperationListener(listener, Operation.RENAME);
-		
+
 		notifyOperationListeners(Operation.RENAME, OperationState.FAILED, 0.0f);
 		clearOperationListeners(Operation.RENAME);
-		
+
 		throw new OperationException("Ubuntu doesn't support rename.");
 
-//		Container<?> existingFile = parent.searchByName(newName, false);
+//		Container<?> existingFile = getParent().searchByName(newName, false);
 //
 //		if (existingFile != null && existingFile instanceof RemoteFile)
 //		{
@@ -366,7 +367,7 @@ public class RemoteFile extends com.yagasoft.overcast.base.container.remote.Remo
 //				@Override
 //				public void onSuccess(U1Node result)
 //				{
-//					sourceObject = (U1File) result;
+//					setSourceObject((U1File) result;
 //					updateInfo();
 //					notifyOperationListeners(Operation.RENAME, OperationState.COMPLETED, 1.0f);
 //				}
@@ -421,7 +422,7 @@ public class RemoteFile extends com.yagasoft.overcast.base.container.remote.Remo
 				@Override
 				public void onSuccess(U1Node result)
 				{
-					parent.remove(RemoteFile.this);
+					getParent().remove(RemoteFile.this);
 					notifyOperationListeners(Operation.DELETE, OperationState.COMPLETED, 1.0f);
 				}
 

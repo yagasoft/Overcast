@@ -61,7 +61,7 @@ public class RemoteFile extends com.yagasoft.overcast.base.container.remote.Remo
 
 		try
 		{
-			return (Google.driveService.files().get((sourceObject == null) ? id : sourceObject.getId()).execute() != null);
+			return (Google.driveService.files().get((getSourceObject() == null) ? id : getSourceObject().getId()).execute() != null);
 		}
 		catch (IOException e)
 		{
@@ -79,14 +79,15 @@ public class RemoteFile extends com.yagasoft.overcast.base.container.remote.Remo
 	@Override
 	public synchronized void updateInfo()
 	{
-		id = sourceObject.getId();
-		name = sourceObject.getTitle();
-		type = sourceObject.getMimeType();
-		path = (((parent == null) || parent.getPath().equals("/")) ? "/" : (parent.getPath() + "/")) + name;
+		super.updateInfo();
+
+		id = getSourceObject().getId();
+		name = getSourceObject().getTitle();
+		type = getSourceObject().getMimeType();
 
 		try
 		{
-			size = sourceObject.getFileSize();
+			size = getSourceObject().getFileSize();
 		}
 		catch (Exception e)
 		{
@@ -95,7 +96,7 @@ public class RemoteFile extends com.yagasoft.overcast.base.container.remote.Remo
 
 		try
 		{
-			link = new URL(sourceObject.getDownloadUrl());
+			link = new URL(getSourceObject().getDownloadUrl());
 		}
 		catch (MalformedURLException e)
 		{
@@ -115,8 +116,8 @@ public class RemoteFile extends com.yagasoft.overcast.base.container.remote.Remo
 
 		try
 		{
-			sourceObject = Google.driveService.files().get((sourceObject == null) ? id : sourceObject.getId()).execute();
-			updateInfo();
+			setSourceObject(Google.driveService.files().get((getSourceObject() == null) ? id : getSourceObject().getId())
+					.execute());
 
 			Logger.info("finished updating info from source: " + path);
 		}
@@ -166,7 +167,7 @@ public class RemoteFile extends com.yagasoft.overcast.base.container.remote.Remo
 			}
 
 			Google.driveService.parents().insert(id, new ParentReference().setId(((RemoteFolder) destination).getId())).execute();
-			RemoteFile file = Google.getFactory().createFile(sourceObject, false);
+			RemoteFile file = Google.getFactory().createFile(getSourceObject(), false);
 			destination.add(file);
 			notifyOperationListeners(Operation.COPY, OperationState.COMPLETED, 1.0f);
 
@@ -224,9 +225,9 @@ public class RemoteFile extends com.yagasoft.overcast.base.container.remote.Remo
 				}
 			}
 
-			Google.driveService.parents().delete(id, parent.getId());
+			Google.driveService.parents().delete(id, getParent().getId());
 			Google.driveService.parents().insert(id, new ParentReference().setId(((RemoteFolder) destination).getId())).execute();
-			parent.remove(this);
+			getParent().remove(this);
 			destination.add(this);
 			notifyOperationListeners(Operation.MOVE, OperationState.COMPLETED, 1.0f);
 
@@ -257,7 +258,7 @@ public class RemoteFile extends com.yagasoft.overcast.base.container.remote.Remo
 
 		addOperationListener(listener, Operation.RENAME);
 
-		Container<?> existingFile = parent.searchByName(newName, false)[0];
+		Container<?> existingFile = getParent().searchByName(newName, false)[0];
 
 		try
 		{
@@ -267,9 +268,10 @@ public class RemoteFile extends com.yagasoft.overcast.base.container.remote.Remo
 				throw new OperationException("File already exists!");
 			}
 
-			sourceObject.setTitle(newName);
-			Google.driveService.files().patch(id, sourceObject);
+			getSourceObject().setTitle(newName);
+			Google.driveService.files().patch(id, getSourceObject());
 			notifyOperationListeners(Operation.RENAME, OperationState.COMPLETED, 1.0f);
+			notifyUpdateListeners();
 
 			Logger.info("finished renaming file: " + path);
 		}
@@ -300,8 +302,8 @@ public class RemoteFile extends com.yagasoft.overcast.base.container.remote.Remo
 
 		try
 		{
-			Google.getDriveService().children().delete(parent.getId(), id).execute();
-			parent.remove(this);
+			Google.getDriveService().children().delete(getParent().getId(), id).execute();
+			getParent().remove(this);
 			notifyOperationListeners(Operation.DELETE, OperationState.COMPLETED, 1.0f);
 
 			Logger.info("finished deleting file: " + path);

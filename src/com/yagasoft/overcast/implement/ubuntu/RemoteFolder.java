@@ -61,9 +61,9 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 
 		try
 		{
-			Container<?> result = parent.searchByName(name, false)[0];
+			Container<?> result = getParent().searchByName(name, false)[0];
 
-			path = parent.getPath().toString() + "/" + name;
+			path = getParent().getPath().toString() + "/" + name;
 
 			// found something, and it's a folder.
 			if (result != null && result.isFolder())
@@ -82,9 +82,8 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 				@Override
 				public void onSuccess(U1Node result)
 				{
-					sourceObject = (U1Directory) result;
-					updateInfo();
-					parent.add(RemoteFolder.this);
+					setSourceObject((U1Directory) result);
+					getParent().add(RemoteFolder.this);
 					notifyOperationListeners(Operation.CREATE, OperationState.COMPLETED, 1.0f);
 				}
 
@@ -139,7 +138,7 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 	@Override
 	public synchronized void buildTree(int numberOfLevels) throws OperationException
 	{
-		if ((numberOfLevels < 0) || !sourceObject.hasChildren())
+		if ((numberOfLevels < 0) || !getSourceObject().hasChildren())
 		{
 			return;
 		}
@@ -183,7 +182,7 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 					RemoteFolder folder = Ubuntu.factory.createFolder((U1Directory) childAsU1Node, false);
 					add(folder);
 
-					Logger.info("Folder: " + folder.parent.getName() + "\\" + folder.name + " => " + folder.id);
+					Logger.info("Folder: " + folder.getParent().getName() + "\\" + folder.name + " => " + folder.id);
 				}
 				else
 				{
@@ -225,9 +224,10 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 	@Override
 	public synchronized void updateInfo()
 	{
-		id = sourceObject.getKey();
-		name = sourceObject.getName();
-		path = sourceObject.getResourcePath().replace("/~/Ubuntu One", "");
+		super.updateInfo();
+
+		id = getSourceObject().getKey();
+		name = getSourceObject().getName();
 	}
 
 	/**
@@ -250,14 +250,14 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 			buildTree(false);
 		}
 
-		Ubuntu.ubuntuService.getNode((sourceObject == null) ? getUbuntuPath() : sourceObject.getResourcePath(),
+		Ubuntu.ubuntuService.getNode((getSourceObject() == null) ? getUbuntuPath() : getSourceObject().getResourcePath(),
 				new U1NodeListener()
 				{
 
 					@Override
 					public void onSuccess(U1Node node)
 					{
-						sourceObject = (U1Directory) node;
+						setSourceObject((U1Directory) node);
 					}
 
 					@Override
@@ -313,7 +313,7 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 	{
 		addOperationListener(listener, Operation.RENAME);
 
-		Container<?> existingFolder = parent.searchByName(newName, false)[0];
+		Container<?> existingFolder = getParent().searchByName(newName, false)[0];
 
 		// found something, and it's a folder.
 		if ((existingFolder != null) && existingFolder.isFolder())
@@ -326,7 +326,7 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 		try
 		{
 			Ubuntu.ubuntuService.moveNode(getUbuntuPath(),
-					((com.yagasoft.overcast.implement.ubuntu.RemoteFolder) parent).getUbuntuPath() + "/" + newName,
+					((com.yagasoft.overcast.implement.ubuntu.RemoteFolder) getParent()).getUbuntuPath() + "/" + newName,
 					new U1NodeRequestListener()
 					{
 
@@ -337,8 +337,7 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 						@Override
 						public void onSuccess(U1Node result)
 						{
-							sourceObject = (U1Directory) result;
-							updateInfo();
+							setSourceObject((U1Directory) result);
 							notifyOperationListeners(Operation.RENAME, OperationState.COMPLETED, 1.0f);
 						}
 
@@ -392,7 +391,7 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 				@Override
 				public void onSuccess(U1Node result)
 				{
-					parent.remove(RemoteFolder.this);
+					getParent().remove(RemoteFolder.this);
 					notifyOperationListeners(Operation.DELETE, OperationState.COMPLETED, 1.0f);
 				}
 

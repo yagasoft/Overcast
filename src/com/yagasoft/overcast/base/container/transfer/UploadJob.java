@@ -78,7 +78,6 @@ public abstract class UploadJob<T, S> extends TransferJob<T>
 	public void success(S file)
 	{
 		remoteFile.setSourceObject(file);
-		remoteFile.updateInfo();
 		localFile.setRemoteMapping(remoteFile);
 		remoteFile.setLocalMapping(localFile);
 		parent.add(remoteFile);

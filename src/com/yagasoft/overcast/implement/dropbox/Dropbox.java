@@ -21,6 +21,7 @@ import com.dropbox.core.DbxEntry;
 import com.dropbox.core.DbxException;
 import com.dropbox.core.DbxRequestConfig;
 import com.yagasoft.logger.Logger;
+import com.yagasoft.overcast.base.container.content.IContentListener;
 import com.yagasoft.overcast.base.container.local.LocalFile;
 import com.yagasoft.overcast.base.container.local.LocalFolder;
 import com.yagasoft.overcast.base.container.operation.IOperationListener;
@@ -128,17 +129,23 @@ public class Dropbox extends CSP<DbxEntry.File, Downloader, Uploader> implements
 
 	/**
 	 * @throws CreationException
-	 * @see com.yagasoft.overcast.base.csp.CSP#initTree()
+	 * @see com.yagasoft.overcast.base.csp.CSP#initTree(IContentListener)
 	 */
 	@Override
-	public void initTree() throws OperationException
+	public void initTree(IContentListener listener) throws OperationException
 	{
 		try
 		{
 			remoteFileTree = factory.createFolder();
 			remoteFileTree.setPath("/");
-			remoteFileTree.updateFromSource();
-			buildFileTree(false);
+			remoteFileTree.updateFromSource(false, false);
+
+			if (listener != null)
+			{
+				remoteFileTree.addContentListener(listener);
+			}
+
+//			buildFileTree(false);
 		}
 		catch (CreationException e)
 		{

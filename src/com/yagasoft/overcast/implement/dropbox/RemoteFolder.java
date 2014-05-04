@@ -77,7 +77,7 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 				throw new CreationException("Folder already Exists!");
 			}
 
-			sourceObject = Dropbox.dropboxService.createFolder(parent.getPath() + "/" + name);
+			setSourceObject(Dropbox.dropboxService.createFolder(parent.getPath() + "/" + name));
 			parent.add(this);
 			notifyOperationListeners(Operation.CREATE, OperationState.COMPLETED, 1.0f);
 
@@ -110,7 +110,7 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 		// if fetching meta-data of the file fails, then it doesn't exist, probably.
 		try
 		{
-			return (Dropbox.dropboxService.getMetadata((sourceObject == null) ? path : sourceObject.path) != null);
+			return (Dropbox.dropboxService.getMetadata((getSourceObject() == null) ? path : getSourceObject().path) != null);
 		}
 		catch (DbxException e)
 		{
@@ -238,9 +238,10 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 	@Override
 	public synchronized void updateInfo()
 	{
-		id = sourceObject.path;
-		name = sourceObject.name;
-		path = (((parent == null) || parent.getPath().equals("/")) ? "/" : (parent.getPath() + "/")) + name;
+		super.updateInfo();
+
+		id = getSourceObject().path;
+		name = getSourceObject().name;
 		// size = calculateSize(); // commented because it might be heavy, so better do it explicitly.
 
 		Logger.info("updated info: " + path);
@@ -272,13 +273,13 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 		try
 		{
 			// re-fetch the meta-data from the server.
-			sourceObject = Dropbox.dropboxService.getMetadata((sourceObject == null) ? path : sourceObject.path).asFolder();
-			updateInfo();
+			setSourceObject(Dropbox.dropboxService.getMetadata((getSourceObject() == null) ? path : getSourceObject().path)
+					.asFolder());
 
 			try
 			{
 				// get link if available.
-				link = new URL(Dropbox.dropboxService.createShareableUrl(sourceObject.path));
+				link = new URL(Dropbox.dropboxService.createShareableUrl(getSourceObject().path));
 			}
 			catch (MalformedURLException | DbxException e)
 			{
@@ -342,7 +343,7 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 			}
 
 			Dropbox.dropboxService.copy(path, destination.getPath() + "/" + name);
-			RemoteFolder file = Dropbox.getFactory().createFolder(sourceObject, false);
+			RemoteFolder file = Dropbox.getFactory().createFolder(getSourceObject(), false);
 			destination.add(file);
 			notifyOperationListeners(Operation.COPY, OperationState.COMPLETED, 1.0f);
 
@@ -401,7 +402,7 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 			}
 
 			Dropbox.dropboxService.move(path, destination.getPath() + "/" + name);
-			parent.remove(this);
+			getParent().remove(this);
 			destination.add(this);
 			notifyOperationListeners(Operation.MOVE, OperationState.COMPLETED, 1.0f);
 
@@ -432,7 +433,7 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 
 		addOperationListener(listener, Operation.RENAME);
 
-		Container<?> existingFolder = parent.searchByName(newName, false)[0];
+		Container<?> existingFolder = getParent().searchByName(newName, false)[0];
 
 		try
 		{
@@ -442,8 +443,9 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 				throw new OperationException("Folder already exists!");
 			}
 
-			Dropbox.dropboxService.move(path, parent.getPath() + "/" + newName);
+			Dropbox.dropboxService.move(path, getParent().getPath() + "/" + newName);
 			notifyOperationListeners(Operation.RENAME, OperationState.COMPLETED, 1.0f);
+			notifyUpdateListeners();
 
 			Logger.info("finished renaming folder: " + path);
 		}
@@ -475,7 +477,7 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 		try
 		{
 			Dropbox.dropboxService.delete(path);
-			parent.remove(this);
+			getParent().remove(this);
 			notifyOperationListeners(Operation.DELETE, OperationState.COMPLETED, 1.0f);
 
 			Logger.info("finished deleting folder: " + path);

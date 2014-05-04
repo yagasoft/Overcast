@@ -1,12 +1,12 @@
-/*
+/* 
  * Copyright (C) 2011-2014 by Ahmed Osama el-Sawalhy
- *
+ * 
  *		The Modified MIT Licence (GPL v3 compatible)
- * 			Licence terms are in a separate file (LICENCE.md)
- *
+ * 			License terms are in a separate file (LICENCE.md)
+ * 
  *		Project/File: Overcast/com.yagasoft.overcast.implement.ubuntu/Ubuntu.java
- *
- *			Modified: 22-Apr-2014 (13:38:36)
+ * 
+ *			Modified: May 3, 2014 (10:07:47 AM)
  *			   Using: Eclipse J-EE / JDK 7 / Windows 8.1 x64
  */
 
@@ -29,6 +29,7 @@ import com.ubuntuone.api.files.request.U1UploadListener;
 import com.ubuntuone.api.files.util.U1CancelTrigger;
 import com.ubuntuone.api.files.util.U1Failure;
 import com.ubuntuone.api.files.util.U1RequestListener.U1UserRequestListener;
+import com.yagasoft.overcast.base.container.content.IContentListener;
 import com.yagasoft.overcast.base.container.local.LocalFile;
 import com.yagasoft.overcast.base.container.local.LocalFolder;
 import com.yagasoft.overcast.base.container.operation.IOperationListener;
@@ -159,15 +160,18 @@ public class Ubuntu extends CSP<U1File, U1DownloadListener, U1UploadListener>
 		return instance;
 	}
 	
+	/**
+	 * @see com.yagasoft.overcast.base.csp.CSP#initTree(com.yagasoft.overcast.base.container.content.IContentListener)
+	 */
 	@Override
-	public void initTree() throws OperationException
+	public void initTree(IContentListener listener) throws OperationException
 	{
 		try
 		{
 			remoteFileTree = factory.createFolder();
 			remoteFileTree.setPath("/");
 			remoteFileTree.updateFromSource(false, false);
-			buildFileTree(false);
+			remoteFileTree.addContentListener(listener);
 		}
 		catch (CreationException e)
 		{
