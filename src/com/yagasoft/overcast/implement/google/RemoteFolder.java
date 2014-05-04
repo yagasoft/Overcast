@@ -336,15 +336,15 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 
 		addOperationListener(listener, Operation.COPY);
 
-		Container<?> existingFolder = destination.searchByName(name, false)[0];
+		Container<?>[] existingFolder = destination.searchByName(name, false);
 
 		try
 		{
-			if ((existingFolder != null) && existingFolder.isFolder())
+			if ((existingFolder.length > 0) && existingFolder[0].isFolder())
 			{
 				if (overwrite)
 				{
-					existingFolder.delete(new IOperationListener()
+					existingFolder[0].delete(new IOperationListener()
 					{
 
 						@Override
@@ -395,15 +395,15 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 
 		addOperationListener(listener, Operation.MOVE);
 
-		Container<?> existingFolder = destination.searchByName(name, false)[0];
+		Container<?>[] existingFolder = destination.searchByName(name, false);
 
 		try
 		{
-			if ((existingFolder != null) && existingFolder.isFolder())
+			if ((existingFolder.length > 0) && existingFolder[0].isFolder())
 			{
 				if (overwrite)
 				{
-					existingFolder.delete(new IOperationListener()
+					existingFolder[0].delete(new IOperationListener()
 					{
 
 						@Override
@@ -452,11 +452,11 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 
 		addOperationListener(listener, Operation.RENAME);
 
-		Container<?> existingFolder = getParent().searchByName(newName, false)[0];
+		Container<?>[] existingFolder = getParent().searchByName(newName, false);
 
 		try
 		{
-			if ((existingFolder != null) && existingFolder.isFolder())
+			if ((existingFolder.length > 0) && existingFolder[0].isFolder())
 			{
 				Logger.error("renaming folder -- already exists: " + path);
 				throw new OperationException("Folder already exists!");

@@ -202,11 +202,11 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 		Logger.info("downloading folder: " + folder.getPath());
 
 		// make sure the folder doesn't exist at the destination.
-		Container<?> result = parent.searchByName(folder.getName(), false)[0];
+		Container<?>[] result = parent.searchByName(folder.getName(), false);
 		LocalFolder localFolder = null;
 
 		// if it doesn't exist ...
-		if ((result == null) || !result.isFolder())
+		if ((result.length <= 0) || !result[0].isFolder())
 		{
 			// ... create the folder at the destination.
 			localFolder = new LocalFolder();
@@ -223,7 +223,7 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 		}
 		else
 		{	// ... else, just use the one at the destination.
-			localFolder = (LocalFolder) result;
+			localFolder = (LocalFolder) result[0];
 		}
 
 		// link the remote and local folders.
@@ -391,11 +391,11 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 		Logger.info("uploading folder: " + folder.getPath());
 
 		// check if the folder exists at the CSP.
-		Container<?> result = parent.searchByName(folder.getName(), false)[0];
+		Container<?>[] result = parent.searchByName(folder.getName(), false);
 		RemoteFolder<?> remoteFolder = null;
 
 		// if it doesn't exist, create it.
-		if ((result == null) || !result.isFolder())
+		if ((result.length <= 0) || !result[0].isFolder())
 		{
 			remoteFolder = getAbstractFactory().createFolder();
 			remoteFolder.setName(folder.getName());
@@ -412,7 +412,7 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 		}
 		else
 		{
-			remoteFolder = (RemoteFolder) result;
+			remoteFolder = (RemoteFolder) result[0];
 		}
 
 		remoteFolder.setLocalMapping(folder);
@@ -613,31 +613,32 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 		String containerName = splitPath.remove(splitPath.size() - 1);
 
 		// save intermediate nodes
-		Container<?> result = remoteFileTree;
+		Container<?>[] result = { remoteFileTree };
 
 		// search for each entry in the path ...
-		while ((result != null) && (splitPath.size() > 0))
+		while ((result.length > 0) && (splitPath.size() > 0))
 		{
-			if ( !result.isFolder())
+			if ( !result[0].isFolder())
 			{	// found a file in the middle of the path -- not what we're looking for.
 				Logger.error("failed to search " + path);
 				throw new OperationException("Couldn't complete search: " + path);
 			}
 			else
 			{	// search for the next node in this node.
-				((RemoteFolder<?>) result).updateFromSource(true, false);
-				result = ((RemoteFolder<?>) result).searchByName(splitPath.remove(0), false)[0];
+				((RemoteFolder<?>) result[0]).updateFromSource(true, false);
+				result = ((RemoteFolder<?>) result[0]).searchByName(splitPath.remove(0), false);
 			}
 		}
 
 		// if part of the path is not found ...
-		if ((splitPath.size() > 0) || (result == null))
+		if ((splitPath.size() > 0) || (result.length > 0))
 		{
 			return null;		// ... return nothing.
 		}
 		else
 		{	// ... or search for the file in the end node. Might return null.
-			return ((RemoteFolder<?>) result).searchByName(containerName, false)[0];
+			result = ((RemoteFolder<?>) result[0]).searchByName(containerName, false);
+			return result.length > 0 ? result[0] : null;
 		}
 
 	}

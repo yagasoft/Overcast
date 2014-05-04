@@ -98,13 +98,13 @@ public abstract class Folder<T> extends Container<T> implements IContentManager
 		// if there're sub-folders in the path
 		if (splitPath.size() > 0)
 		{
-			RemoteFolder result;
+			Container[] result;
 
 			// search for the first sub-folder.
 			try
 			{
 				parent.buildTree(false);		// slows, but removes chance of errors.
-				result = (RemoteFolder) parent.searchByName(splitPath.get(0), false)[0];
+				result = parent.searchByName(splitPath.get(0), false);
 			}
 			catch (OperationException e)
 			{
@@ -117,10 +117,10 @@ public abstract class Folder<T> extends Container<T> implements IContentManager
 
 			// if it's found, and there're more sub-folders ...
 			// (if it's found but not sub-folders, then it's the parent we want to create in)
-			while ((result != null) && (splitPath.size() > 0))
+			while ((result.length > 0) && (splitPath.size() > 0))
 			{
 				// this it the intended parent for now ...
-				parent = result;
+				parent = (RemoteFolder) result[0];
 				splitPath.remove(0);		// don't need it anymore in the node's list.
 
 				// more sub-folders?
@@ -130,7 +130,7 @@ public abstract class Folder<T> extends Container<T> implements IContentManager
 					try
 					{
 						parent.buildTree(false);
-						result = (RemoteFolder) parent.searchByName(splitPath.get(0), false)[0];
+						result = parent.searchByName(splitPath.get(0), false);
 					}
 					catch (OperationException e)
 					{
@@ -160,10 +160,10 @@ public abstract class Folder<T> extends Container<T> implements IContentManager
 		}
 
 		// done with creating/traversing the path, now search if this folder exists in the last node ...
-		RemoteFolder result = (RemoteFolder) parent.searchByName(name, false)[0];
+		Container<?>[] result = parent.searchByName(name, false);
 
 		// ... if so, then it already exists.
-		if (result != null)
+		if (result.length > 0 && result[0].isFolder())
 		{
 			Logger.error("creating nodes to reach desired folder: " + parentPath + "/" + name);
 

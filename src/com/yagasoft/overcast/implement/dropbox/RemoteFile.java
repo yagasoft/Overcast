@@ -150,15 +150,15 @@ public class RemoteFile extends com.yagasoft.overcast.base.container.remote.Remo
 
 		addOperationListener(listener, Operation.COPY);
 
-		Container<?> existingFile = destination.searchByName(name, false)[0];
+		Container<?>[] existingFile = destination.searchByName(name, false);
 
 		try
 		{
-			if ((existingFile != null) && !existingFile.isFolder())
+			if ((existingFile.length > 0) && !existingFile[0].isFolder())
 			{
 				if (overwrite)
 				{
-					existingFile.delete(new IOperationListener()
+					existingFile[0].delete(new IOperationListener()
 					{
 
 						@Override
@@ -209,15 +209,15 @@ public class RemoteFile extends com.yagasoft.overcast.base.container.remote.Remo
 
 		addOperationListener(listener, Operation.MOVE);
 
-		Container<?> existingFile = destination.searchByName(name, false)[0];
+		Container<?>[] existingFile = destination.searchByName(name, false);
 
 		try
 		{
-			if ((existingFile != null) && !existingFile.isFolder())
+			if ((existingFile.length > 0) && !existingFile[0].isFolder())
 			{
 				if (overwrite)
 				{
-					existingFile.delete(new IOperationListener()
+					existingFile[0].delete(new IOperationListener()
 					{
 
 						@Override
@@ -264,11 +264,11 @@ public class RemoteFile extends com.yagasoft.overcast.base.container.remote.Remo
 
 		addOperationListener(listener, Operation.RENAME);
 
-		Container<?> existingFile = getParent().searchByName(newName, false)[0];
+		Container<?>[] existingFile = getParent().searchByName(newName, false);
 
 		try
 		{
-			if ((existingFile != null) && !existingFile.isFolder())
+			if ((existingFile.length > 0) && !existingFile[0].isFolder())
 			{
 				Logger.error("renaming file -- already exists: " + path);
 				throw new OperationException("File already exists!");
