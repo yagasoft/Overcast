@@ -263,8 +263,6 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 				name = "";
 			}
 
-			path = ((parent == null || parent.getPath().equals("/")) ? "/" : (parent.getPath() + "/")) + name;
-
 			try
 			{
 				link = new URL(getSourceObject().getSelfLink());
@@ -276,6 +274,9 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 		}
 
 		// size = calculateSize(); // might be too heavy, so don't do it automatically.
+
+		path = ((parent == null || parent.getPath().equals("/")) ? "/" : (parent.getPath() + "/")) + name;
+		cleanPath();
 
 		notifyUpdateListeners();
 

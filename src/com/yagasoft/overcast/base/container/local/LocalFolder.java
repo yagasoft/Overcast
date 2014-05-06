@@ -24,10 +24,9 @@ import java.util.concurrent.Semaphore;
 
 import com.yagasoft.logger.Logger;
 import com.yagasoft.overcast.base.container.Folder;
-import com.yagasoft.overcast.base.container.FolderHelper;
-import com.yagasoft.overcast.base.container.FolderHelper.TreeCopier;
-import com.yagasoft.overcast.base.container.FolderHelper.TreeDeleter;
-import com.yagasoft.overcast.base.container.FolderHelper.TreeMover;
+import com.yagasoft.overcast.base.container.local.FolderHelper.TreeCopier;
+import com.yagasoft.overcast.base.container.local.FolderHelper.TreeDeleter;
+import com.yagasoft.overcast.base.container.local.FolderHelper.TreeMover;
 import com.yagasoft.overcast.base.container.operation.IOperationListener;
 import com.yagasoft.overcast.base.container.operation.Operation;
 import com.yagasoft.overcast.base.container.operation.OperationState;

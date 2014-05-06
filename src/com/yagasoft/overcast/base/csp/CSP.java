@@ -175,6 +175,7 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 	 */
 	public abstract long calculateRemoteFreeSpace() throws OperationException;
 
+	// TODO Test folder download.
 	/**
 	 * Download the folder (passed) from the server.<br />
 	 * It creates the folder locally and all sub-folders if necessary.
@@ -364,6 +365,7 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 		nextDownloadJob();
 	}
 
+	// TODO Test folder upload.
 	/**
 	 * Upload the folder (passed) to the server.<br />
 	 * It creates the folder remotely and all sub-folders if necessary.

@@ -90,8 +90,6 @@ public class RemoteFile extends com.yagasoft.overcast.base.container.remote.Remo
 				name = "";
 			}
 
-			path = ((parent == null || parent.getPath().equals("/")) ? "/" : (parent.getPath() + "/")) + name;
-
 			try
 			{
 				size = getSourceObject().getFileSize();
@@ -110,6 +108,9 @@ public class RemoteFile extends com.yagasoft.overcast.base.container.remote.Remo
 				link = null;
 			}
 		}
+
+		path = ((parent == null || parent.getPath().equals("/")) ? "/" : (parent.getPath() + "/")) + name;
+		cleanPath();
 
 		notifyUpdateListeners();
 

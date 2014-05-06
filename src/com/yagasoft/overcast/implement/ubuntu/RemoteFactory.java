@@ -20,11 +20,10 @@ import com.ubuntuone.api.files.model.U1File;
 public class RemoteFactory extends
 		com.yagasoft.overcast.base.container.remote.RemoteFactory<U1Directory, RemoteFolder, U1File, RemoteFile>
 {
-	
+
 	public RemoteFactory(Ubuntu ubuntu)
 	{
-		super(RemoteFolder.class, RemoteFile.class);
-		csp = ubuntu;
+		super(ubuntu, RemoteFolder.class, RemoteFile.class, "");
 	}
-	
+
 }

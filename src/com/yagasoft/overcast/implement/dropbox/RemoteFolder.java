@@ -246,10 +246,11 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 			{
 				name = "";
 			}
-
-			path = ((parent == null || parent.getPath().equals("/")) ? "/" : (parent.getPath() + "/")) + name;
 		}
 		// size = calculateSize(); // commented because it might be heavy, so better do it explicitly.
+
+		path = ((parent == null || parent.getPath().equals("/")) ? "/" : (parent.getPath() + "/")) + name;
+		cleanPath();
 
 		notifyUpdateListeners();
 

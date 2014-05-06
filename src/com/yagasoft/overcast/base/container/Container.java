@@ -6,7 +6,7 @@
  *
  *		Project/File: Overcast/com.yagasoft.overcast.base.container/Container.java
  *
- *			Modified: 04-May-2014 (16:18:08)
+ *			Modified: 06-May-2014 (04:08:37)
  *			   Using: Eclipse J-EE / JDK 7 / Windows 8.1 x64
  */
 
@@ -43,10 +43,13 @@ public abstract class Container<T> implements IOperable, IUpdatable, Comparable<
 	protected String											id;
 
 	/** Name of the container. */
-	protected String												name;
+	protected String											name;
 
 	/** Path of the container at the source, including its name. */
-	protected String												path;
+	protected String											path;
+
+	/** Path prefix, which will be used to clean-up the path sent by the CSP -- for API path standardisation. */
+	protected String											pathPrefix;
 
 	/** Size of the container in bytes. */
 	protected long												size;
@@ -90,7 +93,13 @@ public abstract class Container<T> implements IOperable, IUpdatable, Comparable<
 	public abstract boolean isFolder();
 
 	/**
-	 * Update the fields (class attributes) in this file object from the in-memory info (nothing is done outside the program).
+	 * Update the fields (class attributes) in this file object from the in-memory info (nothing is done outside the program). <br />
+	 * Set the path, at the end of the method implementation, in this preferred format to make it standardised across the API:
+	 *
+	 * <pre>
+	 * path = ((parent == null || parent.getPath().equals(&quot;/&quot;)) ? &quot;/&quot; : (parent.getPath() + &quot;/&quot;)) + name;
+	 * cleanPath();		// remove the prefix.
+	 * </pre>
 	 */
 	public abstract void updateInfo();
 
@@ -154,6 +163,10 @@ public abstract class Container<T> implements IOperable, IUpdatable, Comparable<
 	 *             the operation exception
 	 */
 	public abstract void delete(IOperationListener listener) throws OperationException;
+
+	// //////////////////////////////////////////////////////////////////////////////////////
+	// #region Listeners.
+	// ======================================================================================
 
 	/**
 	 * @see com.yagasoft.overcast.base.container.operation.IOperable#addOperationListener(com.yagasoft.overcast.base.container.operation.IOperationListener,
@@ -277,6 +290,22 @@ public abstract class Container<T> implements IOperable, IUpdatable, Comparable<
 		updateListeners.clear();
 	}
 
+	// ======================================================================================
+	// #endregion Listeners.
+	// //////////////////////////////////////////////////////////////////////////////////////
+
+	/**
+	 * Removes the prefix from the path to make it standardised with this API's paths.<br />
+	 * It should be added before communicating with the service using its path format.
+	 */
+	protected void cleanPath()
+	{
+		if (((path != null) && (path != "/")) && path.startsWith(pathPrefix))
+		{
+			path.substring(pathPrefix.length(), path.length() - 1);
+		}
+	}
+
 	/**
 	 * Checks if the object passed is identical to this one. It checks if it's a container in the first place, and if so, checks
 	 * the ID, and as it's unique, there won't be conflicts.
@@ -384,6 +413,25 @@ public abstract class Container<T> implements IOperable, IUpdatable, Comparable<
 	public void setPath(String value)
 	{
 		this.path = value;
+		cleanPath();
+	}
+
+	/**
+	 * @return the pathPrefix
+	 */
+	public String getPathPrefix()
+	{
+		return pathPrefix;
+	}
+
+	/**
+	 * @param pathPrefix
+	 *            the pathPrefix to set
+	 */
+	public void setPathPrefix(String pathPrefix)
+	{
+		this.pathPrefix = pathPrefix;
+		cleanPath();
 	}
 
 	/**

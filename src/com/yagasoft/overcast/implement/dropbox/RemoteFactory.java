@@ -20,8 +20,7 @@ public class RemoteFactory extends com.yagasoft.overcast.base.container.remote.R
 
 	public RemoteFactory(Dropbox dropbox)
 	{
-		super(RemoteFolder.class, RemoteFile.class);
-		csp = dropbox;
+		super(dropbox, RemoteFolder.class, RemoteFile.class, "");
 	}
 
 }

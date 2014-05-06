@@ -20,7 +20,7 @@ public final class Overcast
 {
 	
 	/** Version. */
-	public static String	version	= "4.15.0120";
+	public static final String	VERSION	= "4.15.0120";
 	
 	/**
 	 * This class provides only static info.
