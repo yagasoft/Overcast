@@ -24,7 +24,7 @@ public class RemoteFactory extends com.yagasoft.overcast.base.container.remote.R
 	
 	public RemoteFactory(Google google)
 	{
-		super(google, RemoteFolder.class, RemoteFile.class, "");
+		super(google, RemoteFolder.class, RemoteFile.class, "/My Drive");
 	}
 	
 }

@@ -302,7 +302,14 @@ public abstract class Container<T> implements IOperable, IUpdatable, Comparable<
 	{
 		if (((path != null) && (path != "/")) && path.startsWith(pathPrefix))
 		{
-			path.substring(pathPrefix.length(), path.length() - 1);
+			if (path.length() <= pathPrefix.length())
+			{
+				path = "/";
+			}
+			else
+			{
+				path.substring(pathPrefix.length(), path.length() - 1);
+			}
 		}
 	}
 
