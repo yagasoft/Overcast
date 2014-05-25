@@ -6,7 +6,7 @@
  *
  *		Project/File: Overcast/com.yagasoft.overcast.implement.dropbox/Dropbox.java
  *
- *			Modified: 18-Apr-2014 (21:33:57)
+ *			Modified: 25-May-2014 (23:11:28)
  *			   Using: Eclipse J-EE / JDK 7 / Windows 8.1 x64
  */
 
@@ -24,9 +24,6 @@ import com.yagasoft.logger.Logger;
 import com.yagasoft.overcast.base.container.content.IContentListener;
 import com.yagasoft.overcast.base.container.local.LocalFile;
 import com.yagasoft.overcast.base.container.local.LocalFolder;
-import com.yagasoft.overcast.base.container.operation.IOperationListener;
-import com.yagasoft.overcast.base.container.operation.OperationEvent;
-import com.yagasoft.overcast.base.container.transfer.ITransferProgressListener;
 import com.yagasoft.overcast.base.container.transfer.TransferState;
 import com.yagasoft.overcast.base.csp.CSP;
 import com.yagasoft.overcast.exception.AuthorisationException;
@@ -145,7 +142,7 @@ public class Dropbox extends CSP<DbxEntry.File, Downloader, Uploader> implements
 				remoteFileTree.addContentListener(listener);
 			}
 
-//			buildFileTree(false);
+			//			buildFileTree(false);
 		}
 		catch (CreationException e)
 		{
@@ -187,62 +184,19 @@ public class Dropbox extends CSP<DbxEntry.File, Downloader, Uploader> implements
 	}
 
 	/**
-	 * @see com.yagasoft.overcast.base.csp.CSP#download(com.yagasoft.overcast.base.container.remote.RemoteFile,
-	 *      com.yagasoft.overcast.base.container.local.LocalFolder, boolean,
-	 *      com.yagasoft.overcast.base.container.transfer.ITransferProgressListener)
+	 * @see com.yagasoft.overcast.base.csp.CSP#downloadProcess(com.yagasoft.overcast.base.container.remote.RemoteFile,
+	 *      com.yagasoft.overcast.base.container.local.LocalFolder, boolean)
 	 */
 	@Override
-	public DownloadJob download(com.yagasoft.overcast.base.container.remote.RemoteFile<?> file, LocalFolder parent
-			, boolean overwrite, ITransferProgressListener listener) throws TransferException
+	protected DownloadJob downloadProcess(com.yagasoft.overcast.base.container.remote.RemoteFile<?> file, LocalFolder parent
+			, boolean overwrite) throws TransferException
 	{
-		Logger.info("creating download job for " + file.getPath());
-
-		// check for the file existence in the parent
-		for (com.yagasoft.overcast.base.container.File<?> child : parent.getFilesArray())
-		{
-			// if it exists ...
-			if (file.getName().equals(child.getName()))
-			{
-				// ... delete if required.
-				try
-				{
-					if (overwrite)
-					{
-						child.delete(new IOperationListener()
-						{
-
-							@Override
-							public void operationProgressChanged(OperationEvent event)
-							{}
-						});
-					}
-					else
-					{
-						throw new TransferException("File exists!");
-					}
-				}
-				catch (OperationException | TransferException e)
-				{
-					Logger.error("downloading, file exists: " + file.getPath() + ", in " + parent.getPath());
-					Logger.except(e);
-					e.printStackTrace();
-
-					throw new TransferException("File exists!");
-				}
-			}
-		}
-
-		// create a download job and add it to the queue.
+		// create a download job.
 		DownloadJob downloadJob = new DownloadJob((RemoteFile) file, parent, overwrite, null, null);
 		Downloader downloader = new Downloader(file.getPath(), parent.getPath(), downloadJob);
 		downloadJob.setCspTransferer(downloader);
 		downloadJob.setCanceller(downloader);
 		downloader.addProgressListener(this);
-		downloadJob.addProgressListener(listener);
-		downloadQueue.add(downloadJob);
-		nextDownloadJob();		// check if this job can be executed right away.
-
-		Logger.info("created download job: " + file.getPath());
 
 		return downloadJob;
 	}
@@ -282,77 +236,17 @@ public class Dropbox extends CSP<DbxEntry.File, Downloader, Uploader> implements
 		}
 	}
 
-	/**
-	 * @see com.yagasoft.overcast.base.csp.CSP#upload(com.yagasoft.overcast.base.container.local.LocalFile,
-	 *      com.yagasoft.overcast.base.container.remote.RemoteFolder, boolean,
-	 *      com.yagasoft.overcast.base.container.transfer.ITransferProgressListener, java.lang.Object)
-	 */
 	@Override
-	public UploadJob upload(LocalFile file, com.yagasoft.overcast.base.container.remote.RemoteFolder<?> parent
-			, boolean overwrite, ITransferProgressListener listener) throws TransferException
+	protected UploadJob uploadProcess(LocalFile file, com.yagasoft.overcast.base.container.remote.RemoteFolder<?> parent
+			, boolean overwrite, com.yagasoft.overcast.base.container.remote.RemoteFile<?> remoteFile) throws TransferException
 	{
-		Logger.info("creating upload job for " + file.getPath());
-
-		// overwrite if necessary.
-		for (com.yagasoft.overcast.base.container.File<?> child : parent.getFilesArray())
-		{
-			if (child.getName().equals(file.getName()))
-			{
-				try
-				{
-					if (overwrite)
-					{
-							child.delete(new IOperationListener()
-							{
-
-								@Override
-								public void operationProgressChanged(OperationEvent event)
-								{}
-							});
-					}
-					else
-					{
-						throw new TransferException("File exists!");
-					}
-				}
-				catch (OperationException | TransferException e)
-				{
-					Logger.error("uploading, file exists: " + file.getPath() + ", in " + parent.getPath());
-					Logger.except(e);
-					e.printStackTrace();
-
-					throw new TransferException("File exists!");
-				}
-			}
-		}
-
-		// create an object for the file that's going to be uploaded to be linked to.
-		RemoteFile remoteFile;
-		try
-		{
-			remoteFile = factory.createFile();
-		}
-		catch (CreationException e)
-		{
-			Logger.error("uploading, can't create file object");
-			Logger.except(e);
-			e.printStackTrace();
-
-			throw new TransferException("Can't create file object!");
-		}
-
 		// create an upload job.
-		UploadJob uploadJob = new UploadJob(file, remoteFile, (RemoteFolder) parent
+		UploadJob uploadJob = new UploadJob(file, (RemoteFile) remoteFile, (RemoteFolder) parent
 				, overwrite, null, null);
 		Uploader uploader = new Uploader(parent.getPath(), file.getPath(), uploadJob);
 		uploadJob.setCspTransferer(uploader);
 		uploadJob.setCanceller(uploader);
 		uploader.addProgressListener(this);
-		uploadJob.addProgressListener(listener);
-		uploadQueue.add(uploadJob);		// add it to the queue.
-		nextUploadJob();		// check if it can be executed immediately.
-
-		Logger.info("created upload job: " + file.getPath());
 
 		return uploadJob;
 	}

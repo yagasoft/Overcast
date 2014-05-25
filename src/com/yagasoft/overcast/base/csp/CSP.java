@@ -2,11 +2,11 @@
  * Copyright (C) 2011-2014 by Ahmed Osama el-Sawalhy
  *
  *		The Modified MIT Licence (GPL v3 compatible)
- * 			License terms are in a separate file (LICENCE.md)
+ * 			Licence terms are in a separate file (LICENCE.md)
  *
  *		Project/File: Overcast/com.yagasoft.overcast.base.csp/CSP.java
  *
- *			Modified: May 3, 2014 (9:55:46 AM)
+ *			Modified: 25-May-2014 (22:45:26)
  *			   Using: Eclipse J-EE / JDK 7 / Windows 8.1 x64
  */
 
@@ -175,6 +175,33 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 	 */
 	public abstract long calculateRemoteFreeSpace() throws OperationException;
 
+	// //////////////////////////////////////////////////////////////////////////////////////
+	// #region Transfer.
+	// ======================================================================================
+
+	protected void initTransfer(Container<?> container, Container<?> destination, boolean overwrite) throws OperationException
+	{
+		Logger.info("creating transfer job for " + container.getPath());
+
+		// overwrite if necessary.
+		Container<?>[] existingContainer = ((Folder<?>) destination).searchByName(container.getName(), false);
+
+		if ((existingContainer.length > 0) && (existingContainer[0].isFolder() == container.isFolder()))
+		{
+			if (overwrite)
+			{
+				existingContainer[0].delete();
+			}
+			else
+			{
+				throw new OperationException("Already exists!");
+			}
+		}
+	}
+
+	// --------------------------------------------------------------------------------------
+	// #region Download.
+
 	// TODO Test folder download.
 	/**
 	 * Download the folder (passed) from the server.<br />
@@ -268,9 +295,73 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 	 * @throws TransferException
 	 *             A problem occurred during the transfer of the file.
 	 */
-	public abstract DownloadJob<?> download(RemoteFile<?> file, LocalFolder parent, boolean overwrite,
+	@SuppressWarnings("unchecked")
+	public DownloadJob<?> download(RemoteFile<?> file, LocalFolder parent, boolean overwrite,
 			ITransferProgressListener listener)
+			throws TransferException
+	{
+		try
+		{
+			initTransfer(file, parent, overwrite);
+			DownloadJob<?> downloadJob = downloadProcess(file, parent, overwrite);
+			postDownloadInit(file, (DownloadJob<DownloaderType>) downloadJob, listener);
+
+			return downloadJob;
+		}
+		catch (OperationException e)
+		{
+			Logger.error("downloading, can't init transfer");
+			Logger.except(e);
+			e.printStackTrace();
+
+			throw new TransferException("can't init transfer for " + file.getPath());
+		}
+	}
+
+	/**
+	 * Stuff to do before creating the job. Probably creating a 'LocalFile'.
+	 */
+	protected void initDownload() throws CreationException
+	{}
+
+	/**
+	 * Download process. Should create a job, prepare the downloader object, and set the canceller.
+	 *
+	 * @param file
+	 *            File.
+	 * @param parent
+	 *            Parent.
+	 * @param overwrite
+	 *            Overwrite.
+	 * @param listener
+	 *            Listener.
+	 * @param remoteFile
+	 * @return Download job
+	 * @throws TransferException
+	 *             the transfer exception
+	 */
+	protected abstract DownloadJob<DownloaderType> downloadProcess(RemoteFile<?> file, LocalFolder parent, boolean overwrite)
 			throws TransferException;
+
+	/**
+	 * Post initialisation of download job.
+	 *
+	 * @param file
+	 *            File.
+	 * @param downloadJob
+	 *            Download job.
+	 * @param listener
+	 *            Listener.
+	 */
+	protected void postDownloadInit(RemoteFile<?> file, DownloadJob<DownloaderType> downloadJob,
+			ITransferProgressListener listener)
+	{
+		downloadJob.addProgressListener(listener);
+		downloadQueue.add(downloadJob);		// add it to the queue.
+		Logger.info("created download job: " + file.getPath());
+
+		nextDownloadJob();		// check if it can be executed immediately.
+	}
 
 	/**
 	 * If the queue has a job, set it as the current one after removing it from the queue, and then start the job.<br />
@@ -365,6 +456,12 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 		nextDownloadJob();
 	}
 
+	// #endregion Download.
+	// --------------------------------------------------------------------------------------
+
+	// --------------------------------------------------------------------------------------
+	// #region Upload.
+
 	// TODO Test folder upload.
 	/**
 	 * Upload the folder (passed) to the server.<br />
@@ -453,9 +550,82 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 	 * @throws TransferException
 	 *             A problem occurred during the transfer of the file.
 	 */
-	public abstract UploadJob<?, ?> upload(LocalFile file, RemoteFolder<?> parent, boolean overwrite,
+	@SuppressWarnings("unchecked")
+	public UploadJob<?, ?> upload(LocalFile file, RemoteFolder<?> parent, boolean overwrite,
 			ITransferProgressListener listener)
+			throws TransferException
+	{
+		try
+		{
+			initTransfer(file, parent, overwrite);
+			UploadJob<?, ?> uploadJob = uploadProcess(file, parent, overwrite, initUpload());
+			postUploadInit(file, (UploadJob<UploaderType, SourceFileType>) uploadJob, listener);
+
+			return uploadJob;
+		}
+		catch (OperationException | CreationException e)
+		{
+			Logger.error("uploading, can't init transfer");
+			Logger.except(e);
+			e.printStackTrace();
+
+			throw new TransferException("can't init transfer for " + file.getPath());
+		}
+	}
+
+	/**
+	 * Stuff to do before creating the job. Probably creating a 'RemoteFile'.
+	 *
+	 * @return Remote file
+	 * @throws CreationException
+	 *             the creation exception
+	 */
+	protected RemoteFile<?> initUpload() throws CreationException
+	{
+		// create an object for the file that's going to be uploaded to be linked to.
+		return getAbstractFactory().createFile();
+	}
+
+	/**
+	 * Upload process. Should create a job, prepare the uploader object, and set the canceller.
+	 *
+	 * @param file
+	 *            File.
+	 * @param parent
+	 *            Parent.
+	 * @param overwrite
+	 *            Overwrite.
+	 * @param listener
+	 *            Listener.
+	 * @param remoteFile
+	 * @return Upload job
+	 * @throws TransferException
+	 *             the transfer exception
+	 */
+	protected abstract UploadJob<UploaderType, SourceFileType> uploadProcess(LocalFile file, RemoteFolder<?> parent,
+			boolean overwrite,
+			RemoteFile<?> remoteFile)
 			throws TransferException;
+
+	/**
+	 * Post initialisation of upload job.
+	 *
+	 * @param file
+	 *            File.
+	 * @param uploadJob
+	 *            Upload job.
+	 * @param listener
+	 *            Listener.
+	 */
+	protected void postUploadInit(LocalFile file, UploadJob<UploaderType, SourceFileType> uploadJob,
+			ITransferProgressListener listener)
+	{
+		uploadJob.addProgressListener(listener);
+		uploadQueue.add(uploadJob);		// add it to the queue.
+		Logger.info("created upload job: " + file.getPath());
+
+		nextUploadJob();		// check if it can be executed immediately.
+	}
 
 	/**
 	 * If the queue has a job, set it as the current one after removing it from the queue, and then start the job. <br />
@@ -501,7 +671,8 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 	}
 
 	/**
-	 * Starts the upload and passes the result to the upload job to add to the file object.
+	 * Starts the upload using the 'cspTransferer' included in the job,
+	 * and passes the result to the upload job using 'success' method to add to the file object.
 	 *
 	 * @throws TransferException
 	 *             the transfer exception
@@ -547,6 +718,13 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 		currentUploadJob = null;
 		nextUploadJob();
 	}
+
+	// #endregion Upload.
+	// --------------------------------------------------------------------------------------
+
+	// ======================================================================================
+	// #endregion Transfer.
+	// //////////////////////////////////////////////////////////////////////////////////////
 
 	// //////////////////////////////////////////////////////////////////////////////////////
 	// #region Search by path.

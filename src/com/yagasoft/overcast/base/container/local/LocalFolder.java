@@ -496,4 +496,10 @@ public class LocalFolder extends Folder<Path>
 		return null;
 	}
 
+	@Override
+	public void setPath(String value)
+	{
+		path = value;
+		setPathPrefix("");
+	}
 }
