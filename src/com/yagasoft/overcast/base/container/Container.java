@@ -6,7 +6,7 @@
  *
  *		Project/File: Overcast/com.yagasoft.overcast.base.container/Container.java
  *
- *			Modified: 06-May-2014 (04:08:37)
+ *			Modified: 25-May-2014 (18:14:23)
  *			   Using: Eclipse J-EE / JDK 7 / Windows 8.1 x64
  */
 
@@ -16,6 +16,7 @@ package com.yagasoft.overcast.base.container;
 import java.util.HashMap;
 import java.util.HashSet;
 
+import com.yagasoft.logger.Logger;
 import com.yagasoft.overcast.base.container.operation.IOperable;
 import com.yagasoft.overcast.base.container.operation.IOperationListener;
 import com.yagasoft.overcast.base.container.operation.Operation;
@@ -61,10 +62,13 @@ public abstract class Container<T> implements IOperable, IUpdatable, Comparable<
 	protected Folder<?>											parent;
 
 	/** Listeners to the operations in this container. */
-	protected HashMap<IOperationListener, HashSet<Operation>>	operationListeners	= new HashMap<IOperationListener, HashSet<Operation>>();
+	protected HashMap<IOperationListener, HashSet<Operation>>	operationListeners		= new HashMap<IOperationListener, HashSet<Operation>>();
+
+	/** Temporary listeners to the operations in this container; they're added through the operation methods themselves. */
+	protected HashMap<IOperationListener, HashSet<Operation>>	tempOperationListeners	= new HashMap<IOperationListener, HashSet<Operation>>();
 
 	/** Listeners to the meta-data updates of this container. */
-	protected HashSet<IUpdateListener>							updateListeners		= new HashSet<IUpdateListener>();
+	protected HashSet<IUpdateListener>							updateListeners			= new HashSet<IUpdateListener>();
 
 	/** CSP object related to this container, or where the container is stored at. */
 	protected CSP<T, ?, ?>										csp;
@@ -112,6 +116,110 @@ public abstract class Container<T> implements IOperable, IUpdatable, Comparable<
 	 */
 	public abstract void updateFromSource() throws OperationException;
 
+	// //////////////////////////////////////////////////////////////////////////////////////
+	// #region Operations.
+	// ======================================================================================
+
+	/**
+	 * Initialises a basic operation. Includes checking on container existence in destination, and adding operation listener to
+	 * list.
+	 *
+	 * @param destination
+	 *            Destination folder.
+	 * @param overwrite
+	 *            Overwrite?
+	 * @param listener
+	 *            Listener to this operation.
+	 * @param operation
+	 *            Operation to perform (enum).
+	 * @throws OperationException
+	 *             the operation exception
+	 */
+	protected void initOperation(Folder<?> destination, boolean overwrite, IOperationListener listener, Operation operation)
+			throws OperationException
+	{
+		Logger.info(operation + " container: " + path);
+
+		addTempOperationListener(listener, operation);
+
+		// if it's not a delete, then check for existence at destination
+		if (operation != Operation.DELETE)
+		{
+			Container<?>[] existingContainer = destination.searchByName(name, false);
+
+			if ((existingContainer.length > 0) && (existingContainer[0].isFolder() == isFolder()))
+			{
+				if (overwrite)
+				{
+					existingContainer[0].delete();
+				}
+				else
+				{
+					Logger.error("container -- already exists: " + path);
+					throw new OperationException("Already exists!");
+				}
+			}
+		}
+	}
+
+	/**
+	 * Post operation stuff. Includes removing this container from the old parent upon move or delete,
+	 * adding the copied or moved container to the new parent, and notifying listeners of success.
+	 *
+	 * @param destination
+	 *            Destination folder.
+	 * @param affectedContainer
+	 *            Affected container. When copying, it's the new container.
+	 * @param operation
+	 *            Operation to perform.
+	 * @throws OperationException
+	 *             the operation exception
+	 */
+	protected void postOperation(Folder<?> destination, Container<?> affectedContainer, Operation operation)
+			throws OperationException
+	{
+		// move or delete removes container from this container
+		if ((operation == Operation.MOVE) || (operation == Operation.DELETE))
+		{
+			getParent().remove(this);
+		}
+
+		// copy or move adds a container to the destination
+		if ((operation == Operation.COPY) || (operation == Operation.MOVE))
+		{
+			destination.add(affectedContainer);
+		}
+
+		notifyOperationListeners(operation, OperationState.COMPLETED, 1.0f);
+
+		Logger.info("finished " + operation + ": " + affectedContainer.getPath());
+	}
+
+	/**
+	 * Stuff to do when an operation fails. Includes logging, and throwing an exception.
+	 *
+	 * @param operation
+	 *            Operation that failed.
+	 * @param e
+	 *            Exception thrown at source.
+	 * @throws OperationException
+	 *             the operation exception
+	 */
+	protected void operationFailed(Operation operation, Exception e) throws OperationException
+	{
+		Logger.error("moving file: " + path);
+		Logger.except(e);
+		e.printStackTrace();
+
+		throw new OperationException(operation + " failed! "
+				+ ((e != null) ? e.getMessage() : ""));
+	}
+
+	public synchronized Container<?> copy(Folder<?> destination, boolean overwrite) throws OperationException
+	{
+		return copy(destination, overwrite, null);
+	}
+
 	/**
 	 * Copy this container to the destination folder.
 	 *
@@ -125,8 +233,45 @@ public abstract class Container<T> implements IOperable, IUpdatable, Comparable<
 	 * @throws OperationException
 	 *             the operation exception
 	 */
-	public abstract Container<?> copy(Folder<?> destination, boolean overwrite, IOperationListener listener)
-			throws OperationException;
+	public synchronized Container<?> copy(Folder<?> destination, boolean overwrite, IOperationListener listener)
+			throws OperationException
+	{
+		try
+		{
+			initOperation(destination, overwrite, listener, Operation.COPY);
+			Container<?> copiedContainer = copyProcess(destination);
+			postOperation(destination, copiedContainer, Operation.COPY);
+
+			return copiedContainer;
+		}
+		catch (OperationException e)
+		{
+			operationFailed(Operation.COPY, e);
+		}
+		finally
+		{
+			removeTempOperationListener(listener, Operation.COPY);
+		}
+
+		return null;
+	}
+
+	/**
+	 * Copy process logic. This includes how the copy process is performed. It should return a {@link Container} representing the
+	 * new container copied over.
+	 *
+	 * @param destination
+	 *            Destination folder.
+	 * @return new container at destination
+	 * @throws OperationException
+	 *             the operation exception
+	 */
+	protected abstract Container<?> copyProcess(Folder<?> destination) throws OperationException;
+
+	public synchronized void move(Folder<?> destination, boolean overwrite) throws OperationException
+	{
+		move(destination, overwrite, null);
+	}
 
 	/**
 	 * Move this container to the destination folder.
@@ -140,7 +285,41 @@ public abstract class Container<T> implements IOperable, IUpdatable, Comparable<
 	 * @throws OperationException
 	 *             the operation exception
 	 */
-	public abstract void move(Folder<?> destination, boolean overwrite, IOperationListener listener) throws OperationException;
+	public synchronized void move(Folder<?> destination, boolean overwrite, IOperationListener listener)
+			throws OperationException
+	{
+		try
+		{
+			initOperation(destination, overwrite, listener, Operation.MOVE);
+			setSourceObject(moveProcess(destination));
+			postOperation(destination, this, Operation.MOVE);
+		}
+		catch (OperationException e)
+		{
+			operationFailed(Operation.MOVE, e);
+		}
+		finally
+		{
+			removeTempOperationListener(listener, Operation.MOVE);
+		}
+	}
+
+	/**
+	 * Move process logic. This includes how the move process is performed. It should return an
+	 * object representing the new {@link #sourceObject} returned by the server.
+	 *
+	 * @param destination
+	 *            Destination folder.
+	 * @return source object returned by the server
+	 * @throws OperationException
+	 *             the operation exception
+	 */
+	protected abstract T moveProcess(Folder<?> destination) throws OperationException;
+
+	public synchronized void rename(String newName) throws OperationException
+	{
+		rename(newName, null);
+	}
 
 	/**
 	 * Rename this container.
@@ -152,7 +331,40 @@ public abstract class Container<T> implements IOperable, IUpdatable, Comparable<
 	 * @throws OperationException
 	 *             the operation exception
 	 */
-	public abstract void rename(String newName, IOperationListener listener) throws OperationException;
+	public synchronized void rename(String newName, IOperationListener listener) throws OperationException
+	{
+		try
+		{
+			initOperation(getParent(), false, listener, Operation.RENAME);
+			setSourceObject(renameProcess(newName));
+			postOperation(getParent(), this, Operation.RENAME);
+		}
+		catch (OperationException e)
+		{
+			operationFailed(Operation.RENAME, e);
+		}
+		finally
+		{
+			removeTempOperationListener(listener, Operation.RENAME);
+		}
+	}
+
+	/**
+	 * Rename process logic. This includes how the rename process is performed. It should return an
+	 * object representing the new {@link #sourceObject} returned by the server.
+	 *
+	 * @param newName
+	 *            New name of the container.
+	 * @return source object returned by the server
+	 * @throws OperationException
+	 *             the operation exception
+	 */
+	protected abstract T renameProcess(String newName) throws OperationException;
+
+	public synchronized void delete() throws OperationException
+	{
+		delete(null);
+	}
 
 	/**
 	 * Delete this container.
@@ -162,7 +374,35 @@ public abstract class Container<T> implements IOperable, IUpdatable, Comparable<
 	 * @throws OperationException
 	 *             the operation exception
 	 */
-	public abstract void delete(IOperationListener listener) throws OperationException;
+	public synchronized void delete(IOperationListener listener) throws OperationException
+	{
+		try
+		{
+			initOperation(getParent(), false, listener, Operation.DELETE);
+			deleteProcess();
+			postOperation(getParent(), this, Operation.DELETE);
+		}
+		catch (OperationException e)
+		{
+			operationFailed(Operation.DELETE, e);
+		}
+		finally
+		{
+			removeTempOperationListener(listener, Operation.DELETE);
+		}
+	}
+
+	/**
+	 * Delete process logic.
+	 *
+	 * @throws OperationException
+	 *             the operation exception
+	 */
+	protected abstract void deleteProcess() throws OperationException;
+
+	// ======================================================================================
+	// #endregion Operations.
+	// //////////////////////////////////////////////////////////////////////////////////////
 
 	// //////////////////////////////////////////////////////////////////////////////////////
 	// #region Listeners.
@@ -183,6 +423,41 @@ public abstract class Container<T> implements IOperable, IUpdatable, Comparable<
 
 		// add the operation to the set associated to the key.
 		operationListeners.get(listener).add(operation);
+
+		// remove listener from temp list as it will now monitor this for a while
+		if (tempOperationListeners.containsKey(listener)
+				&& tempOperationListeners.get(listener).contains(operation))
+		{
+			removeTempOperationListener(listener, operation);
+		}
+	}
+
+	/**
+	 * @see com.yagasoft.overcast.base.container.operation.IOperable#addTempOperationListener(com.yagasoft.overcast.base.container.operation.IOperationListener,
+	 *      com.yagasoft.overcast.base.container.operation.Operation)
+	 */
+	@Override
+	public void addTempOperationListener(IOperationListener listener, Operation operation)
+	{
+		if (listener == null)
+		{
+			return;
+		}
+
+		// if it's already monitoring, then don't add it
+		if (operationListeners.containsKey(listener)
+				&& operationListeners.get(listener).contains(operation))
+		{
+			return;
+		}
+
+		if ( !tempOperationListeners.containsKey(listener))
+		{
+			tempOperationListeners.put(listener, new HashSet<Operation>());
+		}
+
+		// add the operation to the set associated to the key.
+		tempOperationListeners.get(listener).add(operation);
 	}
 
 	/**
@@ -192,6 +467,57 @@ public abstract class Container<T> implements IOperable, IUpdatable, Comparable<
 	public void removeOperationListener(IOperationListener listener)
 	{
 		operationListeners.remove(listener);
+	}
+
+	/**
+	 * @see com.yagasoft.overcast.base.container.operation.IOperable#removeOperationListener(com.yagasoft.overcast.base.container.operation.IOperationListener,
+	 *      com.yagasoft.overcast.base.container.operation.Operation)
+	 */
+	@Override
+	public void removeOperationListener(IOperationListener listener, Operation operation)
+	{
+		operationListeners.get(listener).remove(operation);
+
+		// if the operations set is empty, then remove the listener.
+		if (operationListeners.get(listener).isEmpty())
+		{
+			removeOperationListener(listener);
+		}
+	}
+
+	/**
+	 * @see com.yagasoft.overcast.base.container.operation.IOperable#removeTempOperationListener(com.yagasoft.overcast.base.container.operation.IOperationListener)
+	 */
+	@Override
+	public void removeTempOperationListener(IOperationListener listener)
+	{
+		if (listener == null)
+		{
+			return;
+		}
+
+		tempOperationListeners.remove(listener);
+	}
+
+	/**
+	 * @see com.yagasoft.overcast.base.container.operation.IOperable#removeTempOperationListener(com.yagasoft.overcast.base.container.operation.IOperationListener,
+	 *      com.yagasoft.overcast.base.container.operation.Operation)
+	 */
+	@Override
+	public void removeTempOperationListener(IOperationListener listener, Operation operation)
+	{
+		if (listener == null)
+		{
+			return;
+		}
+
+		tempOperationListeners.get(listener).remove(operation);
+
+		// if the operations set is empty, then remove the listener.
+		if (tempOperationListeners.get(listener).isEmpty())
+		{
+			removeTempOperationListener(listener);
+		}
 	}
 
 	/**
@@ -207,12 +533,16 @@ public abstract class Container<T> implements IOperable, IUpdatable, Comparable<
 			if (operationListeners.get(listener).contains(operation))
 			{
 				listener.operationProgressChanged(new OperationEvent(this, operation, state, progress));
+			}
+		}
 
-				// if the operation has ended, remove its listener.
-				if ((state == OperationState.COMPLETED) || (state == OperationState.FAILED))
-				{
-					removeOperationListener(listener);
-				}
+		// go through the temp listeners' list and notify whoever is concerned with this operation.
+		for (IOperationListener listener : tempOperationListeners.keySet())
+		{
+			if (tempOperationListeners.get(listener).contains(operation)
+					&& !(operationListeners.containsKey(listener) && operationListeners.get(listener).contains(operation)))
+			{
+				listener.operationProgressChanged(new OperationEvent(this, operation, state, progress));
 			}
 		}
 	}
@@ -225,18 +555,7 @@ public abstract class Container<T> implements IOperable, IUpdatable, Comparable<
 	{
 		for (IOperationListener listener : operationListeners.keySet())
 		{
-			// does the set contain this kind of operation.
-			if (operationListeners.get(listener).contains(operation))
-			{
-				// remove the operation from the set.
-				operationListeners.get(listener).remove(operation);
-
-				// if the operations set is empty, then remove the listener.
-				if (operationListeners.get(listener).isEmpty())
-				{
-					removeOperationListener(listener);
-				}
-			}
+			removeOperationListener(listener, operation);
 		}
 	}
 
@@ -308,7 +627,7 @@ public abstract class Container<T> implements IOperable, IUpdatable, Comparable<
 			}
 			else
 			{
-				path.substring(pathPrefix.length(), path.length() - 1);
+				path = path.replaceFirst(pathPrefix, "");
 			}
 		}
 	}

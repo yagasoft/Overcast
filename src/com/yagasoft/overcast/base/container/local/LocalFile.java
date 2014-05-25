@@ -14,7 +14,6 @@ package com.yagasoft.overcast.base.container.local;
 
 
 import static java.nio.file.StandardCopyOption.COPY_ATTRIBUTES;
-import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
 import java.io.IOException;
 import java.net.URLConnection;
@@ -24,9 +23,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import com.yagasoft.logger.Logger;
+import com.yagasoft.overcast.base.container.Container;
 import com.yagasoft.overcast.base.container.File;
 import com.yagasoft.overcast.base.container.Folder;
-import com.yagasoft.overcast.base.container.operation.IOperationListener;
 import com.yagasoft.overcast.base.container.remote.RemoteFile;
 import com.yagasoft.overcast.base.container.remote.RemoteFolder;
 import com.yagasoft.overcast.base.container.transfer.ITransferProgressListener;
@@ -42,16 +41,16 @@ import com.yagasoft.overcast.exception.TransferException;
  */
 public class LocalFile extends File<Path>
 {
-
+	
 	/** The {@link RemoteFile} corresponding to this local file if applicable. */
 	protected RemoteFile<?>	remoteMapping;
-
+	
 	/**
 	 * Instantiates a new local file.
 	 */
 	public LocalFile()
 	{}
-
+	
 	/**
 	 * Instantiates a new local file.
 	 *
@@ -70,7 +69,7 @@ public class LocalFile extends File<Path>
 			e.printStackTrace();
 		}		// updating the info locally costs nothing, so do it automatically.
 	}
-
+	
 	/**
 	 * Instantiates a new local file.
 	 *
@@ -81,7 +80,7 @@ public class LocalFile extends File<Path>
 	{
 		this(Paths.get(path));		// get the file object and pass it to the other constructor.
 	}
-
+	
 	/**
 	 * @see com.yagasoft.overcast.base.container.Container#generateId()
 	 */
@@ -90,7 +89,7 @@ public class LocalFile extends File<Path>
 	{
 		id = path;
 	}
-
+	
 	/**
 	 * @see com.yagasoft.overcast.base.container.Container#isExist()
 	 */
@@ -98,7 +97,7 @@ public class LocalFile extends File<Path>
 	public synchronized boolean isExist() throws AccessException
 	{
 		Logger.info("checking file existence: " + path);
-
+		
 		// if the Java library says the file doesn't exist, and at same time it says the file doesn't 'not exist', then ...
 		// obviously a problem.
 		if ( !Files.exists(sourceObject) && !Files.notExists(sourceObject))
@@ -106,10 +105,10 @@ public class LocalFile extends File<Path>
 			Logger.error("determine if file exists or not: " + path);
 			throw new AccessException("Can't determine if file exists or not!");
 		}
-
+		
 		return Files.exists(sourceObject);
 	}
-
+	
 	/**
 	 * @see com.yagasoft.overcast.base.container.Container#updateInfo()
 	 */
@@ -120,12 +119,10 @@ public class LocalFile extends File<Path>
 		{
 			name = "";
 		}
-
-		path = ((parent == null || parent.getPath().equals("/")) ? "/" : (parent.getPath() + "/")) + name;
-
-		Logger.info("updated info: " + path);
+		
+		path = (((parent == null) || parent.getPath().equals("/")) ? "/" : (parent.getPath() + "/")) + name;
 	}
-
+	
 	/**
 	 * @see com.yagasoft.overcast.base.container.Container#updateFromSource()
 	 */
@@ -133,11 +130,11 @@ public class LocalFile extends File<Path>
 	public synchronized void updateFromSource() throws OperationException
 	{
 		Logger.info("updating info from source: " + path);
-
+		
 		name = sourceObject.getFileName().toString();
 		path = sourceObject.toAbsolutePath().toString();
 		type = URLConnection.guessContentTypeFromName(path);		// guess type of file (MIME)
-
+		
 		try
 		{
 			size = Files.size(sourceObject);
@@ -148,134 +145,85 @@ public class LocalFile extends File<Path>
 			e.printStackTrace();
 			throw new OperationException("Couldn't update info! " + e.getMessage());
 		}
-
+		
 		generateId();
-
+		
 		Logger.info("updating info from source: " + path);
 	}
-
+	
 	/**
-	 * @see com.yagasoft.overcast.base.container.Container#copy(com.yagasoft.overcast.base.container.Folder, boolean,
-	 *      IOperationListener)
+	 * @see com.yagasoft.overcast.base.container.Container#copyProcess(com.yagasoft.overcast.base.container.Folder)
 	 */
 	@Override
-	public synchronized LocalFile copy(Folder<?> destination, boolean overwrite, IOperationListener listener)
+	protected Container<?> copyProcess(Folder<?> destination)
 			throws OperationException
-	{
-		Logger.info("copying file: " + path);
-
+			{
 		try
 		{
 			return new LocalFile(Files.copy(
 					sourceObject
 					// get destination path, and add to it this file's name to form complete path.
 					, ((Path) destination.getSourceObject()).resolve(sourceObject.getFileName())
-					, overwrite ?
-							new CopyOption[] { REPLACE_EXISTING, COPY_ATTRIBUTES }
-							:
-							new CopyOption[] { COPY_ATTRIBUTES }));
-
+					, new CopyOption[] { COPY_ATTRIBUTES }));
 		}
 		catch (IOException e)
 		{
-			Logger.error("copying file: " + path);
-			Logger.except(e);
-			e.printStackTrace();
-
-			throw new OperationException("Failed to copy file! " + e.getMessage());
+			throw new OperationException(e.getMessage());
 		}
-	}
-
+			}
+	
 	/**
-	 * @see com.yagasoft.overcast.base.container.Container#move(com.yagasoft.overcast.base.container.Folder, boolean,
-	 *      IOperationListener)
+	 * @see com.yagasoft.overcast.base.container.Container#moveProcess(com.yagasoft.overcast.base.container.Folder)
 	 */
 	@Override
-	public synchronized void move(Folder<?> destination, boolean overwrite, IOperationListener listener)
+	protected Path moveProcess(Folder<?> destination)
 			throws OperationException
 	{
-		Logger.info("moving file: " + path);
-
 		try
 		{
-			sourceObject = Files.move(
+			return Files.move(
 					sourceObject
 					, ((Path) destination.getSourceObject()).resolve(sourceObject.getFileName())
-					, overwrite ?
-							new CopyOption[] { REPLACE_EXISTING }
-							:
-							new CopyOption[0]);
-
-			updateFromSource();		// need to update new path.
-
-			Logger.info("finished moving to: " + destination.getPath() + "/" + name);
+					, new CopyOption[0]);
 		}
 		catch (IOException e)
 		{
-			Logger.error("moving file: " + path);
-			Logger.except(e);
-			e.printStackTrace();
-
-			throw new OperationException("Failed to move file! " + e.getMessage());
+			throw new OperationException(e.getMessage());
 		}
 	}
-
+	
 	/**
-	 * @see com.yagasoft.overcast.base.container.Container#rename(java.lang.String, IOperationListener)
+	 * @see com.yagasoft.overcast.base.container.Container#renameProcess(java.lang.String)
 	 */
 	@Override
-	public synchronized void rename(String newName, IOperationListener listener) throws OperationException
+	protected Path renameProcess(String newName) throws OperationException
 	{
-		Logger.info("renaming file: " + path);
-
 		try
 		{
-			// renaming is effectively moving under a new name.
-			sourceObject = Files.move(sourceObject, sourceObject.resolveSibling(newName));
-			updateFromSource();
-
-			Logger.info("finished renaming file: " + path);
+			return Files.move(sourceObject, sourceObject.resolveSibling(newName));
 		}
 		catch (IOException e)
 		{
-			Logger.error("renaming file: " + path);
-			Logger.except(e);
-			e.printStackTrace();
-
-			throw new OperationException("Failed to rename file! " + e.getMessage());
+			throw new OperationException(e.getMessage());
 		}
 	}
-
+	
 	/**
-	 * @see com.yagasoft.overcast.base.container.Container#delete(IOperationListener)
+	 * @see com.yagasoft.overcast.base.container.Container#deleteProcess()
 	 */
 	@Override
-	public synchronized void delete(IOperationListener listener) throws OperationException
+	public void deleteProcess() throws OperationException
 	{
-		Logger.info("deleting file: " + path);
-
 		try
 		{
 			Files.deleteIfExists(sourceObject);
-
-			// file is obsolete after delete, so remove from parent.
-			if (parent != null)
-			{
-				parent.remove(this);
-			}
-
-			Logger.info("finished deleting file: " + path);
 		}
 		catch (IOException e)
 		{
-			Logger.error("deleting file: " + path);
-			Logger.except(e);
-			e.printStackTrace();
-
-			throw new OperationException("Failed to delete file! " + e.getMessage());
+			throw new OperationException(e.getMessage());
 		}
 	}
-
+	
 	/**
 	 * Upload the container to the server.<br />
 	 * This should just call the one in {@link CSP}.
@@ -293,10 +241,10 @@ public class LocalFile extends File<Path>
 	 */
 	public synchronized UploadJob<?, ?> upload(RemoteFolder<?> parent, boolean overwrite, ITransferProgressListener listener)
 			throws TransferException, OperationException
-	{
+			{
 		return parent.getCsp().upload(this, parent, overwrite, listener);
-	}
-
+			}
+	
 	/**
 	 * @return the remoteMapping
 	 */
@@ -304,7 +252,7 @@ public class LocalFile extends File<Path>
 	{
 		return remoteMapping;
 	}
-
+	
 	/**
 	 * @param remoteMapping
 	 *            the remoteMapping to set
@@ -313,13 +261,13 @@ public class LocalFile extends File<Path>
 	{
 		this.remoteMapping = remoteMapping;
 	}
-
+	
 	@Override
 	public CSP<Path, ?, ?> getCsp()
 	{
 		throw new UnsupportedOperationException("DO NOT USE!");
 	}
-
+	
 	@Override
 	public void setCsp(CSP<Path, ?, ?> csp)
 	{

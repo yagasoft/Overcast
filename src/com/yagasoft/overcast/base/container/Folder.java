@@ -6,7 +6,7 @@
  *
  *		Project/File: Overcast/com.yagasoft.overcast.base.container/Folder.java
  *
- *			Modified: 04-May-2014 (15:07:03)
+ *			Modified: 25-May-2014 (21:19:23)
  *			   Using: Eclipse J-EE / JDK 7 / Windows 8.1 x64
  */
 
@@ -19,8 +19,12 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CompletionService;
+import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Semaphore;
 
 import com.yagasoft.logger.Logger;
 import com.yagasoft.overcast.base.container.content.Change;
@@ -51,23 +55,21 @@ public abstract class Folder<T> extends Container<T> implements IContentManager
 	/** Files inside this folder mapped by ID. */
 	protected HashMap<String, File<?>>						files				= new HashMap<String, File<?>>();
 	
-	/** Number of slots to be used to load folder tree, which reduces the load on the server. */
-	protected static ExecutorService						executor			= Executors.newFixedThreadPool(2);
+	/** Thread executor to be used to load sub-folders in the tree. */
+	protected static ExecutorService						executor			= Executors.newCachedThreadPool();
+	
+	/**
+	 * Number of slots to be used to load folder tree, fixed and low to reduce the load on the server; we don't want to be
+	 * throttled!
+	 */
+	protected static Semaphore								slots				= new Semaphore(2);
 	
 	/** Listeners to the contents changes in this container. */
 	protected HashMap<IContentListener, HashSet<Change>>	contentListeners	= new HashMap<IContentListener, HashSet<Change>>();
 	
-	/**
-	 * Creates the folder at the source with the info set (class attributes).
-	 *
-	 * @param parent
-	 *            Parent folder to create in.
-	 * @param listener
-	 *            the listener
-	 * @throws CreationException
-	 *             problem with creating the folder
-	 */
-	public abstract void create(Folder<?> parent, IOperationListener listener) throws CreationException;
+	// //////////////////////////////////////////////////////////////////////////////////////
+	// #region Create folder.
+	// ======================================================================================
 	
 	/**
 	 * Creates the folder at the source with the name set as a field and the parent path passed.
@@ -112,7 +114,6 @@ public abstract class Folder<T> extends Container<T> implements IContentManager
 				e.printStackTrace();
 				Logger.error("refreshing folder in path: " + parent.getPath());
 				
-				notifyOperationListeners(Operation.CREATE, OperationState.FAILED, 0f);
 				throw new CreationException("Can't refresh path.");
 			}
 			
@@ -138,7 +139,6 @@ public abstract class Folder<T> extends Container<T> implements IContentManager
 						e.printStackTrace();
 						Logger.error("refreshing folder in path: " + parent.getPath());
 						
-						notifyOperationListeners(Operation.CREATE, OperationState.FAILED, 0f);
 						throw new CreationException("Can't refresh path.");
 					}
 				}
@@ -168,7 +168,6 @@ public abstract class Folder<T> extends Container<T> implements IContentManager
 		{
 			Logger.error("creating nodes to reach desired folder: " + parentPath + "/" + name);
 			
-			notifyOperationListeners(Operation.CREATE, OperationState.FAILED, 0f);
 			throw new CreationException("Folder already exists!");
 		}
 		else
@@ -178,75 +177,127 @@ public abstract class Folder<T> extends Container<T> implements IContentManager
 	}
 	
 	/**
-	 * Adds the folder passed to the list of folder in this folder.
+	 * Creates the folder at the source with the info set (class attributes).
 	 *
-	 * @param folder
-	 *            Folder to add.
+	 * @param parent
+	 *            Parent folder to create in.
+	 * @param listener
+	 *            the listener
+	 * @throws CreationException
+	 *             problem with creating the folder
 	 */
-	public void add(Folder<?> folder)
+	public synchronized void create(Folder<?> parent, IOperationListener listener) throws CreationException
 	{
-		folders.put(folder.id, folder);		// extract the ID of the folder and use it to map the folder passed.
-		folder.setParent(this);				// set the parent of the folder passed as this folder.
-		notifyContentListeners(Change.ADD, folder);
-		
-		Logger.info("added folder: " + folder.path + ", to parent: " + path);
-	}
-	
-	/**
-	 * Adds the file passed to the list of files in this folder.
-	 *
-	 * @param file
-	 *            File to add.
-	 */
-	public void add(File<?> file)
-	{
-		files.put(file.id, file);
-		file.setParent(this);
-		notifyContentListeners(Change.ADD, file);
-		
-		Logger.info("added file: " + file.path + ", to parent: " + path);
-	}
-	
-	/**
-	 * Removes the folder from the list of folder in this folder.
-	 *
-	 * @param folder
-	 *            Folder to remove.
-	 */
-	public void remove(Folder<?> folder)
-	{
-		// remove folder, and if it existed, then remove the parent (this) pointer from it as well.
-		if (folders.remove(folder.id) != null)
+		try
 		{
-			folder.setParent(null);
-			notifyContentListeners(Change.REMOVE, folder);
+			initCreate(parent, listener);
+			setSourceObject(createProcess(parent));
+			postCreate(parent);
+		}
+		catch (CreationException e)
+		{
+			Logger.error("creating folder: " + parent.getPath() + "/" + name);
+			Logger.except(e);
+			e.printStackTrace();
 			
-			// the folder is an orphan and not needed, so remove its listeners.
-			folder.clearAllListeners();
+			throw new CreationException("Couldn't create folder! " + e.getMessage());
+		}
+		finally
+		{
+			removeTempOperationListener(listener, Operation.CREATE);
+		}
+	}
+	
+	/**
+	 * Initialises the folder creation process.
+	 */
+	protected void initCreate(Folder<?> parent, IOperationListener listener) throws CreationException
+	{
+		Logger.info("creating folder: " + parent.getPath() + "/" + name);
+		
+		addTempOperationListener(listener, Operation.CREATE);
+		
+		// check if the folder exists in the parent ...
+		Container<?>[] result = parent.searchByName(name, false);
+		
+		// if it exists, problem!
+		if ((result.length >= 1) && result[0].isFolder())
+		{
+			Logger.error("creating folder -- already exists: " + parent.getPath() + "/" + name);
+			throw new CreationException("Folder already Exists!");
+		}
+	}
+	
+	/**
+	 * Process of creating the folder. It should create the folder at the CSP,
+	 * and return an object representing the created folder in the type used by the CSP.
+	 *
+	 * @param parent
+	 *            Parent.
+	 * @return Source object of the created folder.
+	 * @throws CreationException
+	 *             the creation exception
+	 */
+	protected abstract T createProcess(Folder<?> parent) throws CreationException;
+	
+	/**
+	 * Post folder creation.
+	 */
+	protected void postCreate(Folder<?> parent) throws CreationException
+	{
+		parent.add(this);
+		notifyOperationListeners(Operation.CREATE, OperationState.COMPLETED, 1.0f);
+		
+		Logger.info("finished creating folder: " + path);
+	}
+	
+	// ======================================================================================
+	// #endregion Create folder.
+	// //////////////////////////////////////////////////////////////////////////////////////
+	
+	/**
+	 * Adds the container passed to the list of containers in this folder.
+	 *
+	 * @param container
+	 *            Container to add.
+	 */
+	public void add(Container<?> container)
+	{
+		if (container.isFolder())
+		{
+			folders.put(container.id, (Folder<?>) container);		// extract the ID of the folder and use it to map the folder passed.
+		}
+		else
+		{
+			files.put(container.id, (File<?>) container);
 		}
 		
-		Logger.info("removed folder: " + folder.path + ", from parent: " + path);
+		container.setParent(this);				// set the parent of the container passed as this folder.
+		notifyContentListeners(Change.ADD, container);
+		
+		Logger.info("added: " + container.path + ", to parent: " + path);
 	}
 	
 	/**
-	 * Removes the file from the list of files in this folder.
+	 * Removes the container from the list of containers in this folder.
 	 *
-	 * @param file
-	 *            File to remove.
+	 * @param container
+	 *            Container to remove.
 	 */
-	public void remove(File<?> file)
+	public void remove(Container<?> container)
 	{
-		// remove file, and if it existed, then remove the parent (this) pointer from it as well.
-		if (files.remove(file.id) != null)
+		// remove container, and if it existed, then remove the parent (this) pointer from it as well.
+		if ((container.isFolder() && (folders.remove(container.id) != null))
+				|| ( !container.isFolder() && (files.remove(container.id) != null)))
 		{
-			file.setParent(null);
-			notifyContentListeners(Change.REMOVE, file);
+			container.setParent(null);
+			notifyContentListeners(Change.REMOVE, container);
 			
-			// the file is an orphan and not needed, so remove its listeners.
-			file.clearAllListeners();
+			// the container is an orphan and not needed, so remove its listeners.
+			container.clearAllListeners();
+			
+			Logger.info("removed: " + container.path + ", from parent: " + path);
 		}
-		
-		Logger.info("removed file: " + file.path + ", from parent: " + path);
 	}
 	
 	/**
@@ -258,20 +309,15 @@ public abstract class Folder<T> extends Container<T> implements IContentManager
 	public void remove(String id)
 	{
 		// try to remove from both lists, it will fail quietly if it doesn't exist in either.
-		Folder<?> folder = folders.get(id);
-		File<?> file = files.get(id);
-		
-		if (folder != null)
+		if ((folders.remove(id) != null) || (files.remove(id) != null))
 		{
-			remove(folder);
+			Logger.info("removed file/folder: " + id);
 		}
-		else if (file != null)
-		{
-			remove(file);
-		}
-		
-		Logger.info("removed file/folder: " + id);
 	}
+	
+	// //////////////////////////////////////////////////////////////////////////////////////
+	// #region Tree operations.
+	// ======================================================================================
 	
 	/**
 	 * Builds the sub-tree of this folder, adding sub-folders and files to the map.<br />
@@ -282,7 +328,33 @@ public abstract class Folder<T> extends Container<T> implements IContentManager
 	 * @throws OperationException
 	 *             the operation exception
 	 */
-	public abstract void buildTree(int numberOfLevels) throws OperationException;
+	public synchronized void buildTree(int numberOfLevels) throws OperationException
+	{
+		// no more levels to check.
+		if (numberOfLevels < 0)
+		{
+			return;
+		}
+		
+		ArrayList<Container<?>> childrenArray = new ArrayList<Container<?>>();
+		
+		try
+		{
+			initBuildTree();
+			buildTreeProcess(numberOfLevels, childrenArray);
+			postBuildTree(numberOfLevels, childrenArray);
+			
+			Logger.info("processed folder: " + path);
+		}
+		catch (OperationException e)
+		{
+			Logger.error("building folder tree: " + path);
+			Logger.except(e);
+			e.printStackTrace();
+			
+			throw new OperationException("Failed to build tree! " + e.getMessage());
+		}
+	}
 	
 	/**
 	 * Equivalent to {@link Folder#buildTree(int)} with Integer.MAX_VALUE passed if recursive, or passing zero if not.
@@ -303,6 +375,112 @@ public abstract class Folder<T> extends Container<T> implements IContentManager
 			buildTree(0);		// if not recursive, then build only the first level.
 		}
 	}
+	
+	/**
+	 * Initialises the build tree process.
+	 *
+	 * @throws OperationException
+	 *             the operation exception
+	 */
+	protected void initBuildTree() throws OperationException
+	{
+		Logger.info("building folder tree: " + path);
+		
+		// going to work on a branch, so grab a thread.
+		try
+		{
+			slots.acquire();
+		}
+		catch (InterruptedException e)
+		{
+			e.printStackTrace();
+		}
+	}
+	
+	/**
+	 * Builds the tree. It should fetch the children list from the server, remove obsolete using member methods in here,
+	 * create a container object using the factory methods from the CSP, and then add those to the childrenArray.
+	 *
+	 * @param numberOfLevels
+	 *            Number of levels to build.
+	 * @param childrenArray
+	 *            Children array to contain the resulting containers.
+	 * @throws OperationException
+	 *             the operation exception
+	 */
+	protected abstract void buildTreeProcess(int numberOfLevels, List<Container<?>> childrenArray) throws OperationException;
+	
+	/**
+	 * Post build tree.
+	 *
+	 * @param numberOfLevels
+	 *            Number of levels.
+	 * @param childrenArray
+	 *            Children array.
+	 * @throws OperationException
+	 *             the operation exception
+	 */
+	protected void postBuildTree(final int numberOfLevels, List<Container<?>> childrenArray) throws OperationException
+	{
+		for (Container<?> container : childrenArray)
+		{
+			add(container);
+		}
+		
+		slots.release();
+		// use a service to 'join' threads and not return before finishing the whole tree build.
+		CompletionService<Boolean> service = new ExecutorCompletionService<Boolean>(executor);
+		int jobs = 0;		// count the submissions to know what to wait for.
+		
+		for (final Folder<?> folder : getFoldersArray())
+		{
+			try
+			{
+				service.submit(new Callable<Boolean>()
+				{
+					
+					@Override
+					public Boolean call() throws Exception
+					{
+						try
+						{
+							folder.buildTree(numberOfLevels - 1);		// build recursively.
+							return true;
+						}
+						catch (OperationException e)
+						{
+							e.printStackTrace();
+							throw new RuntimeException(e.getMessage());
+						}
+					}
+					
+				});
+				
+				jobs++;		// job submitted, count!
+			}
+			catch (RuntimeException e)
+			{
+				throw new OperationException(e.getMessage());
+			}
+		}
+		
+		// join threads ...
+		try
+		{
+			for (; jobs > 0; jobs--)
+			{
+				service.take();
+			}
+		}
+		catch (InterruptedException e1)
+		{
+			e1.printStackTrace();
+		}
+	}
+	
+	// ======================================================================================
+	// #endregion Tree operations.
+	// //////////////////////////////////////////////////////////////////////////////////////
 	
 	/**
 	 * I chose to add it here and not in updateFromSource because it's an intensive operation that should be done manually only.

@@ -1,12 +1,12 @@
-/* 
+/*
  * Copyright (C) 2011-2014 by Ahmed Osama el-Sawalhy
- * 
+ *
  *		The Modified MIT Licence (GPL v3 compatible)
- * 			License terms are in a separate file (LICENCE.md)
- * 
+ * 			Licence terms are in a separate file (LICENCE.md)
+ *
  *		Project/File: Overcast/com.yagasoft.overcast.base.container.operation/IOperable.java
- * 
- *			Modified: Apr 15, 2014 (9:09:09 AM)
+ *
+ *			Modified: 25-May-2014 (13:03:37)
  *			   Using: Eclipse J-EE / JDK 7 / Windows 8.1 x64
  */
 
@@ -30,6 +30,16 @@ public interface IOperable
 	public void addOperationListener(IOperationListener listener, Operation operation);
 
 	/**
+	 * Adds a temp operation listener to the operations in this container.
+	 *
+	 * @param listener
+	 *            Listener object.
+	 * @param operation
+	 *            the operation
+	 */
+	public void addTempOperationListener(IOperationListener listener, Operation operation);
+
+	/**
 	 * Removes the operation listener.
 	 *
 	 * @param listener
@@ -38,8 +48,32 @@ public interface IOperable
 	public void removeOperationListener(IOperationListener listener);
 
 	/**
+	 * Removes the operation from the listener list.
+	 *
+	 * @param listener            Listener object to be removed.
+	 * @param operation Operation.
+	 */
+	public void removeOperationListener(IOperationListener listener, Operation operation);
+
+	/**
+	 * Removes the temp operation listener.
+	 *
+	 * @param listener
+	 *            Listener object to be removed.
+	 */
+	public void removeTempOperationListener(IOperationListener listener);
+
+	/**
+	 * Removes the operation from the temp listener list.
+	 *
+	 * @param listener            Listener object to be removed.
+	 * @param operation Operation.
+	 */
+	public void removeTempOperationListener(IOperationListener listener, Operation operation);
+
+	/**
 	 * Notify listeners of the state (stated, cancelled, ...etc.) of the operation, and the progress in the range from 0 to 1.
-	 * 
+	 *
 	 * @param operation
 	 *            the operation
 	 * @param state

@@ -2,11 +2,11 @@
  * Copyright (C) 2011-2014 by Ahmed Osama el-Sawalhy
  *
  *		The Modified MIT Licence (GPL v3 compatible)
- * 			License terms are in a separate file (LICENCE.md)
+ * 			Licence terms are in a separate file (LICENCE.md)
  *
  *		Project/File: Overcast/com.yagasoft.overcast.implement.google/RemoteFolder.java
  *
- *			Modified: Apr 15, 2014 (2:06:59 PM)
+ *			Modified: 25-May-2014 (18:19:39)
  *			   Using: Eclipse J-EE / JDK 7 / Windows 8.1 x64
  */
 
@@ -28,10 +28,6 @@ import com.google.api.services.drive.model.ParentReference;
 import com.yagasoft.logger.Logger;
 import com.yagasoft.overcast.base.container.Container;
 import com.yagasoft.overcast.base.container.Folder;
-import com.yagasoft.overcast.base.container.operation.IOperationListener;
-import com.yagasoft.overcast.base.container.operation.Operation;
-import com.yagasoft.overcast.base.container.operation.OperationEvent;
-import com.yagasoft.overcast.base.container.operation.OperationState;
 import com.yagasoft.overcast.exception.CreationException;
 import com.yagasoft.overcast.exception.OperationException;
 
@@ -41,13 +37,13 @@ import com.yagasoft.overcast.exception.OperationException;
  */
 public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.RemoteFolder<File>
 {
-	
+
 	/**
 	 * Better use the factory in Google class.
 	 */
 	public RemoteFolder()
 	{}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.base.container.Container#generateId()
 	 */
@@ -56,55 +52,30 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 	{
 		// TODO generate id
 	}
-	
+
 	/**
-	 * @see com.yagasoft.overcast.base.container.Folder#create(com.yagasoft.overcast.base.container.Folder, IOperationListener)
+	 * @see com.yagasoft.overcast.base.container.Folder#createProcess(com.yagasoft.overcast.base.container.Folder)
 	 */
 	@Override
-	public synchronized void create(Folder<?> parent, IOperationListener listener) throws CreationException
+	public File createProcess(Folder<?> parent) throws CreationException
 	{
-		Logger.info("creating folder: " + parent.getPath() + "/" + name);
-		
-		addOperationListener(listener, Operation.CREATE);
-		
-		Container<?>[] result = parent.searchByName(name, false);
-		
 		try
 		{
-			if ((result.length >= 1) && result[0].isFolder())
-			{
-				Logger.error("creating folder -- already exists: " + parent.getPath() + "/" + name);
-				throw new CreationException("Folder already Exists!");
-			}
-			
 			File metadata = new File();
 			metadata.setTitle(name);
 			metadata.setMimeType("application/vnd.google-apps.folder");
 			metadata.setParents(Arrays.asList(new ParentReference().setId(parent.getId())));
-			
+
 			Drive.Files.Insert insert = Google.driveService.files().insert(metadata);
-			setSourceObject(insert.execute());
-			parent.add(this);
-			notifyOperationListeners(Operation.CREATE, OperationState.COMPLETED, 1.0f);
-			
-			Logger.info("finished creating folder: " + path);
+
+			return insert.execute();
 		}
-		catch (IOException | CreationException e)
+		catch (IOException e)
 		{
-			Logger.error("creating folder: " + parent.getPath() + "/" + name);
-			Logger.except(e);
-			e.printStackTrace();
-			
-			notifyOperationListeners(Operation.CREATE, OperationState.FAILED, 0f);
-			throw new CreationException("Couldn't create folder! " + e.getMessage());
+			throw new CreationException(e.getMessage());
 		}
-		finally
-		{
-			clearOperationListeners(Operation.CREATE);
-		}
-		
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.base.container.Container#isExist()
 	 */
@@ -112,7 +83,7 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 	public synchronized boolean isExist() throws OperationException
 	{
 		Logger.info("checking existence: " + path);
-		
+
 		try
 		{
 			return (Google.driveService.files().get((getSourceObject() == null) ? id : getSourceObject().getId()).execute() != null);
@@ -122,43 +93,38 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 			Logger.error("can't determine if folder exists or not: " + path);
 			Logger.except(e);
 			e.printStackTrace();
-			
+
 			return false;
 		}
 	}
-	
+
 	/**
-	 * @see com.yagasoft.overcast.base.container.Folder#buildTree(int)
+	 * @see com.yagasoft.overcast.base.container.Folder#buildTreeProcess(int, java.util.List)
 	 */
 	@Override
-	public synchronized void buildTree(final int numberOfLevels) throws OperationException
+	protected void buildTreeProcess(final int numberOfLevels, java.util.List<Container<?>> childrenArray)
+			throws OperationException
 	{
-		if (numberOfLevels < 0)
-		{
-			return;
-		}
-		
-		Logger.info("building folder tree: " + path);
-		
 		try
 		{
 			List request = Google.getDriveService().files().list().setQ("trashed = false and '" + id + "' in parents");
-			
+
 			ArrayList<String> childrenIds = new ArrayList<String>();
+			// id and child
 			HashMap<String, File> children = new HashMap<String, File>();
-			
+
 			do
 			{
 				try
 				{
 					FileList childrenResult = request.execute();
-					
+
 					for (File child : childrenResult.getItems())
 					{
 						childrenIds.add(child.getId());
 						children.put(child.getId(), child);
 					}
-					
+
 					request.setPageToken(childrenResult.getNextPageToken());
 				}
 				catch (IOException e)
@@ -168,74 +134,32 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 					throw new OperationException(e.getMessage());
 				}
 			} while ((request.getPageToken() != null) && (request.getPageToken().length() > 0));
-			
+
 			removeObsolete(childrenIds, true);
-			
+
 			if ( !childrenIds.isEmpty())
 			{
 				for (String id : childrenIds)
 				{
 					File remote = children.get(id);
-					
+
 					if (remote.getMimeType().indexOf("folder") >= 0)
 					{
-						RemoteFolder folder = Google.factory.createFolder(remote, false);
-						add(folder);
-						
-						Logger.info("found folder: " + folder.getPath());
+						childrenArray.add(Google.factory.createFolder(remote, false));
 					}
 					else
 					{
-						RemoteFile file = Google.factory.createFile(remote, false);
-						add(file);
-						
-						Logger.info("found file: " + file.getPath());
+						childrenArray.add(Google.factory.createFile(remote, false));
 					}
 				}
 			}
 		}
-		catch (IOException | OperationException | CreationException e)
+		catch (IOException | CreationException e)
 		{
-			Logger.error("building folder tree: " + path);
-			Logger.except(e);
-			e.printStackTrace();
-			
-			throw new OperationException("Couldn't build tree! " + e.getMessage());
+			throw new OperationException(e.getMessage());
 		}
-		
-		for (final Folder<?> folder : getFoldersArray())
-		{
-			try
-			{
-				executor.execute(new Runnable()
-				{
-					
-					@Override
-					public void run()
-					{
-						try
-						{
-							folder.buildTree(numberOfLevels - 1);		// build recursively.
-						}
-						catch (OperationException e)
-						{
-							e.printStackTrace();
-						}
-					}
-				});
-			}
-			catch (RuntimeException e)
-			{
-				Logger.error("building folder tree: " + folder.getPath());
-				Logger.except(e);
-				
-				throw new OperationException(e.getMessage());
-			}
-		}
-		
-		Logger.info("finished building tree: " + path);
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.base.container.Folder#calculateSize()
 	 */
@@ -244,7 +168,7 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 	{
 		return 0;
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.base.container.Folder#updateInfo()
 	 */
@@ -255,12 +179,12 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 		{
 			id = getSourceObject().getId();
 			name = getSourceObject().getTitle();
-			
+
 			if (name == null)
 			{
 				name = "";
 			}
-			
+
 			try
 			{
 				link = new URL(getSourceObject().getSelfLink());
@@ -270,17 +194,15 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 				link = null;
 			}
 		}
-		
+
 		// size = calculateSize(); // might be too heavy, so don't do it automatically.
-		
+
 		path = (((parent == null) || parent.getPath().equals("/")) ? "/" : (parent.getPath() + "/")) + name;
 		cleanPath();
-		
+
 		notifyUpdateListeners();
-		
-		Logger.info("updated info: " + path);
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.base.container.Folder#updateFromSource(boolean, boolean)
 	 */
@@ -295,20 +217,20 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 				folder.updateFromSource(folderContents, recursively);
 			}
 		}
-		
+
 		Logger.info("updating info from source: " + path);
-		
+
 		// refresh children list.
 		if (folderContents)
 		{
 			buildTree(false);
 		}
-		
+
 		try
 		{
 			setSourceObject(Google.driveService.files().get((getSourceObject() == null) ? id : getSourceObject().getId())
 					.execute());
-			
+
 			Logger.info("finished updating info from source: " + path);
 		}
 		catch (IOException e)
@@ -316,11 +238,11 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 			Logger.error("updating info from source: " + path);
 			Logger.except(e);
 			e.printStackTrace();
-			
+
 			throw new OperationException("Couldn't update info! " + e.getMessage());
 		}
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.base.container.Container#updateFromSource()
 	 */
@@ -329,200 +251,77 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 	{
 		updateFromSource(true, false);
 	}
-	
+
 	/**
-	 * @see com.yagasoft.overcast.base.container.Container#copy(com.yagasoft.overcast.base.container.Folder, boolean,
-	 *      IOperationListener)
+	 * @see com.yagasoft.overcast.base.container.Container#copyProcess(com.yagasoft.overcast.base.container.Folder)
 	 */
 	@Override
-	public synchronized Container<?> copy(Folder<?> destination, boolean overwrite, IOperationListener listener)
+	protected Container<?> copyProcess(Folder<?> destination)
 			throws OperationException
 			{
-		Logger.info("copying folder: " + path);
-		
-		addOperationListener(listener, Operation.COPY);
-		
-		Container<?>[] existingFolder = destination.searchByName(name, false);
-		
 		try
 		{
-			if ((existingFolder.length > 0) && existingFolder[0].isFolder())
-			{
-				if (overwrite)
-				{
-					existingFolder[0].delete(new IOperationListener()
-					{
-						
-						@Override
-						public void operationProgressChanged(OperationEvent event)
-						{}
-					});
-				}
-				else
-				{
-					Logger.error("copying folder -- already exists: " + path);
-					throw new OperationException("Folder already exists!");
-				}
-			}
-			
-			Google.driveService.parents().insert(id, new ParentReference().setId(((RemoteFolder) destination).getId())).execute();
-			RemoteFile file = Google.getFactory().createFile(getSourceObject(), false);
-			destination.add(file);
-			notifyOperationListeners(Operation.COPY, OperationState.COMPLETED, 1.0f);
-			
-			Logger.info("finished copying to: " + destination.getPath());
-			
-			return file;
+			Google.driveService.parents().insert(id, new ParentReference().setId(destination.getId())).execute();
+			return Google.getFactory().createFolder(getSourceObject(), false);
 		}
-		catch (IOException | OperationException | CreationException e)
+		catch (CreationException | IOException e)
 		{
-			Logger.error("copying folder: " + path);
-			Logger.except(e);
-			e.printStackTrace();
-			
-			notifyOperationListeners(Operation.COPY, OperationState.FAILED, 0.0f);
-			throw new OperationException("Copy of folder failed! " + e.getMessage());
-		}
-		finally
-		{
-			clearOperationListeners(Operation.COPY);
+			throw new OperationException(e.getMessage());
 		}
 			}
-	
+
 	/**
-	 * @see com.yagasoft.overcast.base.container.Container#move(com.yagasoft.overcast.base.container.Folder, boolean,
-	 *      IOperationListener)
+	 * @see com.yagasoft.overcast.base.container.Container#moveProcess(com.yagasoft.overcast.base.container.Folder)
 	 */
 	@Override
-	public synchronized void move(Folder<?> destination, boolean overwrite, IOperationListener listener)
+	protected File moveProcess(Folder<?> destination)
 			throws OperationException
 	{
-		Logger.info("moving folder: " + path);
-		
-		addOperationListener(listener, Operation.MOVE);
-		
-		Container<?>[] existingFolder = destination.searchByName(name, false);
-		
 		try
 		{
-			if ((existingFolder.length > 0) && existingFolder[0].isFolder())
-			{
-				if (overwrite)
-				{
-					existingFolder[0].delete(new IOperationListener()
-					{
-						
-						@Override
-						public void operationProgressChanged(OperationEvent event)
-						{}
-					});
-				}
-				else
-				{
-					Logger.error("moving folder -- already exists: " + path);
-					throw new OperationException("Folder already exists.");
-				}
-			}
-			
-			Google.driveService.parents().insert(id, new ParentReference().setId(((RemoteFolder) destination).getId())).execute();
-			Google.driveService.parents().delete(id, getParent().getId());
-			getParent().remove(this);
-			destination.add(this);
-			notifyOperationListeners(Operation.MOVE, OperationState.COMPLETED, 1.0f);
-			
-			Logger.info("finished moving to: " + destination.getPath());
-		}
-		catch (IOException | OperationException e)
-		{
-			Logger.error("moving folder: " + path);
-			Logger.except(e);
-			e.printStackTrace();
-			
-			notifyOperationListeners(Operation.MOVE, OperationState.FAILED, 0.0f);
-			throw new OperationException("Move of folder failed! " + e.getMessage());
-		}
-		finally
-		{
-			clearOperationListeners(Operation.MOVE);
-		}
-		
-	}
-	
-	/**
-	 * @see com.yagasoft.overcast.base.container.Container#rename(java.lang.String, IOperationListener)
-	 */
-	@Override
-	public synchronized void rename(String newName, IOperationListener listener) throws OperationException
-	{
-		Logger.info("renaming folder: " + path);
-		
-		addOperationListener(listener, Operation.RENAME);
-		
-		Container<?>[] existingFolder = getParent().searchByName(newName, false);
-		
-		try
-		{
-			if ((existingFolder.length > 0) && existingFolder[0].isFolder())
-			{
-				Logger.error("renaming folder -- already exists: " + path);
-				throw new OperationException("Folder already exists!");
-			}
-			
-			getSourceObject().setTitle(newName);
-			Google.driveService.files().patch(id, getSourceObject()).execute();
-			updateInfo();
-			notifyOperationListeners(Operation.RENAME, OperationState.COMPLETED, 1.0f);
-			notifyUpdateListeners();
-			
-			Logger.info("finished renaming folder: " + path);
-		}
-		catch (IOException | OperationException e)
-		{
-			Logger.error("renaming folder: " + path);
-			Logger.except(e);
-			e.printStackTrace();
-			
-			notifyOperationListeners(Operation.RENAME, OperationState.FAILED, 0.0f);
-			throw new OperationException("Couldn't rename folder! " + e.getMessage());
-		}
-		finally
-		{
-			clearOperationListeners(Operation.RENAME);
-		}
-	}
-	
-	/**
-	 * @see com.yagasoft.overcast.base.container.Container#delete(IOperationListener)
-	 */
-	@Override
-	public synchronized void delete(IOperationListener listener) throws OperationException
-	{
-		Logger.info("deleting folder: " + path);
-		
-		addOperationListener(listener, Operation.DELETE);
-		
-		try
-		{
-			Drive.Files.Delete delete = Google.driveService.files().delete(id);
-			delete.execute();
-			getParent().remove(this);
-			notifyOperationListeners(Operation.DELETE, OperationState.COMPLETED, 1.0f);
-			
-			Logger.info("finished deleting folder: " + path);
+			Google.driveService.parents().insert(id, new ParentReference().setId(destination.getId())).execute();
+			Google.driveService.parents().delete(id, getParent().getId()).execute();
+			return getSourceObject();
 		}
 		catch (IOException e)
 		{
-			Logger.error("deleting folder: " + path);
-			Logger.except(e);
-			e.printStackTrace();
-			
-			notifyOperationListeners(Operation.DELETE, OperationState.FAILED, 0f);
-			throw new OperationException("Couldn't delete folder! " + e.getMessage());
-		}
-		finally
-		{
-			clearOperationListeners(Operation.DELETE);
+			throw new OperationException(e.getMessage());
 		}
 	}
-	
+
+	/**
+	 * @see com.yagasoft.overcast.base.container.Container#renameProcess(java.lang.String)
+	 */
+	@Override
+	protected File renameProcess(String newName) throws OperationException
+	{
+		try
+		{
+			getSourceObject().setTitle(newName);
+			Google.driveService.files().patch(id, getSourceObject()).execute();
+			return getSourceObject();
+		}
+		catch (IOException e)
+		{
+			throw new OperationException(e.getMessage());
+		}
+	}
+
+	/**
+	 * @see com.yagasoft.overcast.base.container.Container#deleteProcess()
+	 */
+	@Override
+	public void deleteProcess() throws OperationException
+	{
+		try
+		{
+			Google.getDriveService().children().delete(getParent().getId(), id).execute();
+			// Google.driveService.files().delete(id).execute();
+		}
+		catch (IOException e)
+		{
+			throw new OperationException(e.getMessage());
+		}
+	}
+
 }
