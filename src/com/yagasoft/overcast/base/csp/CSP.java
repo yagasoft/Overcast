@@ -24,8 +24,6 @@ import com.yagasoft.overcast.base.container.Folder;
 import com.yagasoft.overcast.base.container.content.IContentListener;
 import com.yagasoft.overcast.base.container.local.LocalFile;
 import com.yagasoft.overcast.base.container.local.LocalFolder;
-import com.yagasoft.overcast.base.container.operation.IOperationListener;
-import com.yagasoft.overcast.base.container.operation.OperationEvent;
 import com.yagasoft.overcast.base.container.remote.RemoteFactory;
 import com.yagasoft.overcast.base.container.remote.RemoteFile;
 import com.yagasoft.overcast.base.container.remote.RemoteFolder;
@@ -238,15 +236,7 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 		{
 			// ... create the folder at the destination.
 			localFolder = new LocalFolder();
-
-			localFolder.create(parent, new IOperationListener()
-			{
-
-				@Override
-				public void operationProgressChanged(OperationEvent event)
-				{}
-			});
-
+			localFolder.create(parent, event -> {});
 			localFolder.updateFromSource(true, false);		// update the folder info
 		}
 		else
@@ -379,26 +369,21 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 
 			Logger.info("starting a new download (" + name + "): " + currentDownloadJob.getRemoteFile().getPath());
 
-			currentDownloadThread = new Thread(new Runnable()
+			currentDownloadThread = new Thread(() ->
 			{
-
-				@Override
-				public void run()
+				try
+				{	// start the transfer (starts when thread starts below).
+					initiateDownload();
+					Logger.info("finished download (" + name + "): " + currentDownloadJob.getRemoteFile().getPath());
+				}
+				catch (TransferException e)
+				{	// in case of failure, notify the listeners of the failure, and check for more jobs.
+					e.printStackTrace();
+					currentDownloadJob.failure();
+				}
+				finally
 				{
-					try
-					{	// start the transfer (starts when thread starts below).
-						initiateDownload();
-						Logger.info("finished download (" + name + "): " + currentDownloadJob.getRemoteFile().getPath());
-					}
-					catch (TransferException e)
-					{	// in case of failure, notify the listeners of the failure, and check for more jobs.
-						e.printStackTrace();
-						currentDownloadJob.failure();
-					}
-					finally
-					{
-						resetDownload();
-					}
+					resetDownload();
 				}
 			});
 
@@ -498,15 +483,7 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 		{
 			remoteFolder = getAbstractFactory().createFolder();
 			remoteFolder.setName(folder.getName());
-
-			remoteFolder.create(parent, new IOperationListener()
-			{
-
-				@Override
-				public void operationProgressChanged(OperationEvent event)
-				{}
-			});
-
+			remoteFolder.create(parent, event -> {});
 			remoteFolder.updateFromSource(true, false);
 		}
 		else
@@ -640,28 +617,23 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 
 			Logger.info("starting a new upload (" + name + "): " + currentUploadJob.getLocalFile().getPath());
 
-			currentUploadThread = new Thread(new Runnable()
+			currentUploadThread = new Thread(() ->
 			{
-
-				@Override
-				public void run()
+				try
 				{
-					try
-					{
-						// start the transfer (starts when thread starts below).
-						initiateUpload();
+					// start the transfer (starts when thread starts below).
+					initiateUpload();
 
-						Logger.info("finished upload (" + name + "): " + currentUploadJob.getLocalFile().getPath());
-					}
-					catch (TransferException e)
-					{
-						e.printStackTrace();
-						currentUploadJob.failure();
-					}
-					finally
-					{
-						resetUpload();
-					}
+					Logger.info("finished upload (" + name + "): " + currentUploadJob.getLocalFile().getPath());
+				}
+				catch (TransferException e)
+				{
+					e.printStackTrace();
+					currentUploadJob.failure();
+				}
+				finally
+				{
+					resetUpload();
 				}
 			});
 
@@ -852,7 +824,7 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 	 *
 	 * @return the abstract factory
 	 */
-	public abstract RemoteFactory<?, ?, ?, ?> getAbstractFactory();
+	public abstract RemoteFactory<?, ?, ?, ?, ?> getAbstractFactory();
 
 	/**
 	 * Returns the name of the CSP.

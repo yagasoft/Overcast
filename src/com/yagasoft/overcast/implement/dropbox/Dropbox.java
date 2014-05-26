@@ -24,6 +24,7 @@ import com.yagasoft.logger.Logger;
 import com.yagasoft.overcast.base.container.content.IContentListener;
 import com.yagasoft.overcast.base.container.local.LocalFile;
 import com.yagasoft.overcast.base.container.local.LocalFolder;
+import com.yagasoft.overcast.base.container.remote.RemoteFactory;
 import com.yagasoft.overcast.base.container.transfer.TransferState;
 import com.yagasoft.overcast.base.csp.CSP;
 import com.yagasoft.overcast.exception.AuthorisationException;
@@ -46,25 +47,25 @@ public class Dropbox extends CSP<DbxEntry.File, Downloader, Uploader> implements
 {
 
 	/** The Dropbox singleton. */
-	static private Dropbox	instance;
+	static private Dropbox				instance;
 
 	/** Constant: application name. */
-	static final String		APPLICATION_NAME	= "Overcast";
+	static final String					APPLICATION_NAME	= "Overcast";
 
 	/** The authorisation object. */
-	static Authorisation	authorisation;
+	static Authorisation				authorisation;
 
 	/** The dropbox service object, which is used to call on any services. */
-	static DbxClient		dropboxService;
+	static DbxClient					dropboxService;
 
 	/** The remote file/folder factory. */
-	static RemoteFactory	factory;
+	static RemoteFactory<DbxEntry.Folder, RemoteFolder, DbxEntry.File, RemoteFile, Dropbox>	factory;
 
 	/** User locale. */
-	static final String		userLocale			= Locale.getDefault().toString();
+	static final String					userLocale			= Locale.getDefault().toString();
 
 	/** Request config. */
-	static DbxRequestConfig	requestConfig;
+	static DbxRequestConfig				requestConfig;
 
 	/**
 	 * Instantiates a new Dropbox object.
@@ -93,7 +94,8 @@ public class Dropbox extends CSP<DbxEntry.File, Downloader, Uploader> implements
 				, authorisation.getAuthInfo().host);
 
 		// initialise the remote file factory.
-		factory = new RemoteFactory(this);
+		factory = new RemoteFactory<DbxEntry.Folder, RemoteFolder, DbxEntry.File, RemoteFile, Dropbox>(
+				this, RemoteFolder.class, RemoteFile.class, "");
 
 		name = "Dropbox";
 
@@ -142,7 +144,7 @@ public class Dropbox extends CSP<DbxEntry.File, Downloader, Uploader> implements
 				remoteFileTree.addContentListener(listener);
 			}
 
-			//			buildFileTree(false);
+			// buildFileTree(false);
 		}
 		catch (CreationException e)
 		{
@@ -297,7 +299,7 @@ public class Dropbox extends CSP<DbxEntry.File, Downloader, Uploader> implements
 	 * @see com.yagasoft.overcast.base.csp.CSP#getAbstractFactory()
 	 */
 	@Override
-	public com.yagasoft.overcast.base.container.remote.RemoteFactory<?, ?, ?, ?> getAbstractFactory()
+	public com.yagasoft.overcast.base.container.remote.RemoteFactory<?, ?, ?, ?, ?> getAbstractFactory()
 	{
 		return factory;
 	}
@@ -311,7 +313,7 @@ public class Dropbox extends CSP<DbxEntry.File, Downloader, Uploader> implements
 	 *
 	 * @return the factory
 	 */
-	public static RemoteFactory getFactory()
+	public static RemoteFactory<DbxEntry.Folder, RemoteFolder, DbxEntry.File, RemoteFile, Dropbox> getFactory()
 	{
 		return factory;
 	}

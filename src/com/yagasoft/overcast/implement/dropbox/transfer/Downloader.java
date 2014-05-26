@@ -1,4 +1,4 @@
-/* 
+/*
  * Copyright (C) 2011-2014 by Ahmed Osama el-Sawalhy
  * 
  *		The Modified MIT Licence (GPL v3 compatible)
@@ -34,7 +34,7 @@ import com.yagasoft.overcast.implement.dropbox.Dropbox;
  */
 public class Downloader
 {
-
+	
 	/** The size. */
 	long							size;
 	
@@ -54,11 +54,11 @@ public class Downloader
 	OutputStream					out;
 	
 	/** flag to stop the checking the downloaded amount, and to release resources. */
-	boolean done;
-
+	boolean							done;
+	
 	/** The listeners to this download. */
 	ArrayList<IProgressListener>	listeners	= new ArrayList<IProgressListener>();
-
+	
 	/**
 	 * Instantiates a new downloader.
 	 * 
@@ -82,7 +82,7 @@ public class Downloader
 		// fetch the file size to calculate download completion.
 		size = downloadJob.getSourceFile().getSize();
 	}
-
+	
 	/**
 	 * Start the download based on the parameters set.
 	 * 
@@ -98,44 +98,39 @@ public class Downloader
 		{
 			// prepare the local file stream.
 			out = Files.newOutputStream(localFile);
-
+			
 			// a separate thread to check on file progress by reading the size of the downloaded file locally.
-			new Thread(new Runnable()
+			new Thread(() ->
 			{
-
-				@Override
-				public void run()
+				long downloaded = 0;
+				
+				do
 				{
-					long downloaded = 0;
-
-					do
+					try
 					{
-						try
-						{
-							downloaded = Files.size(localFile);
-							Logger.info("downloaded " + NumberFormat.getPercentInstance().format(downloaded / (double) size)
-									+ " done. " + remoteFilePath);
-							notifyProgressListeners(TransferState.IN_PROGRESS, (downloaded / (float) size));
-							Thread.sleep(1000);
-						}
-						catch (IOException | InterruptedException e)
-						{
-							Logger.except(e);
-							e.printStackTrace();
-						}
-					} while (!done);
-				}
+						downloaded = Files.size(localFile);
+						Logger.info("downloaded " + NumberFormat.getPercentInstance().format(downloaded / (double) size)
+								+ " done. " + remoteFilePath);
+						notifyProgressListeners(TransferState.IN_PROGRESS, (downloaded / (float) size));
+						Thread.sleep(1000);
+					}
+					catch (IOException | InterruptedException e)
+					{
+						Logger.except(e);
+						e.printStackTrace();
+					}
+				} while ( !done);
 			}).start();
-
+			
 			notifyProgressListeners(TransferState.INITIALISED, 0.0f);
-
+			
 			return Dropbox.getDropboxService().getFile(remoteFilePath, null, out);
 		}
 		catch (IOException | DbxException e)
 		{
 			e.printStackTrace();
-
-			if (!done)
+			
+			if ( !done)
 			{
 				Logger.error("failed to download file: " + remoteFilePath);
 				
@@ -163,7 +158,7 @@ public class Downloader
 			}
 		}
 	}
-
+	
 	/**
 	 * Adds the progress listener.
 	 * 
@@ -174,7 +169,7 @@ public class Downloader
 	{
 		listeners.add(listener);
 	}
-
+	
 	/**
 	 * Notify progress listeners.
 	 * 
@@ -190,7 +185,7 @@ public class Downloader
 			listener.progressChanged(downloadJob, state, progress);
 		}
 	}
-
+	
 	/**
 	 * Removes the progress listener.
 	 * 
@@ -201,7 +196,7 @@ public class Downloader
 	{
 		listeners.remove(listener);
 	}
-
+	
 	/**
 	 * Clear progress listeners.
 	 */
@@ -209,7 +204,7 @@ public class Downloader
 	{
 		listeners.clear();
 	}
-
+	
 	/**
 	 * Cancel.
 	 */

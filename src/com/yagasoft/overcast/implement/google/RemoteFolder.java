@@ -37,13 +37,13 @@ import com.yagasoft.overcast.exception.OperationException;
  */
 public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.RemoteFolder<File>
 {
-
+	
 	/**
 	 * Better use the factory in Google class.
 	 */
 	public RemoteFolder()
 	{}
-
+	
 	/**
 	 * @see com.yagasoft.overcast.base.container.Container#generateId()
 	 */
@@ -52,7 +52,7 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 	{
 		// TODO generate id
 	}
-
+	
 	/**
 	 * @see com.yagasoft.overcast.base.container.Folder#createProcess(com.yagasoft.overcast.base.container.Folder)
 	 */
@@ -65,9 +65,9 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 			metadata.setTitle(name);
 			metadata.setMimeType("application/vnd.google-apps.folder");
 			metadata.setParents(Arrays.asList(new ParentReference().setId(parent.getId())));
-
+			
 			Drive.Files.Insert insert = Google.driveService.files().insert(metadata);
-
+			
 			return insert.execute();
 		}
 		catch (IOException e)
@@ -75,7 +75,7 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 			throw new CreationException(e.getMessage());
 		}
 	}
-
+	
 	/**
 	 * @see com.yagasoft.overcast.base.container.Container#isExist()
 	 */
@@ -83,7 +83,7 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 	public synchronized boolean isExist() throws OperationException
 	{
 		Logger.info("checking existence: " + path);
-
+		
 		try
 		{
 			return (Google.driveService.files().get((getSourceObject() == null) ? id : getSourceObject().getId()).execute() != null);
@@ -93,11 +93,11 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 			Logger.error("can't determine if folder exists or not: " + path);
 			Logger.except(e);
 			e.printStackTrace();
-
+			
 			return false;
 		}
 	}
-
+	
 	/**
 	 * @see com.yagasoft.overcast.base.container.Folder#buildTreeProcess(int, java.util.List)
 	 */
@@ -108,23 +108,23 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 		try
 		{
 			List request = Google.getDriveService().files().list().setQ("trashed = false and '" + id + "' in parents");
-
+			
 			ArrayList<String> childrenIds = new ArrayList<String>();
 			// id and child
 			HashMap<String, File> children = new HashMap<String, File>();
-
+			
 			do
 			{
 				try
 				{
 					FileList childrenResult = request.execute();
-
+					
 					for (File child : childrenResult.getItems())
 					{
 						childrenIds.add(child.getId());
 						children.put(child.getId(), child);
 					}
-
+					
 					request.setPageToken(childrenResult.getNextPageToken());
 				}
 				catch (IOException e)
@@ -134,15 +134,15 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 					throw new OperationException(e.getMessage());
 				}
 			} while ((request.getPageToken() != null) && (request.getPageToken().length() > 0));
-
+			
 			removeObsolete(childrenIds, true);
-
+			
 			if ( !childrenIds.isEmpty())
 			{
 				for (String id : childrenIds)
 				{
 					File remote = children.get(id);
-
+					
 					if (remote.getMimeType().indexOf("folder") >= 0)
 					{
 						childrenArray.add(Google.factory.createFolder(remote, false));
@@ -159,7 +159,7 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 			throw new OperationException(e.getMessage());
 		}
 	}
-
+	
 	/**
 	 * @see com.yagasoft.overcast.base.container.Folder#calculateSize()
 	 */
@@ -168,7 +168,7 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 	{
 		return 0;
 	}
-
+	
 	/**
 	 * @see com.yagasoft.overcast.base.container.Folder#updateInfo()
 	 */
@@ -179,12 +179,12 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 		{
 			id = getSourceObject().getId();
 			name = getSourceObject().getTitle();
-
+			
 			if (name == null)
 			{
 				name = "";
 			}
-
+			
 			try
 			{
 				link = new URL(getSourceObject().getSelfLink());
@@ -194,15 +194,15 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 				link = null;
 			}
 		}
-
+		
 		// size = calculateSize(); // might be too heavy, so don't do it automatically.
-
+		
 		path = (((parent == null) || parent.getPath().equals("/")) ? "/" : (parent.getPath() + "/")) + name;
 		cleanPath();
-
+		
 		notifyUpdateListeners();
 	}
-
+	
 	/**
 	 * @see com.yagasoft.overcast.base.container.Folder#updateFromSource(boolean, boolean)
 	 */
@@ -217,20 +217,20 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 				folder.updateFromSource(folderContents, recursively);
 			}
 		}
-
+		
 		Logger.info("updating info from source: " + path);
-
+		
 		// refresh children list.
 		if (folderContents)
 		{
 			buildTree(false);
 		}
-
+		
 		try
 		{
 			setSourceObject(Google.driveService.files().get((getSourceObject() == null) ? id : getSourceObject().getId())
 					.execute());
-
+			
 			Logger.info("finished updating info from source: " + path);
 		}
 		catch (IOException e)
@@ -238,11 +238,11 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 			Logger.error("updating info from source: " + path);
 			Logger.except(e);
 			e.printStackTrace();
-
+			
 			throw new OperationException("Couldn't update info! " + e.getMessage());
 		}
 	}
-
+	
 	/**
 	 * @see com.yagasoft.overcast.base.container.Container#updateFromSource()
 	 */
@@ -251,25 +251,25 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 	{
 		updateFromSource(true, false);
 	}
-
+	
 	/**
 	 * @see com.yagasoft.overcast.base.container.Container#copyProcess(com.yagasoft.overcast.base.container.Folder)
 	 */
 	@Override
 	protected Container<?> copyProcess(Folder<?> destination)
 			throws OperationException
-			{
+	{
 		try
 		{
 			Google.driveService.parents().insert(id, new ParentReference().setId(destination.getId())).execute();
-			return Google.getFactory().createFolder(getSourceObject(), false);
+			return Google.factory.createFolder(getSourceObject(), false);
 		}
 		catch (CreationException | IOException e)
 		{
 			throw new OperationException(e.getMessage());
 		}
-			}
-
+	}
+	
 	/**
 	 * @see com.yagasoft.overcast.base.container.Container#moveProcess(com.yagasoft.overcast.base.container.Folder)
 	 */
@@ -288,7 +288,7 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 			throw new OperationException(e.getMessage());
 		}
 	}
-
+	
 	/**
 	 * @see com.yagasoft.overcast.base.container.Container#renameProcess(java.lang.String)
 	 */
@@ -306,7 +306,7 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 			throw new OperationException(e.getMessage());
 		}
 	}
-
+	
 	/**
 	 * @see com.yagasoft.overcast.base.container.Container#deleteProcess()
 	 */
@@ -323,5 +323,5 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 			throw new OperationException(e.getMessage());
 		}
 	}
-
+	
 }

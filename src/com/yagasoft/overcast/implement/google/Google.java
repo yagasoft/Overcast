@@ -37,6 +37,7 @@ import com.yagasoft.logger.Logger;
 import com.yagasoft.overcast.base.container.content.IContentListener;
 import com.yagasoft.overcast.base.container.local.LocalFile;
 import com.yagasoft.overcast.base.container.local.LocalFolder;
+import com.yagasoft.overcast.base.container.remote.RemoteFactory;
 import com.yagasoft.overcast.base.container.transfer.TransferState;
 import com.yagasoft.overcast.base.csp.CSP;
 import com.yagasoft.overcast.exception.AuthorisationException;
@@ -54,29 +55,29 @@ public class Google extends CSP<File, MediaHttpDownloader, Drive.Files.Insert> i
 {
 
 	/** The Google singleton. */
-	static private Google		instance;
+	static private Google				instance;
 
 	/**
 	 * Be sure to specify the name of your application. If the application name is {@code null} or blank, the application will log
 	 * a warning.
 	 * Suggested format is "MyCompany-ProductName/1.0".
 	 */
-	static final String			APPLICATION_NAME	= "Overcast";
+	static final String					APPLICATION_NAME	= "Overcast";
 
 	/** Global instance of the HTTP transport. */
-	static HttpTransport		httpTransport;
+	static HttpTransport				httpTransport;
 
 	/** Global Drive API client. */
-	static Drive				driveService;
+	static Drive						driveService;
 
 	/** Global instance of the JSON factory. */
-	static final JsonFactory	JSON_FACTORY		= JacksonFactory.getDefaultInstance();
+	static final JsonFactory			JSON_FACTORY		= JacksonFactory.getDefaultInstance();
 
 	/** The authorisation object. */
-	Authorisation				authorisation;
+	Authorisation						authorisation;
 
 	/** The remote file factory. */
-	static RemoteFactory		factory;
+	static RemoteFactory<File, RemoteFolder, File, RemoteFile, Google>	factory;
 
 	/**
 	 * Instantiates a new Google instance.
@@ -106,7 +107,8 @@ public class Google extends CSP<File, MediaHttpDownloader, Drive.Files.Insert> i
 					.setApplicationName(APPLICATION_NAME).build();
 
 			// initialise the remote file factory.
-			factory = new RemoteFactory(this);
+			factory = new RemoteFactory<File, RemoteFolder, File, RemoteFile, Google>(
+					this, RemoteFolder.class, RemoteFile.class, "/My Drive");
 
 			name = "Google Drive";
 
@@ -159,7 +161,7 @@ public class Google extends CSP<File, MediaHttpDownloader, Drive.Files.Insert> i
 				remoteFileTree.addContentListener(listener);
 			}
 
-			//			buildFileTree(false);
+			// buildFileTree(false);
 		}
 		catch (CreationException e)
 		{
@@ -345,7 +347,7 @@ public class Google extends CSP<File, MediaHttpDownloader, Drive.Files.Insert> i
 	}
 
 	@Override
-	public com.yagasoft.overcast.base.container.remote.RemoteFactory<?, ?, ?, ?> getAbstractFactory()
+	public com.yagasoft.overcast.base.container.remote.RemoteFactory<?, ?, ?, ?, ?> getAbstractFactory()
 	{
 		return factory;
 	}
@@ -380,15 +382,6 @@ public class Google extends CSP<File, MediaHttpDownloader, Drive.Files.Insert> i
 	}
 
 	/**
-	 * @param driveService
-	 *            the driveService to set
-	 */
-	public static void setDriveService(Drive driveService)
-	{
-		Google.driveService = driveService;
-	}
-
-	/**
 	 * @return the jsonFactory
 	 */
 	public static JsonFactory getJsonFactory()
@@ -399,18 +392,9 @@ public class Google extends CSP<File, MediaHttpDownloader, Drive.Files.Insert> i
 	/**
 	 * @return the factory
 	 */
-	public static RemoteFactory getFactory()
+	public static RemoteFactory<File, RemoteFolder, File, RemoteFile, Google> getFactory()
 	{
 		return factory;
-	}
-
-	/**
-	 * @param factory
-	 *            the factory to set
-	 */
-	public static void setFactory(RemoteFactory factory)
-	{
-		Google.factory = factory;
 	}
 
 	// ======================================================================================

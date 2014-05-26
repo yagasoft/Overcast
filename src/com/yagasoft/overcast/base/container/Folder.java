@@ -1,13 +1,13 @@
-/*
+/* 
  * Copyright (C) 2011-2014 by Ahmed Osama el-Sawalhy
- *
+ * 
  *		The Modified MIT Licence (GPL v3 compatible)
  * 			Licence terms are in a separate file (LICENCE.md)
- *
+ * 
  *		Project/File: Overcast/com.yagasoft.overcast.base.container/Folder.java
- *
- *			Modified: 25-May-2014 (21:19:23)
- *			   Using: Eclipse J-EE / JDK 7 / Windows 8.1 x64
+ * 
+ *			Modified: 26-May-2014 (17:21:01)
+ *			   Using: Eclipse J-EE / JDK 8 / Windows 8.1 x64
  */
 
 package com.yagasoft.overcast.base.container;
@@ -19,7 +19,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.Callable;
 import java.util.concurrent.CompletionService;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
@@ -436,24 +435,18 @@ public abstract class Folder<T> extends Container<T> implements IContentManager
 		{
 			try
 			{
-				service.submit(new Callable<Boolean>()
+				service.submit(() ->
 				{
-					
-					@Override
-					public Boolean call() throws Exception
+					try
 					{
-						try
-						{
-							folder.buildTree(numberOfLevels - 1);		// build recursively.
-							return true;
-						}
-						catch (OperationException e)
-						{
-							e.printStackTrace();
-							throw new RuntimeException(e.getMessage());
-						}
+						folder.buildTree(numberOfLevels - 1);		// build recursively.
+						return true;
 					}
-					
+					catch (OperationException e)
+					{
+						e.printStackTrace();
+						throw new RuntimeException(e.getMessage());
+					}
 				});
 				
 				jobs++;		// job submitted, count!
