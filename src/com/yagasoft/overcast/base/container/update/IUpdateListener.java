@@ -1,13 +1,13 @@
-/*
+/* 
  * Copyright (C) 2011-2014 by Ahmed Osama el-Sawalhy
- *
+ * 
  *		The Modified MIT Licence (GPL v3 compatible)
  * 			Licence terms are in a separate file (LICENCE.md)
- *
- *		Project/File: Overcast/com.yagasoft.overcast.base.container.content/IUpdateListener.java
- *
- *			Modified: 04-May-2014 (15:20:49)
- *			   Using: Eclipse J-EE / JDK 7 / Windows 8.1 x64
+ * 
+ *		Project/File: Overcast/com.yagasoft.overcast.base.container.update/IUpdateListener.java
+ * 
+ *			Modified: 26-May-2014 (21:31:10)
+ *			   Using: Eclipse J-EE / JDK 8 / Windows 8.1 x64
  */
 
 package com.yagasoft.overcast.base.container.update;
@@ -26,6 +26,7 @@ package com.yagasoft.overcast.base.container.update;
  *
  * @see IUpdateEvent
  */
+@FunctionalInterface
 public interface IUpdateListener
 {
 

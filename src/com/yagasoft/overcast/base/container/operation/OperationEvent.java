@@ -1,11 +1,11 @@
-/* 
+/*
  * Copyright (C) 2011-2014 by Ahmed Osama el-Sawalhy
- * 
+ *
  *		The Modified MIT Licence (GPL v3 compatible)
  * 			License terms are in a separate file (LICENCE.md)
- * 
+ *
  *		Project/File: Overcast/com.yagasoft.overcast.base.container.operation/OperationEvent.java
- * 
+ *
  *			Modified: Apr 15, 2014 (9:05:03 AM)
  *			   Using: Eclipse J-EE / JDK 7 / Windows 8.1 x64
  */
@@ -22,19 +22,19 @@ import com.yagasoft.overcast.base.container.Event;
  */
 public class OperationEvent extends Event
 {
-	
+
 	/** The operation. */
-	Operation		operation;
-	
+	protected Operation		operation;
+
 	/** The state. */
-	OperationState	state;
-	
+	protected OperationState	state;
+
 	/** The progress. */
 	protected float	progress;
-	
+
 	/**
 	 * Instantiates a new operation event.
-	 * 
+	 *
 	 * @param container
 	 *            the container relating to the event.
 	 * @param operation
@@ -51,20 +51,20 @@ public class OperationEvent extends Event
 		this.progress = progress;
 		this.operation = operation;
 	}
-	
+
 	/**
 	 * Gets the state.
-	 * 
+	 *
 	 * @return the state
 	 */
 	public OperationState getState()
 	{
 		return state;
 	}
-	
+
 	/**
 	 * Sets the state.
-	 * 
+	 *
 	 * @param state
 	 *            the new state
 	 */
@@ -72,20 +72,20 @@ public class OperationEvent extends Event
 	{
 		this.state = state;
 	}
-	
+
 	/**
 	 * Gets the progress.
-	 * 
+	 *
 	 * @return the progress
 	 */
 	public float getProgress()
 	{
 		return progress;
 	}
-	
+
 	/**
 	 * Sets the progress.
-	 * 
+	 *
 	 * @param progress
 	 *            the new progress
 	 */
@@ -93,20 +93,20 @@ public class OperationEvent extends Event
 	{
 		this.progress = progress;
 	}
-	
+
 	/**
 	 * Gets the operation.
-	 * 
+	 *
 	 * @return the operation
 	 */
 	public Operation getOperation()
 	{
 		return operation;
 	}
-	
+
 	/**
 	 * Sets the operation.
-	 * 
+	 *
 	 * @param operation
 	 *            the new operation
 	 */
@@ -114,5 +114,5 @@ public class OperationEvent extends Event
 	{
 		this.operation = operation;
 	}
-	
+
 }

@@ -1,12 +1,12 @@
-/* 
+/*
  * Copyright (C) 2011-2014 by Ahmed Osama el-Sawalhy
- * 
+ *
  *		The Modified MIT Licence (GPL v3 compatible)
  * 			Licence terms are in a separate file (LICENCE.md)
- * 
+ *
  *		Project/File: Overcast/com.yagasoft.overcast.base.container/Folder.java
- * 
- *			Modified: 26-May-2014 (17:21:01)
+ *
+ *			Modified: 26-May-2014 (21:51:11)
  *			   Using: Eclipse J-EE / JDK 8 / Windows 8.1 x64
  */
 
@@ -24,6 +24,7 @@ import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
+import java.util.stream.Collectors;
 
 import com.yagasoft.logger.Logger;
 import com.yagasoft.overcast.base.container.content.Change;
@@ -47,29 +48,29 @@ import com.yagasoft.overcast.exception.OperationException;
 @SuppressWarnings("unchecked")
 public abstract class Folder<T> extends Container<T> implements IContentManager
 {
-	
+
 	/** Folders inside this folder mapped by ID (tree implementation). */
 	protected HashMap<String, Folder<?>>					folders				= new HashMap<String, Folder<?>>();
-	
+
 	/** Files inside this folder mapped by ID. */
 	protected HashMap<String, File<?>>						files				= new HashMap<String, File<?>>();
-	
+
 	/** Thread executor to be used to load sub-folders in the tree. */
 	protected static ExecutorService						executor			= Executors.newCachedThreadPool();
-	
+
 	/**
 	 * Number of slots to be used to load folder tree, fixed and low to reduce the load on the server; we don't want to be
 	 * throttled!
 	 */
 	protected static Semaphore								slots				= new Semaphore(2);
-	
+
 	/** Listeners to the contents changes in this container. */
 	protected HashMap<IContentListener, HashSet<Change>>	contentListeners	= new HashMap<IContentListener, HashSet<Change>>();
-	
+
 	// //////////////////////////////////////////////////////////////////////////////////////
 	// #region Create folder.
 	// ======================================================================================
-	
+
 	/**
 	 * Creates the folder at the source with the name set as a field and the parent path passed.
 	 *
@@ -84,24 +85,24 @@ public abstract class Folder<T> extends Container<T> implements IContentManager
 	public void create(String parentPath, IOperationListener listener) throws CreationException
 	{
 		Logger.info("creating folder from path: " + parentPath + "/" + name);
-		
+
 		// split the parent path into nodes.
 		ArrayList<String> splitPath = new ArrayList<String>(Arrays.asList(parentPath.split("/")));
-		
+
 		// remove the first node as it's the root
 		if ((splitPath.size() > 0) && splitPath.get(0).equals(""))
 		{
 			splitPath.remove(0);
 		}
-		
+
 		// start from the root.
 		RemoteFolder parent = csp.getRemoteFileTree();
-		
+
 		// if there're sub-folders in the path
 		if (splitPath.size() > 0)
 		{
 			Container[] result;
-			
+
 			// search for the first sub-folder.
 			try
 			{
@@ -112,10 +113,10 @@ public abstract class Folder<T> extends Container<T> implements IContentManager
 			{
 				e.printStackTrace();
 				Logger.error("refreshing folder in path: " + parent.getPath());
-				
+
 				throw new CreationException("Can't refresh path.");
 			}
-			
+
 			// if it's found, and there're more sub-folders ...
 			// (if it's found but not sub-folders, then it's the parent we want to create in)
 			while ((result.length > 0) && (splitPath.size() > 0))
@@ -123,7 +124,7 @@ public abstract class Folder<T> extends Container<T> implements IContentManager
 				// this it the intended parent for now ...
 				parent = (RemoteFolder) result[0];
 				splitPath.remove(0);		// don't need it anymore in the node's list.
-				
+
 				// more sub-folders?
 				if (splitPath.size() > 0)
 				{
@@ -137,7 +138,7 @@ public abstract class Folder<T> extends Container<T> implements IContentManager
 					{
 						e.printStackTrace();
 						Logger.error("refreshing folder in path: " + parent.getPath());
-						
+
 						throw new CreationException("Can't refresh path.");
 					}
 				}
@@ -147,7 +148,7 @@ public abstract class Folder<T> extends Container<T> implements IContentManager
 				}
 			}
 		}
-		
+
 		// couldn't find a node in the first iteration, so start creating the folders in the rest of the path.
 		while (splitPath.size() > 0)
 		{
@@ -155,18 +156,18 @@ public abstract class Folder<T> extends Container<T> implements IContentManager
 			tempFolder.setName(splitPath.remove(0));
 			tempFolder.create(parent, listener);
 			parent = tempFolder;		// new parent is the newly created folder.
-			
+
 			Logger.info("created mid folder: " + parent.path);
 		}
-		
+
 		// done with creating/traversing the path, now search if this folder exists in the last node ...
 		Container<?>[] result = parent.searchByName(name, false);
-		
+
 		// ... if so, then it already exists.
 		if ((result.length > 0) && result[0].isFolder())
 		{
 			Logger.error("creating nodes to reach desired folder: " + parentPath + "/" + name);
-			
+
 			throw new CreationException("Folder already exists!");
 		}
 		else
@@ -174,7 +175,7 @@ public abstract class Folder<T> extends Container<T> implements IContentManager
 			create(parent, listener);		// create the folder in the reached parent.
 		}
 	}
-	
+
 	/**
 	 * Creates the folder at the source with the info set (class attributes).
 	 *
@@ -198,7 +199,7 @@ public abstract class Folder<T> extends Container<T> implements IContentManager
 			Logger.error("creating folder: " + parent.getPath() + "/" + name);
 			Logger.except(e);
 			e.printStackTrace();
-			
+
 			throw new CreationException("Couldn't create folder! " + e.getMessage());
 		}
 		finally
@@ -206,19 +207,19 @@ public abstract class Folder<T> extends Container<T> implements IContentManager
 			removeTempOperationListener(listener, Operation.CREATE);
 		}
 	}
-	
+
 	/**
 	 * Initialises the folder creation process.
 	 */
 	protected void initCreate(Folder<?> parent, IOperationListener listener) throws CreationException
 	{
 		Logger.info("creating folder: " + parent.getPath() + "/" + name);
-		
+
 		addTempOperationListener(listener, Operation.CREATE);
-		
+
 		// check if the folder exists in the parent ...
 		Container<?>[] result = parent.searchByName(name, false);
-		
+
 		// if it exists, problem!
 		if ((result.length >= 1) && result[0].isFolder())
 		{
@@ -226,7 +227,7 @@ public abstract class Folder<T> extends Container<T> implements IContentManager
 			throw new CreationException("Folder already Exists!");
 		}
 	}
-	
+
 	/**
 	 * Process of creating the folder. It should create the folder at the CSP,
 	 * and return an object representing the created folder in the type used by the CSP.
@@ -238,7 +239,7 @@ public abstract class Folder<T> extends Container<T> implements IContentManager
 	 *             the creation exception
 	 */
 	protected abstract T createProcess(Folder<?> parent) throws CreationException;
-	
+
 	/**
 	 * Post folder creation.
 	 */
@@ -246,14 +247,14 @@ public abstract class Folder<T> extends Container<T> implements IContentManager
 	{
 		parent.add(this);
 		notifyOperationListeners(Operation.CREATE, OperationState.COMPLETED, 1.0f);
-		
+
 		Logger.info("finished creating folder: " + path);
 	}
-	
+
 	// ======================================================================================
 	// #endregion Create folder.
 	// //////////////////////////////////////////////////////////////////////////////////////
-	
+
 	/**
 	 * Adds the container passed to the list of containers in this folder.
 	 *
@@ -270,13 +271,13 @@ public abstract class Folder<T> extends Container<T> implements IContentManager
 		{
 			files.put(container.id, (File<?>) container);
 		}
-		
+
 		container.setParent(this);				// set the parent of the container passed as this folder.
 		notifyContentListeners(Change.ADD, container);
-		
+
 		Logger.info("added: " + container.path + ", to parent: " + path);
 	}
-	
+
 	/**
 	 * Removes the container from the list of containers in this folder.
 	 *
@@ -291,14 +292,14 @@ public abstract class Folder<T> extends Container<T> implements IContentManager
 		{
 			container.setParent(null);
 			notifyContentListeners(Change.REMOVE, container);
-			
+
 			// the container is an orphan and not needed, so remove its listeners.
 			container.clearAllListeners();
-			
+
 			Logger.info("removed: " + container.path + ", from parent: " + path);
 		}
 	}
-	
+
 	/**
 	 * Removes the file/folder from either list in this folder based on ID -- should search both lists.
 	 *
@@ -313,11 +314,11 @@ public abstract class Folder<T> extends Container<T> implements IContentManager
 			Logger.info("removed file/folder: " + id);
 		}
 	}
-	
+
 	// //////////////////////////////////////////////////////////////////////////////////////
 	// #region Tree operations.
 	// ======================================================================================
-	
+
 	/**
 	 * Builds the sub-tree of this folder, adding sub-folders and files to the map.<br />
 	 * Should check the levels reached on each recursion.
@@ -334,15 +335,15 @@ public abstract class Folder<T> extends Container<T> implements IContentManager
 		{
 			return;
 		}
-		
+
 		ArrayList<Container<?>> childrenArray = new ArrayList<Container<?>>();
-		
+
 		try
 		{
 			initBuildTree();
 			buildTreeProcess(numberOfLevels, childrenArray);
 			postBuildTree(numberOfLevels, childrenArray);
-			
+
 			Logger.info("processed folder: " + path);
 		}
 		catch (OperationException e)
@@ -350,11 +351,11 @@ public abstract class Folder<T> extends Container<T> implements IContentManager
 			Logger.error("building folder tree: " + path);
 			Logger.except(e);
 			e.printStackTrace();
-			
+
 			throw new OperationException("Failed to build tree! " + e.getMessage());
 		}
 	}
-	
+
 	/**
 	 * Equivalent to {@link Folder#buildTree(int)} with Integer.MAX_VALUE passed if recursive, or passing zero if not.
 	 *
@@ -374,7 +375,7 @@ public abstract class Folder<T> extends Container<T> implements IContentManager
 			buildTree(0);		// if not recursive, then build only the first level.
 		}
 	}
-	
+
 	/**
 	 * Initialises the build tree process.
 	 *
@@ -384,7 +385,7 @@ public abstract class Folder<T> extends Container<T> implements IContentManager
 	protected void initBuildTree() throws OperationException
 	{
 		Logger.info("building folder tree: " + path);
-		
+
 		// going to work on a branch, so grab a thread.
 		try
 		{
@@ -395,7 +396,7 @@ public abstract class Folder<T> extends Container<T> implements IContentManager
 			e.printStackTrace();
 		}
 	}
-	
+
 	/**
 	 * Builds the tree. It should fetch the children list from the server, remove obsolete using member methods in here,
 	 * create a container object using the factory methods from the CSP, and then add those to the childrenArray.
@@ -408,7 +409,7 @@ public abstract class Folder<T> extends Container<T> implements IContentManager
 	 *             the operation exception
 	 */
 	protected abstract void buildTreeProcess(int numberOfLevels, List<Container<?>> childrenArray) throws OperationException;
-	
+
 	/**
 	 * Post build tree.
 	 *
@@ -421,16 +422,14 @@ public abstract class Folder<T> extends Container<T> implements IContentManager
 	 */
 	protected void postBuildTree(final int numberOfLevels, List<Container<?>> childrenArray) throws OperationException
 	{
-		for (Container<?> container : childrenArray)
-		{
-			add(container);
-		}
-		
+		// add the resulting children to this folder's list
+		childrenArray.parallelStream().forEach(container -> add(container));
+
 		slots.release();
 		// use a service to 'join' threads and not return before finishing the whole tree build.
 		CompletionService<Boolean> service = new ExecutorCompletionService<Boolean>(executor);
 		int jobs = 0;		// count the submissions to know what to wait for.
-		
+
 		for (final Folder<?> folder : getFoldersArray())
 		{
 			try
@@ -448,7 +447,7 @@ public abstract class Folder<T> extends Container<T> implements IContentManager
 						throw new RuntimeException(e.getMessage());
 					}
 				});
-				
+
 				jobs++;		// job submitted, count!
 			}
 			catch (RuntimeException e)
@@ -456,7 +455,7 @@ public abstract class Folder<T> extends Container<T> implements IContentManager
 				throw new OperationException(e.getMessage());
 			}
 		}
-		
+
 		// join threads ...
 		try
 		{
@@ -470,11 +469,11 @@ public abstract class Folder<T> extends Container<T> implements IContentManager
 			e1.printStackTrace();
 		}
 	}
-	
+
 	// ======================================================================================
 	// #endregion Tree operations.
 	// //////////////////////////////////////////////////////////////////////////////////////
-	
+
 	/**
 	 * I chose to add it here and not in updateFromSource because it's an intensive operation that should be done manually only.
 	 *
@@ -483,7 +482,7 @@ public abstract class Folder<T> extends Container<T> implements IContentManager
 	 *             the operation exception
 	 */
 	public abstract long calculateSize() throws OperationException;
-	
+
 	/**
 	 * @see com.yagasoft.overcast.base.container.Container#isFolder()
 	 */
@@ -492,7 +491,7 @@ public abstract class Folder<T> extends Container<T> implements IContentManager
 	{
 		return true;		// this is a folder!
 	}
-	
+
 	/**
 	 * Update from where the folder resides. It updates the info of the folder from the source itself
 	 * , and can be done recursively (tree). It refreshes the children list if 'contents' flag is true.
@@ -505,11 +504,11 @@ public abstract class Folder<T> extends Container<T> implements IContentManager
 	 *             the operation exception
 	 */
 	public abstract void updateFromSource(boolean folderContents, boolean recursively) throws OperationException;
-	
+
 	// //////////////////////////////////////////////////////////////////////////////////////
 	// #region Events.
 	// ======================================================================================
-	
+
 	/**
 	 * @see com.yagasoft.overcast.base.container.content.IContentManager#addContentListener(com.yagasoft.overcast.base.container.content.IContentListener)
 	 */
@@ -519,7 +518,7 @@ public abstract class Folder<T> extends Container<T> implements IContentManager
 		addContentListener(listener, Change.ADD);
 		addContentListener(listener, Change.REMOVE);
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.base.container.content.IContentManager#addContentListener(com.yagasoft.overcast.base.container.content.IContentListener,
 	 *      com.yagasoft.overcast.base.container.content.Change)
@@ -531,10 +530,10 @@ public abstract class Folder<T> extends Container<T> implements IContentManager
 		{
 			contentListeners.put(listener, new HashSet<Change>());
 		}
-		
+
 		contentListeners.get(listener).add(change);
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.base.container.content.IContentManager#notifyContentListeners(com.yagasoft.overcast.base.container.content.Change,
 	 *      com.yagasoft.overcast.base.container.Container)
@@ -543,15 +542,12 @@ public abstract class Folder<T> extends Container<T> implements IContentManager
 	public void notifyContentListeners(Change change, Container<?> object)
 	{
 		// go through the listeners' list and notify whoever is concerned with this change.
-		for (IContentListener listener : contentListeners.keySet())
-		{
-			if (contentListeners.get(listener).contains(change))
-			{
-				listener.contentsChanged(new ChangeEvent(this, change, object));
-			}
-		}
+		contentListeners.keySet()
+			.parallelStream()
+				.filter(listener -> contentListeners.get(listener).contains(change))
+				.forEach(listener -> listener.contentsChanged(new ChangeEvent(this, change, object)));
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.base.container.content.IContentManager#removeContentListener(com.yagasoft.overcast.base.container.content.IContentListener)
 	 */
@@ -560,27 +556,20 @@ public abstract class Folder<T> extends Container<T> implements IContentManager
 	{
 		contentListeners.remove(listener);
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.base.container.content.IContentManager#clearContentListeners(com.yagasoft.overcast.base.container.content.Change)
 	 */
 	@Override
 	public void clearContentListeners(Change change)
 	{
-		for (IContentListener listener : contentListeners.keySet())
-		{
-			if (contentListeners.get(listener).contains(change))
-			{
-				contentListeners.get(listener).remove(change);
-				
-				if (contentListeners.get(listener).isEmpty())
-				{
-					removeContentListener(listener);
-				}
-			}
-		}
+		contentListeners.keySet().parallelStream()
+			.filter(listener -> contentListeners.get(listener).contains(change))	// keep listeners monitoring change
+			.peek(listener -> contentListeners.get(listener).remove(change))		// remove the change from their list
+			.filter(listener -> contentListeners.get(listener).isEmpty())			// keep listeners watching nothing now
+			.forEach(listener -> removeContentListener(listener));					// remove those listeners
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.base.container.Container#clearAllListeners()
 	 */
@@ -590,15 +579,15 @@ public abstract class Folder<T> extends Container<T> implements IContentManager
 		super.clearAllListeners();
 		contentListeners.clear();
 	}
-	
+
 	// ======================================================================================
 	// #endregion Events.
 	// //////////////////////////////////////////////////////////////////////////////////////
-	
+
 	// //////////////////////////////////////////////////////////////////////////////////////
 	// #region Searching.
 	// ======================================================================================
-	
+
 	/**
 	 * Checks if this file/folder exists in this folder (searches by ID), and whether to do it recursively.
 	 *
@@ -613,7 +602,7 @@ public abstract class Folder<T> extends Container<T> implements IContentManager
 	public <S extends Container<?>> S searchById(String id, boolean recursively)
 	{
 		Logger.info("searching: " + id + ", in: " + path);
-		
+
 		try
 		{
 			updateFromSource(true, false);
@@ -624,14 +613,16 @@ public abstract class Folder<T> extends Container<T> implements IContentManager
 			Logger.except(e);
 			e.printStackTrace();
 		}
-		
+
 		// if the folders list contains the passed ID (mapped), return it.
 		if (folders.containsKey(id))
 		{
+			Logger.info("found: " + folders.get(id).path + ", in: " + path);
 			return (S) folders.get(id);
 		}
 		else if (files.containsKey(id))
 		{	// else, check the files list.
+			Logger.info("found: " + files.get(id).path + ", in: " + path);
 			return (S) files.get(id);
 		}
 		else if (recursively)
@@ -640,20 +631,19 @@ public abstract class Folder<T> extends Container<T> implements IContentManager
 			{
 				// search each by calling this method repeatedly for each.
 				Container<?> container = folder.searchById(id, recursively);
-				
+
 				// if something was returned at any point, then return it and end.
 				if (container != null)
 				{
-					Logger.info("found: " + container.path + ", in: " + path);
 					return (S) container;
 				}
 			}
 		}
-		
+
 		// nothing was found.
 		return null;
 	}
-	
+
 	/**
 	 * Search by name.
 	 *
@@ -666,7 +656,7 @@ public abstract class Folder<T> extends Container<T> implements IContentManager
 	public Container<?>[] searchByName(String name, boolean recursively)
 	{
 		Logger.info("searching " + name + " in " + path);
-		
+
 		try
 		{
 			updateFromSource(true, false);
@@ -677,38 +667,39 @@ public abstract class Folder<T> extends Container<T> implements IContentManager
 			Logger.except(e);
 			e.printStackTrace();
 		}
-		
-		ArrayList<Container<?>> result = new ArrayList<Container<?>>();
-		
-		// same as 'searchById' ...
-		for (Container<?> container : getChildrenArray())
+
+		List<Container<?>> result = new ArrayList<Container<?>>();
+
+		// same as 'searchById', in THIS folder only ...
+		result.addAll(Arrays.stream(getChildrenArray())		// get all children as a stream
+					.filter(container -> name.equals(container.name))		// keep only containers with a matching name
+					.collect(Collectors.toList()));		// convert filtered result to an array
+
+		if (!result.isEmpty())
 		{
-			if (name.equals(container.name))
-			{
-				Logger.info("found: " + container.path + ", in: " + path);
-				result.add(container);
-			}
+			Logger.info("found " + result.get(0) + " in " + path);
 		}
-		
+
+		// search sub-folders
 		if (recursively)
 		{
-			for (Folder<?> folder : folders.values())
-			{
-				result.addAll(Arrays.asList(folder.searchByName(name, recursively)));
-			}
+			result.addAll(folders.values().parallelStream()		// get sub-folders as a stream
+						// replace each folder with a stream containing its children that match the name, this effectively is recursive
+						.flatMap(folder -> Arrays.stream(folder.searchByName(name, recursively)))
+						.collect(Collectors.toList()));	// convert to an array
 		}
-		
+
 		return result.toArray(new Container<?>[result.size()]);
 	}
-	
+
 	// ======================================================================================
 	// #endregion Searching.
 	// //////////////////////////////////////////////////////////////////////////////////////
-	
+
 	// //////////////////////////////////////////////////////////////////////////////////////
 	// #region Filtering.
 	// ======================================================================================
-	
+
 	/**
 	 * Removes the obsolete members from the list in this folder using the fresh list sent as an argument.
 	 *
@@ -718,45 +709,43 @@ public abstract class Folder<T> extends Container<T> implements IContentManager
 	 *            Filter the sent list from already existing members in this folder (to allow faster parsing of new ones). This
 	 *            removes the duplicates in the list SENT when compared to this folder's list.
 	 */
-	public void removeObsolete(ArrayList<String> ids, boolean filter)
+	public void removeObsolete(List<String> ids, boolean filter)
 	{
 		Logger.info("removing obsolete containers: " + path);
-		
+
 		// combine lists in this folder (IDs only, not containers themselves).
-		ArrayList<String> containers = new ArrayList<String>();
+		List<String> containers = new ArrayList<String>();
 		containers.addAll(folders.keySet());
 		containers.addAll(files.keySet());
-		
+
 		// go through the combined list.
-		for (String container : containers)
-		{
-			// if the list sent contains any of the existing containers in this folder ...
-			if ( !ids.contains(container))
+		containers.parallelStream()
+			.filter(container -> !ids.contains(container))		// keep only the containers in the list sent (not deleted on server)
+			.forEach(container ->
 			{
 				// remove it.
-				folders.remove(id);
-				files.remove(id);
-				
+				folders.remove(container);
+				files.remove(container);
+
 				Logger.info("removed obsolete: " + container);
-			}
-		}
-		
-		// if it's required to filter the sent list as well ...
+			});
+
+		// if it's required to filter (remove commons) the sent list as well ...
 		if (filter)
 		{
-			// go through the combined list again.
-			for (String container : containers)
-			{
-				// this time just remove from the sent list that exist in this folder.
-				ids.remove(container);
-				
-				Logger.info("filtering existing: " + container);
-			}
+			// go through the combined list again, but this time just remove from the sent list that exist in this folder.
+			containers.parallelStream()
+				.forEach(container ->
+				{
+					ids.remove(container);
+
+					Logger.info("filtering existing: " + container);
+				});
 		}
-		
+
 		Logger.info("finished removing obsolete containers: " + path);
 	}
-	
+
 	/**
 	 * Removes the obsolete folders from the list in this folder using the fresh list sent as an argument.
 	 *
@@ -766,35 +755,34 @@ public abstract class Folder<T> extends Container<T> implements IContentManager
 	 *            Filter the sent list from already existing members in this folder (to allow faster parsing of new ones). This
 	 *            removes the duplicates in the list SENT when compared to this folder's list.
 	 */
-	public void removeObsoleteFolders(ArrayList<String> folderIds, boolean filter)
+	public void removeObsoleteFolders(List<String> folderIds, boolean filter)
 	{
 		Logger.info("removing obsolete folders: " + path);
-		
-		ArrayList<String> foldersList = new ArrayList<String>();
+
+		List<String> foldersList = new ArrayList<String>();
 		foldersList.addAll(folders.keySet());
-		
-		for (String folder : foldersList)
-		{
-			if ( !folderIds.contains(folder))
+
+		foldersList.parallelStream()
+			.filter(folder -> !folderIds.contains(folder))
+			.forEach(folder ->
 			{
-				folders.remove(id);
-				files.remove(id);
-				
+				folders.remove(folder);
+
 				Logger.info("removed obsolete: " + folder);
-			}
-		}
-		
+			});
+
 		if (filter)
 		{
-			for (String folder : foldersList)
-			{
-				folderIds.remove(folder);
-				
-				Logger.info("filtering existing: " + folder);
-			}
+			foldersList.parallelStream()
+				.forEach(folder ->
+				{
+					folderIds.remove(folder);
+
+					Logger.info("filtering existing: " + folder);
+				});
 		}
 	}
-	
+
 	/**
 	 * Removes the obsolete files from the list in this folder using the fresh list sent as an argument.
 	 *
@@ -804,43 +792,42 @@ public abstract class Folder<T> extends Container<T> implements IContentManager
 	 *            Filter the sent list from already existing members in this folder (to allow faster parsing of new ones). This
 	 *            removes the duplicates in the list SENT when compared to this folder's list.
 	 */
-	public void removeObsoleteFiles(ArrayList<String> fileIds, boolean filter)
+	public void removeObsoleteFiles(List<String> fileIds, boolean filter)
 	{
 		Logger.info("removing obsolete files: " + path);
-		
-		ArrayList<String> filesList = new ArrayList<String>();
+
+		List<String> filesList = new ArrayList<String>();
 		filesList.addAll(folders.keySet());
-		
-		for (String file : filesList)
-		{
-			if ( !fileIds.contains(file))
+
+		filesList.parallelStream()
+			.filter(file -> !fileIds.contains(file))
+			.forEach(file ->
 			{
-				folders.remove(id);
-				files.remove(id);
-				
+				files.remove(file);
+
 				Logger.info("removed obsolete: " + file);
-			}
-		}
-		
+			});
+
 		if (filter)
 		{
-			for (String file : filesList)
-			{
-				fileIds.remove(file);
-				
-				Logger.info("filtering existing: " + file);
-			}
+			filesList.parallelStream()
+				.forEach(file ->
+				{
+					fileIds.remove(file);
+
+					Logger.info("filtering existing: " + file);
+				});
 		}
 	}
-	
+
 	// ======================================================================================
 	// #endregion Filtering.
 	// //////////////////////////////////////////////////////////////////////////////////////
-	
+
 	// //////////////////////////////////////////////////////////////////////////////////////
 	// #region Children listing.
 	// ======================================================================================
-	
+
 	/**
 	 * Gets the whole tree as a sequential list. First adds the children to a new list, and then goes through each folder and gets
 	 * its tree and adds it recursively.
@@ -850,19 +837,17 @@ public abstract class Folder<T> extends Container<T> implements IContentManager
 	public List<Container<?>> getWholeTreeList()
 	{
 		// combine the lists in this folder.
-		ArrayList<Container<?>> children = new ArrayList<Container<?>>();
+		List<Container<?>> children = new ArrayList<Container<?>>();
 		children.addAll(folders.values());
 		children.addAll(files.values());
-		
+
 		// do it recursively.
-		for (Folder<?> folder : getFoldersList())
-		{
-			children.addAll(folder.getWholeTreeList());
-		}
-		
+		getFoldersList().parallelStream()
+			.forEach(folder -> children.addAll(folder.getWholeTreeList()));
+
 		return children;
 	}
-	
+
 	/**
 	 * Gets the children as a list, including folders and files.
 	 *
@@ -870,13 +855,13 @@ public abstract class Folder<T> extends Container<T> implements IContentManager
 	 */
 	public List<Container<?>> getChildrenList()
 	{
-		ArrayList<Container<?>> children = new ArrayList<Container<?>>();
+		List<Container<?>> children = new ArrayList<Container<?>>();
 		children.addAll(folders.values());
 		children.addAll(files.values());
-		
+
 		return children;
 	}
-	
+
 	/**
 	 * Gets the folders list only.
 	 *
@@ -884,12 +869,9 @@ public abstract class Folder<T> extends Container<T> implements IContentManager
 	 */
 	public List<Folder<?>> getFoldersList()
 	{
-		ArrayList<Folder<?>> foldersList = new ArrayList<Folder<?>>();
-		foldersList.addAll(folders.values());
-		
-		return foldersList;
+		return new ArrayList<Folder<?>>(folders.values());
 	}
-	
+
 	/**
 	 * Gets the files list only.
 	 *
@@ -897,12 +879,9 @@ public abstract class Folder<T> extends Container<T> implements IContentManager
 	 */
 	public List<File<?>> getFilesList()
 	{
-		ArrayList<File<?>> filesList = new ArrayList<File<?>>();
-		filesList.addAll(files.values());
-		
-		return filesList;
+		return new ArrayList<File<?>>(files.values());
 	}
-	
+
 	/**
 	 * Gets the children as an array, including folders and files.
 	 *
@@ -910,13 +889,13 @@ public abstract class Folder<T> extends Container<T> implements IContentManager
 	 */
 	public Container<?>[] getChildrenArray()
 	{
-		ArrayList<Container<?>> children = new ArrayList<Container<?>>();
+		List<Container<?>> children = new ArrayList<Container<?>>();
 		children.addAll(folders.values());
 		children.addAll(files.values());
-		
+
 		return children.toArray(new Container<?>[children.size()]);		// convert to array before returning.
 	}
-	
+
 	/**
 	 * Gets the folders array.
 	 *
@@ -924,12 +903,9 @@ public abstract class Folder<T> extends Container<T> implements IContentManager
 	 */
 	public Folder<?>[] getFoldersArray()
 	{
-		ArrayList<Folder<?>> foldersList = new ArrayList<Folder<?>>();
-		foldersList.addAll(folders.values());
-		
-		return foldersList.toArray(new Folder<?>[foldersList.size()]);
+		return folders.values().toArray(new Folder<?>[folders.size()]);
 	}
-	
+
 	/**
 	 * Gets the files array.
 	 *
@@ -937,12 +913,9 @@ public abstract class Folder<T> extends Container<T> implements IContentManager
 	 */
 	public File<?>[] getFilesArray()
 	{
-		ArrayList<File<?>> filesList = new ArrayList<File<?>>();
-		filesList.addAll(files.values());
-		
-		return filesList.toArray(new File<?>[filesList.size()]);
+		return files.values().toArray(new File<?>[files.size()]);
 	}
-	
+
 	/**
 	 * Gets the children iterator, including folders and files.
 	 *
@@ -952,7 +925,7 @@ public abstract class Folder<T> extends Container<T> implements IContentManager
 	{
 		return getChildrenList().iterator();
 	}
-	
+
 	/**
 	 * Gets the folders iterator.
 	 *
@@ -962,7 +935,7 @@ public abstract class Folder<T> extends Container<T> implements IContentManager
 	{
 		return getFoldersList().iterator();
 	}
-	
+
 	/**
 	 * Gets the files iterator.
 	 *
@@ -972,11 +945,11 @@ public abstract class Folder<T> extends Container<T> implements IContentManager
 	{
 		return getFilesList().iterator();
 	}
-	
+
 	// ======================================================================================
 	// #endregion Children listing.
 	// //////////////////////////////////////////////////////////////////////////////////////
-	
+
 	/**
 	 * @return the executor
 	 */
@@ -984,7 +957,7 @@ public abstract class Folder<T> extends Container<T> implements IContentManager
 	{
 		return executor;
 	}
-	
+
 	/**
 	 * @param executor
 	 *            the executor to set
@@ -993,5 +966,5 @@ public abstract class Folder<T> extends Container<T> implements IContentManager
 	{
 		Folder.executor = executor;
 	}
-	
+
 }

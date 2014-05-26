@@ -2,12 +2,12 @@
  * Copyright (C) 2011-2014 by Ahmed Osama el-Sawalhy
  * 
  *		The Modified MIT Licence (GPL v3 compatible)
- * 			License terms are in a separate file (LICENCE.md)
+ * 			Licence terms are in a separate file (LICENCE.md)
  * 
  *		Project/File: Overcast/com.yagasoft.overcast.base.container.content/IContentListener.java
  * 
- *			Modified: May 3, 2014 (8:19:33 AM)
- *			   Using: Eclipse J-EE / JDK 7 / Windows 8.1 x64
+ *			Modified: 26-May-2014 (21:30:30)
+ *			   Using: Eclipse J-EE / JDK 8 / Windows 8.1 x64
  */
 
 package com.yagasoft.overcast.base.container.content;
@@ -24,6 +24,7 @@ package com.yagasoft.overcast.base.container.content;
  * 
  * @see IOperationEvent
  */
+@FunctionalInterface
 public interface IContentListener
 {
 	

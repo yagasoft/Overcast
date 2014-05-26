@@ -16,6 +16,7 @@ package com.yagasoft.overcast.base.csp;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Queue;
 
 import com.yagasoft.logger.Logger;
@@ -249,7 +250,7 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 		folder.setLocalMapping(localFolder);
 
 		// collect the jobs in this array to be returned later.
-		ArrayList<DownloadJob> downloadJobs = new ArrayList<DownloadJob>();
+		List<DownloadJob> downloadJobs = new ArrayList<DownloadJob>();
 
 		// add each file in the folder to the download queue.
 		for (com.yagasoft.overcast.base.container.File<?> file : folder.getFilesArray())

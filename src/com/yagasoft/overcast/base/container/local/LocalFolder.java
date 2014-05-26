@@ -1,13 +1,13 @@
-/*
+/* 
  * Copyright (C) 2011-2014 by Ahmed Osama el-Sawalhy
- *
+ * 
  *		The Modified MIT Licence (GPL v3 compatible)
  * 			Licence terms are in a separate file (LICENCE.md)
- *
+ * 
  *		Project/File: Overcast/com.yagasoft.overcast.base.container.local/LocalFolder.java
- *
- *			Modified: 25-May-2014 (18:39:03)
- *			   Using: Eclipse J-EE / JDK 7 / Windows 8.1 x64
+ * 
+ *			Modified: 26-May-2014 (21:54:52)
+ *			   Using: Eclipse J-EE / JDK 8 / Windows 8.1 x64
  */
 
 package com.yagasoft.overcast.base.container.local;
@@ -169,11 +169,11 @@ public class LocalFolder extends Folder<Path>
 		// read children of the folder from the disk.
 		try (DirectoryStream<Path> stream = Files.newDirectoryStream(sourceObject))
 		{
-			for (Path file : stream)
+			stream.forEach(file ->
 			{
 				paths.add(file);
 				pathsString.add(file.toAbsolutePath().toString());
-			}
+			});
 		}
 		catch (IOException | DirectoryIteratorException e)
 		{
@@ -187,33 +187,41 @@ public class LocalFolder extends Folder<Path>
 		// HashMap<String, File<?>> newFiles = new HashMap<String, File<?>>();
 
 		// add new files and folders to this folder's list, and build recursively if required.
-		for (Path path : paths)
-		{
-			// if ( !folders.containsKey(path.toString()))
-			// {
-			// if ( !files.containsKey(path.toString()))
-			// {
-			if (Files.isDirectory(path))
+		paths.parallelStream()
+			.forEach(path ->
 			{
-				childrenArray.add(new LocalFolder(path));
-			}
-			else
-			{
-				childrenArray.add(new LocalFile(path));
-			}
-			// }
-			// else
-			// {
-			// newFiles.put(path.toString(), files.get(path.toString()));
-			// }
-			// }
-			// else
-			// {
-			// Folder<?> folder = folders.get(path.toString());
-			// folder.buildTree(numberOfLevels - 1);
-			// newFolders.put(folder.id, folder);
-			// }
-		}
+				// if ( !folders.containsKey(path.toString()))
+				// {
+				// if ( !files.containsKey(path.toString()))
+				// {
+				try
+				{
+					if (Files.isDirectory(path))
+					{
+						childrenArray.add(new LocalFolder(path));
+					}
+					else
+					{
+						childrenArray.add(new LocalFile(path));
+					}
+				}
+				catch (Exception e)
+				{
+					e.printStackTrace();
+				}
+				// }
+				// else
+				// {
+				// newFiles.put(path.toString(), files.get(path.toString()));
+				// }
+				// }
+				// else
+				// {
+				// Folder<?> folder = folders.get(path.toString());
+				// folder.buildTree(numberOfLevels - 1);
+				// newFolders.put(folder.id, folder);
+				// }
+			});
 
 		//
 		// folders = newFolders;

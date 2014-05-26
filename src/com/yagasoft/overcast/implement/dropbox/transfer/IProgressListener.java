@@ -1,17 +1,18 @@
-/* 
+/*
  * Copyright (C) 2011-2014 by Ahmed Osama el-Sawalhy
- * 
+ *
  *		The Modified MIT Licence (GPL v3 compatible)
  * 			License terms are in a separate file (LICENCE.md)
- * 
+ *
  *		Project/File: Overcast/com.yagasoft.overcast.implement.dropbox.transfer/IProgressListener.java
- * 
+ *
  *			Modified: Apr 15, 2014 (1:20:28 PM)
  *			   Using: Eclipse J-EE / JDK 7 / Windows 8.1 x64
  */
 
 package com.yagasoft.overcast.implement.dropbox.transfer;
 
+import com.yagasoft.overcast.base.container.transfer.ITransferProgressListener;
 import com.yagasoft.overcast.base.container.transfer.TransferState;
 
 
@@ -24,16 +25,19 @@ import com.yagasoft.overcast.base.container.transfer.TransferState;
  * with that class is registered with a component using the
  * component's <code>addIProgressListener<code> method. When
  * the IProgress event occurs, that object's appropriate
- * method is invoked.
- * 
+ * method is invoked.<br />
+ * <br />
+ * This is used to report progress changes from the custom uploader for Dropbox.
+ * To report transfer progress changes, use {@link ITransferProgressListener} instead.
+ *
  * @see IProgressEvent
  */
 public interface IProgressListener
 {
-	
+
 	/**
 	 * Progress changed.
-	 * 
+	 *
 	 * @param uploadJob
 	 *            the upload job
 	 * @param state
@@ -45,7 +49,7 @@ public interface IProgressListener
 
 	/**
 	 * Progress changed.
-	 * 
+	 *
 	 * @param downloadJob
 	 *            the download job
 	 * @param state

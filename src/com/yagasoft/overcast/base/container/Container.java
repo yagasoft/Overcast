@@ -1,13 +1,13 @@
-/*
+/* 
  * Copyright (C) 2011-2014 by Ahmed Osama el-Sawalhy
- *
+ * 
  *		The Modified MIT Licence (GPL v3 compatible)
  * 			Licence terms are in a separate file (LICENCE.md)
- *
+ * 
  *		Project/File: Overcast/com.yagasoft.overcast.base.container/Container.java
- *
- *			Modified: 25-May-2014 (18:14:23)
- *			   Using: Eclipse J-EE / JDK 7 / Windows 8.1 x64
+ * 
+ *			Modified: 26-May-2014 (21:29:33)
+ *			   Using: Eclipse J-EE / JDK 8 / Windows 8.1 x64
  */
 
 package com.yagasoft.overcast.base.container;
@@ -528,23 +528,17 @@ public abstract class Container<T> implements IOperable, IUpdatable, Comparable<
 	public void notifyOperationListeners(Operation operation, OperationState state, float progress)
 	{
 		// go through the listeners' list and notify whoever is concerned with this operation.
-		for (IOperationListener listener : operationListeners.keySet())
-		{
-			if (operationListeners.get(listener).contains(operation))
-			{
-				listener.operationProgressChanged(new OperationEvent(this, operation, state, progress));
-			}
-		}
+		operationListeners.keySet().parallelStream()
+				.filter(listener -> operationListeners.get(listener).contains(operation))
+				.forEach(listener -> listener.operationProgressChanged(new OperationEvent(this, operation, state, progress)));
 
 		// go through the temp listeners' list and notify whoever is concerned with this operation.
-		for (IOperationListener listener : tempOperationListeners.keySet())
-		{
-			if (tempOperationListeners.get(listener).contains(operation)
-					&& !(operationListeners.containsKey(listener) && operationListeners.get(listener).contains(operation)))
-			{
-				listener.operationProgressChanged(new OperationEvent(this, operation, state, progress));
-			}
-		}
+		tempOperationListeners.keySet().parallelStream()
+				.filter(listener ->
+					tempOperationListeners.get(listener).contains(operation)
+					&& !(operationListeners.containsKey(listener)
+							&& operationListeners.get(listener).contains(operation)))
+				.forEach(listener -> listener.operationProgressChanged(new OperationEvent(this, operation, state, progress)));
 	}
 
 	/**
@@ -553,10 +547,8 @@ public abstract class Container<T> implements IOperable, IUpdatable, Comparable<
 	@Override
 	public void clearOperationListeners(Operation operation)
 	{
-		for (IOperationListener listener : operationListeners.keySet())
-		{
-			removeOperationListener(listener, operation);
-		}
+		operationListeners.keySet().parallelStream()
+			.forEach(listener -> removeOperationListener(listener, operation));
 	}
 
 	/**
@@ -594,10 +586,8 @@ public abstract class Container<T> implements IOperable, IUpdatable, Comparable<
 	public void notifyUpdateListeners()
 	{
 		// go through the listeners' list and notify whoever is concerned with this update.
-		for (IUpdateListener listener : updateListeners)
-		{
-			listener.containerUpdated(new UpdateEvent(this));
-		}
+		updateListeners.parallelStream()
+			.forEach(listener -> listener.containerUpdated(new UpdateEvent(this)));
 	}
 
 	/**

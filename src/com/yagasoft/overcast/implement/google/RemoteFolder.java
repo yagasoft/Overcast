@@ -1,13 +1,13 @@
-/*
+/* 
  * Copyright (C) 2011-2014 by Ahmed Osama el-Sawalhy
- *
+ * 
  *		The Modified MIT Licence (GPL v3 compatible)
  * 			Licence terms are in a separate file (LICENCE.md)
- *
+ * 
  *		Project/File: Overcast/com.yagasoft.overcast.implement.google/RemoteFolder.java
- *
- *			Modified: 25-May-2014 (18:19:39)
- *			   Using: Eclipse J-EE / JDK 7 / Windows 8.1 x64
+ * 
+ *			Modified: 26-May-2014 (22:05:07)
+ *			   Using: Eclipse J-EE / JDK 8 / Windows 8.1 x64
  */
 
 package com.yagasoft.overcast.implement.google;
@@ -119,11 +119,12 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 				{
 					FileList childrenResult = request.execute();
 					
-					for (File child : childrenResult.getItems())
-					{
-						childrenIds.add(child.getId());
-						children.put(child.getId(), child);
-					}
+					childrenResult.getItems().parallelStream()
+						.forEach(child ->
+						{
+							childrenIds.add(child.getId());
+							children.put(child.getId(), child);
+						});
 					
 					request.setPageToken(childrenResult.getNextPageToken());
 				}

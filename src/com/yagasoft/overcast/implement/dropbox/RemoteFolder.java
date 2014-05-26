@@ -1,13 +1,13 @@
-/*
+/* 
  * Copyright (C) 2011-2014 by Ahmed Osama el-Sawalhy
- *
+ * 
  *		The Modified MIT Licence (GPL v3 compatible)
  * 			Licence terms are in a separate file (LICENCE.md)
- *
+ * 
  *		Project/File: Overcast/com.yagasoft.overcast.implement.dropbox/RemoteFolder.java
- *
- *			Modified: 25-May-2014 (21:19:19)
- *			   Using: Eclipse J-EE / JDK 7 / Windows 8.1 x64
+ * 
+ *			Modified: 26-May-2014 (22:02:10)
+ *			   Using: Eclipse J-EE / JDK 8 / Windows 8.1 x64
  */
 
 package com.yagasoft.overcast.implement.dropbox;
@@ -112,13 +112,11 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 			// id and child
 			HashMap<String, DbxEntry> children = new HashMap<String, DbxEntry>();
 			
-			for (DbxEntry child : listing.children)
-			{
-				children.put(child.isFolder() ? child.path : ((DbxEntry.File) child).rev, child);
-			}
+			listing.children.parallelStream()
+				.forEach(child -> children.put(child.isFolder() ? child.path : ((DbxEntry.File) child).rev, child));
 			
 			// collect the children IDs and filter already existing and deleted ones.
-			ArrayList<String> childrenIds = new ArrayList<String>(children.keySet());
+			List<String> childrenIds = new ArrayList<String>(children.keySet());
 			removeObsolete(childrenIds, true);
 			
 			// if there're new children on the server ...
