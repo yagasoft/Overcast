@@ -201,6 +201,33 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 	// --------------------------------------------------------------------------------------
 	// #region Download.
 
+	/**
+	 * Checks the queues, if it's the same job passed, then call cancel;
+	 * if not, then simply remove it from the queue.
+	 *
+	 * @param job
+	 *            the job
+	 */
+	public void cancelTransfer(TransferJob<?> job)
+	{
+		// just try to remove it from each queue, instead of checking type and such.
+		if (currentUploadJob == job)
+		{
+			cancelCurrentUpload();
+		}
+		if (currentDownloadJob == job)
+		{
+			cancelCurrentDownload();
+		}
+		else
+		{
+			Logger.info("cancelling transfer: " + job.getSourceFile().getPath());
+
+			uploadQueue.remove(job);
+			downloadQueue.remove(job);
+		}
+	}
+
 	// TODO Test folder download.
 	/**
 	 * Download the folder (passed) from the server.<br />
@@ -401,27 +428,6 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 	 *             the transfer exception
 	 */
 	protected abstract void initiateDownload() throws TransferException;
-
-	/**
-	 * Checks the download queue, if it's the same job passed, then call {@link #cancelCurrentDownload()};
-	 * if not, then simply remove it from the queue.
-	 *
-	 * @param job
-	 *            the job
-	 */
-	public void cancelDownload(TransferJob<?> job)
-	{
-		if (currentDownloadJob == job)
-		{
-			cancelCurrentDownload();
-		}
-		else
-		{
-			Logger.info("cancelling download: " + currentDownloadJob.getRemoteFile().getPath());
-
-			downloadQueue.remove(job);
-		}
-	}
 
 	/**
 	 * Cancel current running download.
@@ -651,27 +657,6 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 	 *             the transfer exception
 	 */
 	protected abstract void initiateUpload() throws TransferException;
-
-	/**
-	 * Checks the upload queue, if it's the same job passed, then call {@link #cancelCurrentUpload()};
-	 * if not, then simply remove it from the queue.
-	 *
-	 * @param job
-	 *            the job
-	 */
-	public void cancelUpload(TransferJob<?> job)
-	{
-		if (currentUploadJob == job)
-		{
-			cancelCurrentUpload();
-		}
-		else
-		{
-			Logger.info("cancelling upload: " + currentUploadJob.getLocalFile().getPath());
-
-			uploadQueue.remove(job);
-		}
-	}
 
 	/**
 	 * Cancel current upload.
