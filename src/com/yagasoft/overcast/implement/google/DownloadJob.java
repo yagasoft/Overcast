@@ -15,7 +15,7 @@ package com.yagasoft.overcast.implement.google;
 
 import com.google.api.client.googleapis.media.MediaHttpDownloader;
 import com.yagasoft.overcast.base.container.local.LocalFolder;
-import com.yagasoft.overcast.base.container.transfer.TransferState;
+import com.yagasoft.overcast.base.container.transfer.event.TransferState;
 
 
 /**

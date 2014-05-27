@@ -18,7 +18,7 @@ import java.net.URL;
 import com.yagasoft.overcast.base.container.Folder;
 import com.yagasoft.overcast.base.container.local.LocalFolder;
 import com.yagasoft.overcast.base.container.transfer.DownloadJob;
-import com.yagasoft.overcast.base.container.transfer.ITransferProgressListener;
+import com.yagasoft.overcast.base.container.transfer.event.ITransferProgressListener;
 import com.yagasoft.overcast.base.csp.CSP;
 import com.yagasoft.overcast.exception.CreationException;
 import com.yagasoft.overcast.exception.OperationException;

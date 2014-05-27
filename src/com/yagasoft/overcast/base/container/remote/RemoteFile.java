@@ -19,7 +19,7 @@ import com.yagasoft.overcast.base.container.File;
 import com.yagasoft.overcast.base.container.local.LocalFile;
 import com.yagasoft.overcast.base.container.local.LocalFolder;
 import com.yagasoft.overcast.base.container.transfer.DownloadJob;
-import com.yagasoft.overcast.base.container.transfer.ITransferProgressListener;
+import com.yagasoft.overcast.base.container.transfer.event.ITransferProgressListener;
 import com.yagasoft.overcast.base.csp.CSP;
 import com.yagasoft.overcast.exception.OperationException;
 import com.yagasoft.overcast.exception.TransferException;

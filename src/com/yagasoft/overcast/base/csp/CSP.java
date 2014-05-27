@@ -22,16 +22,16 @@ import java.util.Queue;
 import com.yagasoft.logger.Logger;
 import com.yagasoft.overcast.base.container.Container;
 import com.yagasoft.overcast.base.container.Folder;
-import com.yagasoft.overcast.base.container.content.IContentListener;
 import com.yagasoft.overcast.base.container.local.LocalFile;
 import com.yagasoft.overcast.base.container.local.LocalFolder;
+import com.yagasoft.overcast.base.container.operation.IOperationListener;
 import com.yagasoft.overcast.base.container.remote.RemoteFactory;
 import com.yagasoft.overcast.base.container.remote.RemoteFile;
 import com.yagasoft.overcast.base.container.remote.RemoteFolder;
 import com.yagasoft.overcast.base.container.transfer.DownloadJob;
-import com.yagasoft.overcast.base.container.transfer.ITransferProgressListener;
 import com.yagasoft.overcast.base.container.transfer.TransferJob;
 import com.yagasoft.overcast.base.container.transfer.UploadJob;
+import com.yagasoft.overcast.base.container.transfer.event.ITransferProgressListener;
 import com.yagasoft.overcast.base.csp.authorisation.Authorisation;
 import com.yagasoft.overcast.exception.CSPBuildException;
 import com.yagasoft.overcast.exception.CreationException;
@@ -103,7 +103,7 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 	 * @throws OperationException
 	 *             the operation exception
 	 */
-	public abstract void initTree(IContentListener listener) throws OperationException;
+	public abstract void initTree(IOperationListener listener) throws OperationException;
 
 	/**
 	 * Initialises the tree -- only reads the root's own info but none of the children.

@@ -10,10 +10,11 @@
  *			   Using: Eclipse J-EE / JDK 7 / Windows 8.1 x64
  */
 
-package com.yagasoft.overcast.base.container.transfer;
+package com.yagasoft.overcast.base.container.transfer.event;
 
 
 import com.yagasoft.overcast.base.container.Event;
+import com.yagasoft.overcast.base.container.transfer.TransferJob;
 
 
 /**

@@ -1,12 +1,12 @@
-/* 
+/*
  * Copyright (C) 2011-2014 by Ahmed Osama el-Sawalhy
- * 
+ *
  *		The Modified MIT Licence (GPL v3 compatible)
  * 			Licence terms are in a separate file (LICENCE.md)
- * 
+ *
  *		Project/File: Overcast/com.yagasoft.overcast.base.container/Container.java
- * 
- *			Modified: 26-May-2014 (21:29:33)
+ *
+ *			Modified: 28-May-2014 (00:05:17)
  *			   Using: Eclipse J-EE / JDK 8 / Windows 8.1 x64
  */
 
@@ -15,6 +15,7 @@ package com.yagasoft.overcast.base.container;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 
 import com.yagasoft.logger.Logger;
 import com.yagasoft.overcast.base.container.operation.IOperable;
@@ -22,9 +23,6 @@ import com.yagasoft.overcast.base.container.operation.IOperationListener;
 import com.yagasoft.overcast.base.container.operation.Operation;
 import com.yagasoft.overcast.base.container.operation.OperationEvent;
 import com.yagasoft.overcast.base.container.operation.OperationState;
-import com.yagasoft.overcast.base.container.update.IUpdatable;
-import com.yagasoft.overcast.base.container.update.IUpdateListener;
-import com.yagasoft.overcast.base.container.update.UpdateEvent;
 import com.yagasoft.overcast.base.csp.CSP;
 import com.yagasoft.overcast.exception.AccessException;
 import com.yagasoft.overcast.exception.OperationException;
@@ -37,7 +35,7 @@ import com.yagasoft.overcast.exception.OperationException;
  * @param <T>
  *            the type of the file or folder in the original API of the CSP.
  */
-public abstract class Container<T> implements IOperable, IUpdatable, Comparable<Container<T>>
+public abstract class Container<T> implements IOperable, Comparable<Container<T>>
 {
 
 	/** Unique identifier for the container -- implementation specific. */
@@ -62,13 +60,10 @@ public abstract class Container<T> implements IOperable, IUpdatable, Comparable<
 	protected Folder<?>											parent;
 
 	/** Listeners to the operations in this container. */
-	protected HashMap<IOperationListener, HashSet<Operation>>	operationListeners		= new HashMap<IOperationListener, HashSet<Operation>>();
+	protected Map<IOperationListener, HashSet<Operation>>	operationListeners		= new HashMap<IOperationListener, HashSet<Operation>>();
 
 	/** Temporary listeners to the operations in this container; they're added through the operation methods themselves. */
-	protected HashMap<IOperationListener, HashSet<Operation>>	tempOperationListeners	= new HashMap<IOperationListener, HashSet<Operation>>();
-
-	/** Listeners to the meta-data updates of this container. */
-	protected HashSet<IUpdateListener>							updateListeners			= new HashSet<IUpdateListener>();
+	protected Map<IOperationListener, HashSet<Operation>>	tempOperationListeners	= new HashMap<IOperationListener, HashSet<Operation>>();
 
 	/** CSP object related to this container, or where the container is stored at. */
 	protected CSP<T, ?, ?>										csp;
@@ -521,16 +516,15 @@ public abstract class Container<T> implements IOperable, IUpdatable, Comparable<
 	}
 
 	/**
-	 * @see com.yagasoft.overcast.base.container.operation.IOperable#notifyOperationListeners(Operation,
-	 *      com.yagasoft.overcast.base.container.operation.OperationState, float)
+	 * @see com.yagasoft.overcast.base.container.operation.IOperable#notifyOperationListeners(com.yagasoft.overcast.base.container.operation.Operation, com.yagasoft.overcast.base.container.operation.OperationState, float, com.yagasoft.overcast.base.container.Container)
 	 */
 	@Override
-	public void notifyOperationListeners(Operation operation, OperationState state, float progress)
+	public void notifyOperationListeners(Operation operation, OperationState state, float progress, Container<?> object)
 	{
 		// go through the listeners' list and notify whoever is concerned with this operation.
 		operationListeners.keySet().parallelStream()
 				.filter(listener -> operationListeners.get(listener).contains(operation))
-				.forEach(listener -> listener.operationProgressChanged(new OperationEvent(this, operation, state, progress)));
+				.forEach(listener -> listener.operationChange(new OperationEvent(this, operation, state, progress, object)));
 
 		// go through the temp listeners' list and notify whoever is concerned with this operation.
 		tempOperationListeners.keySet().parallelStream()
@@ -538,7 +532,7 @@ public abstract class Container<T> implements IOperable, IUpdatable, Comparable<
 					tempOperationListeners.get(listener).contains(operation)
 					&& !(operationListeners.containsKey(listener)
 							&& operationListeners.get(listener).contains(operation)))
-				.forEach(listener -> listener.operationProgressChanged(new OperationEvent(this, operation, state, progress)));
+				.forEach(listener -> listener.operationChange(new OperationEvent(this, operation, state, progress, object)));
 	}
 
 	/**
@@ -558,46 +552,8 @@ public abstract class Container<T> implements IOperable, IUpdatable, Comparable<
 	public void clearAllListeners()
 	{
 		operationListeners.clear();
-		updateListeners.clear();
 	}
 
-	/**
-	 * @see com.yagasoft.overcast.base.container.update.IUpdatable#addUpdateListener(com.yagasoft.overcast.base.container.update.IUpdateListener)
-	 */
-	@Override
-	public void addUpdateListener(IUpdateListener listener)
-	{
-		updateListeners.add(listener);
-	}
-
-	/**
-	 * @see com.yagasoft.overcast.base.container.update.IUpdatable#removeUpdateListener(com.yagasoft.overcast.base.container.update.IUpdateListener)
-	 */
-	@Override
-	public void removeUpdateListener(IUpdateListener listener)
-	{
-		updateListeners.remove(listener);
-	}
-
-	/**
-	 * @see com.yagasoft.overcast.base.container.update.IUpdatable#notifyUpdateListeners()
-	 */
-	@Override
-	public void notifyUpdateListeners()
-	{
-		// go through the listeners' list and notify whoever is concerned with this update.
-		updateListeners.parallelStream()
-			.forEach(listener -> listener.containerUpdated(new UpdateEvent(this)));
-	}
-
-	/**
-	 * @see com.yagasoft.overcast.base.container.update.IUpdatable#clearUpdateListeners()
-	 */
-	@Override
-	public void clearUpdateListeners()
-	{
-		updateListeners.clear();
-	}
 
 	// ======================================================================================
 	// #endregion Listeners.

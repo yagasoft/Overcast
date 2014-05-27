@@ -12,8 +12,8 @@
 
 package com.yagasoft.overcast.implement.dropbox.transfer;
 
-import com.yagasoft.overcast.base.container.transfer.ITransferProgressListener;
-import com.yagasoft.overcast.base.container.transfer.TransferState;
+import com.yagasoft.overcast.base.container.transfer.event.ITransferProgressListener;
+import com.yagasoft.overcast.base.container.transfer.event.TransferState;
 
 
 

@@ -6,7 +6,7 @@
  *
  *		Project/File: Overcast/com.yagasoft.overcast.base.container/Folder.java
  *
- *			Modified: 26-May-2014 (21:51:11)
+ *			Modified: 28-May-2014 (00:05:30)
  *			   Using: Eclipse J-EE / JDK 8 / Windows 8.1 x64
  */
 
@@ -16,7 +16,6 @@ package com.yagasoft.overcast.base.container;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CompletionService;
@@ -27,10 +26,6 @@ import java.util.concurrent.Semaphore;
 import java.util.stream.Collectors;
 
 import com.yagasoft.logger.Logger;
-import com.yagasoft.overcast.base.container.content.Change;
-import com.yagasoft.overcast.base.container.content.ChangeEvent;
-import com.yagasoft.overcast.base.container.content.IContentListener;
-import com.yagasoft.overcast.base.container.content.IContentManager;
 import com.yagasoft.overcast.base.container.operation.IOperationListener;
 import com.yagasoft.overcast.base.container.operation.Operation;
 import com.yagasoft.overcast.base.container.operation.OperationState;
@@ -46,26 +41,23 @@ import com.yagasoft.overcast.exception.OperationException;
  *            the type of the folder in the original API of the CSP.
  */
 @SuppressWarnings("unchecked")
-public abstract class Folder<T> extends Container<T> implements IContentManager
+public abstract class Folder<T> extends Container<T>
 {
 
 	/** Folders inside this folder mapped by ID (tree implementation). */
-	protected HashMap<String, Folder<?>>					folders				= new HashMap<String, Folder<?>>();
+	protected HashMap<String, Folder<?>>	folders		= new HashMap<String, Folder<?>>();
 
 	/** Files inside this folder mapped by ID. */
-	protected HashMap<String, File<?>>						files				= new HashMap<String, File<?>>();
+	protected HashMap<String, File<?>>		files		= new HashMap<String, File<?>>();
 
 	/** Thread executor to be used to load sub-folders in the tree. */
-	protected static ExecutorService						executor			= Executors.newCachedThreadPool();
+	protected static ExecutorService		executor	= Executors.newCachedThreadPool();
 
 	/**
 	 * Number of slots to be used to load folder tree, fixed and low to reduce the load on the server; we don't want to be
 	 * throttled!
 	 */
-	protected static Semaphore								slots				= new Semaphore(2);
-
-	/** Listeners to the contents changes in this container. */
-	protected HashMap<IContentListener, HashSet<Change>>	contentListeners	= new HashMap<IContentListener, HashSet<Change>>();
+	protected static Semaphore				slots		= new Semaphore(2);
 
 	// //////////////////////////////////////////////////////////////////////////////////////
 	// #region Create folder.
@@ -273,7 +265,7 @@ public abstract class Folder<T> extends Container<T> implements IContentManager
 		}
 
 		container.setParent(this);				// set the parent of the container passed as this folder.
-		notifyContentListeners(Change.ADD, container);
+		notifyOperationListeners(Operation.ADD, container);
 
 		Logger.info("added: " + container.path + ", to parent: " + path);
 	}
@@ -291,7 +283,7 @@ public abstract class Folder<T> extends Container<T> implements IContentManager
 				|| ( !container.isFolder() && (files.remove(container.id) != null)))
 		{
 			container.setParent(null);
-			notifyContentListeners(Change.REMOVE, container);
+			notifyOperationListeners(Operation.REMOVE, container);
 
 			// the container is an orphan and not needed, so remove its listeners.
 			container.clearAllListeners();
@@ -506,85 +498,6 @@ public abstract class Folder<T> extends Container<T> implements IContentManager
 	public abstract void updateFromSource(boolean folderContents, boolean recursively) throws OperationException;
 
 	// //////////////////////////////////////////////////////////////////////////////////////
-	// #region Events.
-	// ======================================================================================
-
-	/**
-	 * @see com.yagasoft.overcast.base.container.content.IContentManager#addContentListener(com.yagasoft.overcast.base.container.content.IContentListener)
-	 */
-	@Override
-	public void addContentListener(IContentListener listener)
-	{
-		addContentListener(listener, Change.ADD);
-		addContentListener(listener, Change.REMOVE);
-	}
-
-	/**
-	 * @see com.yagasoft.overcast.base.container.content.IContentManager#addContentListener(com.yagasoft.overcast.base.container.content.IContentListener,
-	 *      com.yagasoft.overcast.base.container.content.Change)
-	 */
-	@Override
-	public void addContentListener(IContentListener listener, Change change)
-	{
-		if ( !contentListeners.containsKey(listener))
-		{
-			contentListeners.put(listener, new HashSet<Change>());
-		}
-
-		contentListeners.get(listener).add(change);
-	}
-
-	/**
-	 * @see com.yagasoft.overcast.base.container.content.IContentManager#notifyContentListeners(com.yagasoft.overcast.base.container.content.Change,
-	 *      com.yagasoft.overcast.base.container.Container)
-	 */
-	@Override
-	public void notifyContentListeners(Change change, Container<?> object)
-	{
-		// go through the listeners' list and notify whoever is concerned with this change.
-		contentListeners.keySet()
-			.parallelStream()
-				.filter(listener -> contentListeners.get(listener).contains(change))
-				.forEach(listener -> listener.contentsChanged(new ChangeEvent(this, change, object)));
-	}
-
-	/**
-	 * @see com.yagasoft.overcast.base.container.content.IContentManager#removeContentListener(com.yagasoft.overcast.base.container.content.IContentListener)
-	 */
-	@Override
-	public void removeContentListener(IContentListener listener)
-	{
-		contentListeners.remove(listener);
-	}
-
-	/**
-	 * @see com.yagasoft.overcast.base.container.content.IContentManager#clearContentListeners(com.yagasoft.overcast.base.container.content.Change)
-	 */
-	@Override
-	public void clearContentListeners(Change change)
-	{
-		contentListeners.keySet().parallelStream()
-			.filter(listener -> contentListeners.get(listener).contains(change))	// keep listeners monitoring change
-			.peek(listener -> contentListeners.get(listener).remove(change))		// remove the change from their list
-			.filter(listener -> contentListeners.get(listener).isEmpty())			// keep listeners watching nothing now
-			.forEach(listener -> removeContentListener(listener));					// remove those listeners
-	}
-
-	/**
-	 * @see com.yagasoft.overcast.base.container.Container#clearAllListeners()
-	 */
-	@Override
-	public void clearAllListeners()
-	{
-		super.clearAllListeners();
-		contentListeners.clear();
-	}
-
-	// ======================================================================================
-	// #endregion Events.
-	// //////////////////////////////////////////////////////////////////////////////////////
-
-	// //////////////////////////////////////////////////////////////////////////////////////
 	// #region Searching.
 	// ======================================================================================
 
@@ -672,10 +585,10 @@ public abstract class Folder<T> extends Container<T> implements IContentManager
 
 		// same as 'searchById', in THIS folder only ...
 		result.addAll(Arrays.stream(getChildrenArray())		// get all children as a stream
-					.filter(container -> name.equals(container.name))		// keep only containers with a matching name
-					.collect(Collectors.toList()));		// convert filtered result to an array
+				.filter(container -> name.equals(container.name))		// keep only containers with a matching name
+				.collect(Collectors.toList()));		// convert filtered result to an array
 
-		if (!result.isEmpty())
+		if ( !result.isEmpty())
 		{
 			Logger.info("found " + result.get(0) + " in " + path);
 		}
@@ -684,9 +597,10 @@ public abstract class Folder<T> extends Container<T> implements IContentManager
 		if (recursively)
 		{
 			result.addAll(folders.values().parallelStream()		// get sub-folders as a stream
-						// replace each folder with a stream containing its children that match the name, this effectively is recursive
-						.flatMap(folder -> Arrays.stream(folder.searchByName(name, recursively)))
-						.collect(Collectors.toList()));	// convert to an array
+					// replace each folder with a stream containing its children that match the name, this effectively is
+					// recursive
+					.flatMap(folder -> Arrays.stream(folder.searchByName(name, recursively)))
+					.collect(Collectors.toList()));	// convert to an array
 		}
 
 		return result.toArray(new Container<?>[result.size()]);
@@ -720,27 +634,28 @@ public abstract class Folder<T> extends Container<T> implements IContentManager
 
 		// go through the combined list.
 		containers.parallelStream()
-			.filter(container -> !ids.contains(container))		// keep only the containers in the list sent (not deleted on server)
-			.forEach(container ->
-			{
-				// remove it.
-				folders.remove(container);
-				files.remove(container);
+				.filter(container -> !ids.contains(container))		// keep only the containers in the list sent (not deleted on
+																// server)
+				.forEach(container ->
+				{
+					// remove it.
+						folders.remove(container);
+						files.remove(container);
 
-				Logger.info("removed obsolete: " + container);
-			});
+						Logger.info("removed obsolete: " + container);
+					});
 
 		// if it's required to filter (remove commons) the sent list as well ...
 		if (filter)
 		{
 			// go through the combined list again, but this time just remove from the sent list that exist in this folder.
 			containers.parallelStream()
-				.forEach(container ->
-				{
-					ids.remove(container);
+					.forEach(container ->
+					{
+						ids.remove(container);
 
-					Logger.info("filtering existing: " + container);
-				});
+						Logger.info("filtering existing: " + container);
+					});
 		}
 
 		Logger.info("finished removing obsolete containers: " + path);
@@ -763,23 +678,23 @@ public abstract class Folder<T> extends Container<T> implements IContentManager
 		foldersList.addAll(folders.keySet());
 
 		foldersList.parallelStream()
-			.filter(folder -> !folderIds.contains(folder))
-			.forEach(folder ->
-			{
-				folders.remove(folder);
+				.filter(folder -> !folderIds.contains(folder))
+				.forEach(folder ->
+				{
+					folders.remove(folder);
 
-				Logger.info("removed obsolete: " + folder);
-			});
+					Logger.info("removed obsolete: " + folder);
+				});
 
 		if (filter)
 		{
 			foldersList.parallelStream()
-				.forEach(folder ->
-				{
-					folderIds.remove(folder);
+					.forEach(folder ->
+					{
+						folderIds.remove(folder);
 
-					Logger.info("filtering existing: " + folder);
-				});
+						Logger.info("filtering existing: " + folder);
+					});
 		}
 	}
 
@@ -800,23 +715,23 @@ public abstract class Folder<T> extends Container<T> implements IContentManager
 		filesList.addAll(folders.keySet());
 
 		filesList.parallelStream()
-			.filter(file -> !fileIds.contains(file))
-			.forEach(file ->
-			{
-				files.remove(file);
+				.filter(file -> !fileIds.contains(file))
+				.forEach(file ->
+				{
+					files.remove(file);
 
-				Logger.info("removed obsolete: " + file);
-			});
+					Logger.info("removed obsolete: " + file);
+				});
 
 		if (filter)
 		{
 			filesList.parallelStream()
-				.forEach(file ->
-				{
-					fileIds.remove(file);
+					.forEach(file ->
+					{
+						fileIds.remove(file);
 
-					Logger.info("filtering existing: " + file);
-				});
+						Logger.info("filtering existing: " + file);
+					});
 		}
 	}
 
@@ -843,7 +758,7 @@ public abstract class Folder<T> extends Container<T> implements IContentManager
 
 		// do it recursively.
 		getFoldersList().parallelStream()
-			.forEach(folder -> children.addAll(folder.getWholeTreeList()));
+				.forEach(folder -> children.addAll(folder.getWholeTreeList()));
 
 		return children;
 	}

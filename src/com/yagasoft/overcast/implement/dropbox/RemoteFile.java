@@ -103,7 +103,7 @@ public class RemoteFile extends com.yagasoft.overcast.base.container.remote.Remo
 		path = (((parent == null) || parent.getPath().equals("/")) ? "/" : (parent.getPath() + "/")) + name;
 		cleanPath();
 
-		notifyUpdateListeners();
+		notifyOperationListeners();
 	}
 
 	/**

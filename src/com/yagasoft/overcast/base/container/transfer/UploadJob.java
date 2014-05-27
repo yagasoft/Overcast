@@ -18,6 +18,7 @@ import com.yagasoft.overcast.base.container.File;
 import com.yagasoft.overcast.base.container.Folder;
 import com.yagasoft.overcast.base.container.local.LocalFile;
 import com.yagasoft.overcast.base.container.remote.RemoteFile;
+import com.yagasoft.overcast.base.container.transfer.event.TransferState;
 
 
 /**

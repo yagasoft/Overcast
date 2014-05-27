@@ -1,11 +1,11 @@
-/* 
+/*
  * Copyright (C) 2011-2014 by Ahmed Osama el-Sawalhy
- * 
+ *
  *		The Modified MIT Licence (GPL v3 compatible)
  * 			License terms are in a separate file (LICENCE.md)
- * 
+ *
  *		Project/File: Overcast/com.yagasoft.overcast.base.container.transfer/TransferJob.java
- * 
+ *
  *			Modified: Apr 15, 2014 (9:29:06 AM)
  *			   Using: Eclipse J-EE / JDK 7 / Windows 8.1 x64
  */
@@ -14,45 +14,50 @@ package com.yagasoft.overcast.base.container.transfer;
 
 
 import java.util.ArrayList;
+import java.util.List;
 
 import com.yagasoft.logger.Logger;
 import com.yagasoft.overcast.base.container.File;
 import com.yagasoft.overcast.base.container.Folder;
 import com.yagasoft.overcast.base.container.local.LocalFile;
+import com.yagasoft.overcast.base.container.transfer.event.ITransferProgressListener;
+import com.yagasoft.overcast.base.container.transfer.event.ITransferrable;
+import com.yagasoft.overcast.base.container.transfer.event.TransferEvent;
+import com.yagasoft.overcast.base.container.transfer.event.TransferState;
 import com.yagasoft.overcast.base.csp.CSP;
 
 
 /**
  * A class representing a job in the upload/download queue.<br />
  * It's needed to contain information vital to complete the transfer process.
- * 
+ *
  * @param <T>
  *            the type of the object to perform the actual transfer.
  */
 public abstract class TransferJob<T> implements ITransferrable
 {
-	
+
 	/** The local file. */
 	protected LocalFile								localFile;
-	
+
 	/** The parent. */
 	protected Folder<?>								parent;
-	
+
 	/** Overwrite existing container. */
 	protected boolean								overwrite;
-	
+
 	/** The parent. */
 	protected CSP<?, ?, ?>							csp;
-	
+
 	/** The object to perform the actual transfer. */
 	protected T										cspTransferer;
-	
+
 	/** Progress listeners to the download or upload of this container. */
-	protected ArrayList<ITransferProgressListener>	progressListeners	= new ArrayList<ITransferProgressListener>();
-	
+	protected List<ITransferProgressListener>	progressListeners	= new ArrayList<ITransferProgressListener>();
+
 	/**
 	 * Instantiates a new transfer job.
-	 * 
+	 *
 	 * @param localFile
 	 *            the local file
 	 * @param parent
@@ -71,12 +76,12 @@ public abstract class TransferJob<T> implements ITransferrable
 		this.localFile = localFile;
 		this.csp = csp;
 	}
-	
+
 	/**
 	 * Perform actions if transfer is successful.
 	 */
 	public abstract void success();
-	
+
 	/**
 	 * Perform actions when progress of transfer changes.
 	 */
@@ -84,80 +89,80 @@ public abstract class TransferJob<T> implements ITransferrable
 	{
 		notifyProgressListeners(TransferState.IN_PROGRESS, progress);
 	}
-	
+
 	/**
 	 * Perform actions if transfer failed.
 	 */
 	public abstract void failure();
-	
+
 	/**
 	 * Cancel the transfer.
 	 */
 	public abstract void cancelTransfer();
-	
+
 	/**
 	 * Gets the source file.
-	 * 
+	 *
 	 * @return the source file
 	 */
 	public abstract File<?> getSourceFile();
-	
+
 	/**
-	 * @see com.yagasoft.overcast.base.container.transfer.ITransferrable#addProgressListener(com.yagasoft.overcast.base.container.transfer.ITransferProgressListener)
+	 * @see com.yagasoft.overcast.base.container.transfer.event.ITransferrable#addProgressListener(com.yagasoft.overcast.base.container.transfer.event.ITransferProgressListener)
 	 */
 	@Override
 	public void addProgressListener(ITransferProgressListener listener)
 	{
 		progressListeners.add(listener);
 	}
-	
+
 	/**
-	 * @see com.yagasoft.overcast.base.container.transfer.ITransferrable#removeProgressListener(com.yagasoft.overcast.base.container.transfer.ITransferProgressListener)
+	 * @see com.yagasoft.overcast.base.container.transfer.event.ITransferrable#removeProgressListener(com.yagasoft.overcast.base.container.transfer.event.ITransferProgressListener)
 	 */
 	@Override
 	public void removeProgressListener(ITransferProgressListener listener)
 	{
 		progressListeners.remove(listener);
 	}
-	
+
 	/**
-	 * @see com.yagasoft.overcast.base.container.transfer.ITransferrable#notifyProgressListeners(com.yagasoft.overcast.base.container.transfer.TransferState,
+	 * @see com.yagasoft.overcast.base.container.transfer.event.ITransferrable#notifyProgressListeners(com.yagasoft.overcast.base.container.transfer.event.TransferState,
 	 *      float)
 	 */
 	@Override
 	public void notifyProgressListeners(TransferState state, float progress)
 	{
 		Logger.info("transfer event: " + state + " => " + progress);
-		
+
 		for (ITransferProgressListener listener : progressListeners)
 		{
 			listener.transferProgressChanged(new TransferEvent(this, state, progress));
 		}
-		
+
 		if (state == TransferState.COMPLETED)
 		{
 			clearTransferListeners();
 		}
 	}
-	
+
 	/**
-	 * @see com.yagasoft.overcast.base.container.transfer.ITransferrable#clearTransferListeners()
+	 * @see com.yagasoft.overcast.base.container.transfer.event.ITransferrable#clearTransferListeners()
 	 */
 	@Override
 	public void clearTransferListeners()
 	{
 		progressListeners.clear();
 	}
-	
+
 	@Override
 	public String toString()
 	{
 		return getSourceFile().getPath();
 	}
-	
+
 	// --------------------------------------------------------------------------------------
 	// #region Getters and setters.
-	
+
 	/**
 	 * @return the localFile
 	 */
@@ -165,7 +170,7 @@ public abstract class TransferJob<T> implements ITransferrable
 	{
 		return localFile;
 	}
-	
+
 	/**
 	 * @param localFile
 	 *            the localFile to set
@@ -174,7 +179,7 @@ public abstract class TransferJob<T> implements ITransferrable
 	{
 		this.localFile = localFile;
 	}
-	
+
 	/**
 	 * @return the overwrite
 	 */
@@ -182,7 +187,7 @@ public abstract class TransferJob<T> implements ITransferrable
 	{
 		return overwrite;
 	}
-	
+
 	/**
 	 * @param overwrite
 	 *            the overwrite to set
@@ -191,7 +196,7 @@ public abstract class TransferJob<T> implements ITransferrable
 	{
 		this.overwrite = overwrite;
 	}
-	
+
 	/**
 	 * @return the cspTransferer
 	 */
@@ -199,7 +204,7 @@ public abstract class TransferJob<T> implements ITransferrable
 	{
 		return cspTransferer;
 	}
-	
+
 	/**
 	 * @param cspTransferer
 	 *            the cspTransferer to set
@@ -208,7 +213,7 @@ public abstract class TransferJob<T> implements ITransferrable
 	{
 		this.cspTransferer = cspTransferer;
 	}
-	
+
 	/**
 	 * @return the parent
 	 */
@@ -216,7 +221,7 @@ public abstract class TransferJob<T> implements ITransferrable
 	{
 		return parent;
 	}
-	
+
 	/**
 	 * @param parent
 	 *            the parent to set
@@ -225,7 +230,7 @@ public abstract class TransferJob<T> implements ITransferrable
 	{
 		this.parent = parent;
 	}
-	
+
 	/**
 	 * @return the csp
 	 */
@@ -233,7 +238,7 @@ public abstract class TransferJob<T> implements ITransferrable
 	{
 		return csp;
 	}
-	
+
 	/**
 	 * @param csp
 	 *            the csp to set
@@ -242,8 +247,8 @@ public abstract class TransferJob<T> implements ITransferrable
 	{
 		this.csp = csp;
 	}
-	
+
 	// #endregion Getters and setters.
 	// --------------------------------------------------------------------------------------
-	
+
 }

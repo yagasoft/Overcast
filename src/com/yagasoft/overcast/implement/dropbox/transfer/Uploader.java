@@ -27,7 +27,7 @@ import com.dropbox.core.DbxEntry.File;
 import com.dropbox.core.DbxException;
 import com.dropbox.core.DbxWriteMode;
 import com.yagasoft.logger.Logger;
-import com.yagasoft.overcast.base.container.transfer.TransferState;
+import com.yagasoft.overcast.base.container.transfer.event.TransferState;
 import com.yagasoft.overcast.exception.TransferException;
 import com.yagasoft.overcast.implement.dropbox.Dropbox;
 

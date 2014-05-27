@@ -6,8 +6,8 @@
  *
  *		Project/File: Overcast/com.yagasoft.overcast/Overcast.java
  *
- *			Modified: 05-May-2014 (01:56:04)
- *			   Using: Eclipse J-EE / JDK 7 / Windows 8.1 x64
+ *			Modified: 28-May-2014 (00:12:31)
+ *			   Using: Eclipse J-EE / JDK 8 / Windows 8.1 x64
  */
 
 package com.yagasoft.overcast;
@@ -20,7 +20,7 @@ public final class Overcast
 {
 
 	/** Version. */
-	public static final String	VERSION	= "4.16.0135";
+	public static final String	VERSION	= "4.19.0145";
 
 	/**
 	 * This class provides only static info.

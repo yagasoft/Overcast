@@ -24,13 +24,37 @@ public class OperationEvent extends Event
 {
 
 	/** The operation. */
-	protected Operation		operation;
+	protected Operation			operation;
 
 	/** The state. */
 	protected OperationState	state;
 
 	/** The progress. */
-	protected float	progress;
+	protected float				progress;
+
+	/** The object of the change. */
+	protected Container<?>				object;
+
+	public OperationEvent(Container<?> container)
+	{
+		this(container, Operation.UPDATE, null);
+	}
+
+	/**
+	 * Instantiates a new operation event.
+	 *
+	 * @param container
+	 *            the container relating to the event.
+	 * @param change
+	 *            the change enum
+	 * @param object
+	 *            the object of the change
+	 */
+	public OperationEvent(Container<?> container, Operation operation, Container<?> object)
+	{
+		this(container, operation, null, 1.0f);
+		this.object = object;
+	}
 
 	/**
 	 * Instantiates a new operation event.
@@ -51,6 +75,19 @@ public class OperationEvent extends Event
 		this.progress = progress;
 		this.operation = operation;
 	}
+
+	public OperationEvent(Container<?> container, Operation operation, OperationState state, float progress, Container<?> object)
+	{
+		super(container);
+		this.state = state;
+		this.progress = progress;
+		this.operation = operation;
+		this.object = object;
+	}
+
+	////////////////////////////////////////////////////////////////////////////////////////
+	// #region Getters and setters.
+	//======================================================================================
 
 	/**
 	 * Gets the state.
@@ -114,5 +151,27 @@ public class OperationEvent extends Event
 	{
 		this.operation = operation;
 	}
+
+
+	/**
+	 * @return the object
+	 */
+	public Container<?> getObject()
+	{
+		return object;
+	}
+
+
+	/**
+	 * @param object the object to set
+	 */
+	public void setObject(Container<?> object)
+	{
+		this.object = object;
+	}
+
+	//======================================================================================
+	// #endregion Getters and setters.
+	////////////////////////////////////////////////////////////////////////////////////////
 
 }

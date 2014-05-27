@@ -1,11 +1,11 @@
-/* 
+/*
  * Copyright (C) 2011-2014 by Ahmed Osama el-Sawalhy
- * 
+ *
  *		The Modified MIT Licence (GPL v3 compatible)
  * 			Licence terms are in a separate file (LICENCE.md)
- * 
+ *
  *		Project/File: Overcast/com.yagasoft.overcast.implement.dropbox/RemoteFolder.java
- * 
+ *
  *			Modified: 26-May-2014 (22:02:10)
  *			   Using: Eclipse J-EE / JDK 8 / Windows 8.1 x64
  */
@@ -36,13 +36,13 @@ import com.yagasoft.overcast.exception.OperationException;
  */
 public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.RemoteFolder<DbxEntry.Folder>
 {
-	
+
 	/**
 	 * Better use the factory in Google class.
 	 */
 	public RemoteFolder()
 	{}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.base.container.Container#generateId()
 	 */
@@ -51,7 +51,7 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 	{
 		// TODO generate id
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.base.container.Folder#createProcess(com.yagasoft.overcast.base.container.Folder)
 	 */
@@ -67,7 +67,7 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 			throw new CreationException(e.getMessage());
 		}
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.base.container.Container#isExist()
 	 */
@@ -75,7 +75,7 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 	public synchronized boolean isExist() throws AccessException
 	{
 		Logger.info("checking existence: " + path);
-		
+
 		// if fetching meta-data of the file fails, then it doesn't exist, probably.
 		try
 		{
@@ -86,11 +86,11 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 			Logger.error("can't determine if folder exists or not: " + path);
 			Logger.except(e);
 			e.printStackTrace();
-			
+
 			throw new AccessException("Couldn't determine existence! " + e.getMessage());
 		}
 	}
-	
+
 	/**
 	 * Builds the tree process.
 	 *
@@ -108,17 +108,17 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 		{
 			// get folder list from Dropbox (metadata)
 			DbxEntry.WithChildren listing = Dropbox.dropboxService.getMetadataWithChildren(path);
-			
+
 			// id and child
 			HashMap<String, DbxEntry> children = new HashMap<String, DbxEntry>();
-			
+
 			listing.children.parallelStream()
 				.forEach(child -> children.put(child.isFolder() ? child.path : ((DbxEntry.File) child).rev, child));
-			
+
 			// collect the children IDs and filter already existing and deleted ones.
 			List<String> childrenIds = new ArrayList<String>(children.keySet());
 			removeObsolete(childrenIds, true);
-			
+
 			// if there're new children on the server ...
 			if ( !childrenIds.isEmpty())
 			{
@@ -126,7 +126,7 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 				for (String child : childrenIds)
 				{
 					DbxEntry childAsEntry = children.get(child);
-					
+
 					// if the child is a folder ...
 					if (childAsEntry.isFolder())
 					{
@@ -145,7 +145,7 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 			throw new OperationException(e.getMessage());
 		}
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.base.container.Folder#calculateSize()
 	 */
@@ -154,7 +154,7 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 	{
 		return 0;
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.base.container.Folder#updateInfo()
 	 */
@@ -171,13 +171,13 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 			}
 		}
 		// size = calculateSize(); // commented because it might be heavy, so better do it explicitly.
-		
+
 		path = (((parent == null) || parent.getPath().equals("/")) ? "/" : (parent.getPath() + "/")) + name;
 		cleanPath();
-		
-		notifyUpdateListeners();
+
+		notifyOperationListeners();
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.base.container.Folder#updateFromSource(boolean, boolean)
 	 */
@@ -192,21 +192,21 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 				folder.updateFromSource(folderContents, recursively);
 			}
 		}
-		
+
 		Logger.info("updating info from source: " + path);
-		
+
 		// refresh children list.
 		if (folderContents)
 		{
 			buildTree(false);
 		}
-		
+
 		try
 		{
 			// re-fetch the meta-data from the server.
 			setSourceObject(Dropbox.dropboxService.getMetadata((getSourceObject() == null) ? path : getSourceObject().path)
 					.asFolder());
-			
+
 			try
 			{
 				// get link if available.
@@ -216,7 +216,7 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 			{
 				link = null;
 			}
-			
+
 			Logger.info("finished updating info from source: " + path);
 		}
 		catch (DbxException e)
@@ -224,11 +224,11 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 			Logger.error("updating info from source: " + path);
 			Logger.except(e);
 			e.printStackTrace();
-			
+
 			throw new OperationException("Couldn't update info! " + e.getMessage());
 		}
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.base.container.Container#updateFromSource()
 	 */
@@ -237,7 +237,7 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 	{
 		updateFromSource(true, false);
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.base.container.Container#copyProcess(com.yagasoft.overcast.base.container.Folder)
 	 */
@@ -255,7 +255,7 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 			throw new OperationException(e.getMessage());
 		}
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.base.container.Container#moveProcess(com.yagasoft.overcast.base.container.Folder)
 	 */
@@ -272,7 +272,7 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 			throw new OperationException(e.getMessage());
 		}
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.base.container.Container#renameProcess(java.lang.String)
 	 */
@@ -288,7 +288,7 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 			throw new OperationException(e.getMessage());
 		}
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.base.container.Container#deleteProcess()
 	 */
@@ -304,5 +304,5 @@ public class RemoteFolder extends com.yagasoft.overcast.base.container.remote.Re
 			throw new OperationException(e.getMessage());
 		}
 	}
-	
+
 }

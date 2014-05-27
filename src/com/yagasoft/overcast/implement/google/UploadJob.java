@@ -16,7 +16,7 @@ package com.yagasoft.overcast.implement.google;
 import com.google.api.services.drive.Drive;
 import com.google.api.services.drive.model.File;
 import com.yagasoft.overcast.base.container.local.LocalFile;
-import com.yagasoft.overcast.base.container.transfer.TransferState;
+import com.yagasoft.overcast.base.container.transfer.event.TransferState;
 
 
 /**

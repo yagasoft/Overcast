@@ -31,13 +31,13 @@ import com.yagasoft.overcast.exception.OperationException;
  */
 public class RemoteFile extends com.yagasoft.overcast.base.container.remote.RemoteFile<File>
 {
-	
+
 	/**
 	 * Better use the factory in Google class.
 	 */
 	public RemoteFile()
 	{}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.base.container.Container#generateId()
 	 */
@@ -46,7 +46,7 @@ public class RemoteFile extends com.yagasoft.overcast.base.container.remote.Remo
 	{
 		// TODO generate id
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.base.container.Container#isExist()
 	 */
@@ -54,7 +54,7 @@ public class RemoteFile extends com.yagasoft.overcast.base.container.remote.Remo
 	public synchronized boolean isExist() throws OperationException
 	{
 		Logger.info("checking existence: " + path);
-		
+
 		try
 		{
 			return (Google.driveService.files().get((getSourceObject() == null) ? id : getSourceObject().getId()).execute() != null);
@@ -64,11 +64,11 @@ public class RemoteFile extends com.yagasoft.overcast.base.container.remote.Remo
 			Logger.error("checking existence: " + path);
 			Logger.except(e);
 			e.printStackTrace();
-			
+
 			return false;
 		}
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.base.container.Container#updateInfo()
 	 */
@@ -80,12 +80,12 @@ public class RemoteFile extends com.yagasoft.overcast.base.container.remote.Remo
 			id = getSourceObject().getId();
 			name = getSourceObject().getTitle();
 			type = getSourceObject().getMimeType();
-			
+
 			if (name == null)
 			{
 				name = "";
 			}
-			
+
 			try
 			{
 				size = getSourceObject().getFileSize();
@@ -94,7 +94,7 @@ public class RemoteFile extends com.yagasoft.overcast.base.container.remote.Remo
 			{
 				size = 0;
 			}
-			
+
 			try
 			{
 				link = new URL(getSourceObject().getDownloadUrl());
@@ -104,13 +104,13 @@ public class RemoteFile extends com.yagasoft.overcast.base.container.remote.Remo
 				link = null;
 			}
 		}
-		
+
 		path = (((parent == null) || parent.getPath().equals("/")) ? "/" : (parent.getPath() + "/")) + name;
 		cleanPath();
-		
-		notifyUpdateListeners();
+
+		notifyOperationListeners();
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.base.container.Container#updateFromSource()
 	 */
@@ -118,12 +118,12 @@ public class RemoteFile extends com.yagasoft.overcast.base.container.remote.Remo
 	public synchronized void updateFromSource() throws OperationException
 	{
 		Logger.info("updating info from source: " + path);
-		
+
 		try
 		{
 			setSourceObject(Google.driveService.files().get((getSourceObject() == null) ? id : getSourceObject().getId())
 					.execute());
-			
+
 			Logger.info("finished updating info from source: " + path);
 		}
 		catch (IOException e)
@@ -131,11 +131,11 @@ public class RemoteFile extends com.yagasoft.overcast.base.container.remote.Remo
 			Logger.error("updating info from source: " + path);
 			Logger.except(e);
 			e.printStackTrace();
-			
+
 			throw new OperationException("Couldn't update info! " + e.getMessage());
 		}
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.base.container.Container#copyProcess(com.yagasoft.overcast.base.container.Folder)
 	 */
@@ -153,7 +153,7 @@ public class RemoteFile extends com.yagasoft.overcast.base.container.remote.Remo
 			throw new OperationException(e.getMessage());
 		}
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.base.container.Container#moveProcess(com.yagasoft.overcast.base.container.Folder)
 	 */
@@ -172,7 +172,7 @@ public class RemoteFile extends com.yagasoft.overcast.base.container.remote.Remo
 			throw new OperationException(e.getMessage());
 		}
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.base.container.Container#renameProcess(java.lang.String)
 	 */
@@ -190,7 +190,7 @@ public class RemoteFile extends com.yagasoft.overcast.base.container.remote.Remo
 			throw new OperationException(e.getMessage());
 		}
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.base.container.Container#deleteProcess()
 	 */
@@ -206,5 +206,5 @@ public class RemoteFile extends com.yagasoft.overcast.base.container.remote.Remo
 			throw new OperationException(e.getMessage());
 		}
 	}
-	
+
 }

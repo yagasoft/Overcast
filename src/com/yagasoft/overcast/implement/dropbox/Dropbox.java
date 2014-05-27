@@ -21,11 +21,12 @@ import com.dropbox.core.DbxEntry;
 import com.dropbox.core.DbxException;
 import com.dropbox.core.DbxRequestConfig;
 import com.yagasoft.logger.Logger;
-import com.yagasoft.overcast.base.container.content.IContentListener;
 import com.yagasoft.overcast.base.container.local.LocalFile;
 import com.yagasoft.overcast.base.container.local.LocalFolder;
+import com.yagasoft.overcast.base.container.operation.IOperationListener;
+import com.yagasoft.overcast.base.container.operation.Operation;
 import com.yagasoft.overcast.base.container.remote.RemoteFactory;
-import com.yagasoft.overcast.base.container.transfer.TransferState;
+import com.yagasoft.overcast.base.container.transfer.event.TransferState;
 import com.yagasoft.overcast.base.csp.CSP;
 import com.yagasoft.overcast.exception.AuthorisationException;
 import com.yagasoft.overcast.exception.CSPBuildException;
@@ -131,7 +132,7 @@ public class Dropbox extends CSP<DbxEntry.File, Downloader, Uploader> implements
 	 * @see com.yagasoft.overcast.base.csp.CSP#initTree(IContentListener)
 	 */
 	@Override
-	public void initTree(IContentListener listener) throws OperationException
+	public void initTree(IOperationListener listener) throws OperationException
 	{
 		try
 		{
@@ -141,7 +142,8 @@ public class Dropbox extends CSP<DbxEntry.File, Downloader, Uploader> implements
 
 			if (listener != null)
 			{
-				remoteFileTree.addContentListener(listener);
+				remoteFileTree.addOperationListener(listener, Operation.ADD);
+				remoteFileTree.addOperationListener(listener, Operation.REMOVE);
 			}
 
 			// buildFileTree(false);
@@ -271,7 +273,7 @@ public class Dropbox extends CSP<DbxEntry.File, Downloader, Uploader> implements
 
 	/**
 	 * @see com.yagasoft.overcast.implement.dropbox.transfer.IProgressListener#progressChanged(com.yagasoft.overcast.implement.dropbox.transfer.UploadJob,
-	 *      com.yagasoft.overcast.base.container.transfer.TransferState, float)
+	 *      com.yagasoft.overcast.base.container.transfer.event.TransferState, float)
 	 */
 	@Override
 	public void progressChanged(UploadJob uploadJob, TransferState state, float progress)
