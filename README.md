@@ -12,7 +12,7 @@ A façade that facilitates creating APIs to deal with Cloud Storage Providers (C
     + File tree.
   + Support for OAuth or traditional way of logging in.
   + Full event and exception handling for all actions.
-  + Local file system, Google, and Dropbox are implemented out of the box.
+  + Local file system is implemented out of the box.
 
 ### Implementation instructions:
 

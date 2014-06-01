@@ -584,7 +584,7 @@ public abstract class Folder<T> extends Container<T>
 		List<Container<?>> result = new ArrayList<Container<?>>();
 
 		// same as 'searchById', in THIS folder only ...
-		result.addAll(Arrays.stream(getChildrenArray())		// get all children as a stream
+		result.addAll(Arrays.stream(getChildrenArray()).parallel()		// get all children as a stream
 				.filter(container -> name.equals(container.name))		// keep only containers with a matching name
 				.collect(Collectors.toList()));		// convert filtered result to an array
 
@@ -599,7 +599,7 @@ public abstract class Folder<T> extends Container<T>
 			result.addAll(folders.values().parallelStream()		// get sub-folders as a stream
 					// replace each folder with a stream containing its children that match the name, this effectively is
 					// recursive
-					.flatMap(folder -> Arrays.stream(folder.searchByName(name, recursively)))
+					.flatMap(folder -> Arrays.stream(folder.searchByName(name, recursively)).parallel())
 					.collect(Collectors.toList()));	// convert to an array
 		}
 
