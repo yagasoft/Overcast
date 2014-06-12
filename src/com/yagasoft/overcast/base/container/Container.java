@@ -16,6 +16,7 @@ package com.yagasoft.overcast.base.container;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 
 import com.yagasoft.logger.Logger;
@@ -141,13 +142,13 @@ public abstract class Container<T> implements IOperable, Comparable<Container<T>
 		// if it's not a delete, then check for existence at destination
 		if (operation != Operation.DELETE)
 		{
-			Container<?>[] existingContainer = destination.searchByName(name, false);
+			List<Container<?>> existingContainer = destination.searchByName(name, false);
 
-			if ((existingContainer.length > 0) && (existingContainer[0].isFolder() == isFolder()))
+			if ((existingContainer.size() > 0) && (existingContainer.get(0).isFolder() == isFolder()))
 			{
 				if (overwrite)
 				{
-					existingContainer[0].delete();
+					existingContainer.get(0).delete();
 				}
 				else
 				{
@@ -543,7 +544,7 @@ public abstract class Container<T> implements IOperable, Comparable<Container<T>
 	public void clearOperationListeners(Operation operation)
 	{
 		operationListeners.keySet().parallelStream()
-			.forEach(listener -> removeOperationListener(listener, operation));
+				.forEach(listener -> removeOperationListener(listener, operation));
 	}
 
 	/**
@@ -605,17 +606,17 @@ public abstract class Container<T> implements IOperable, Comparable<Container<T>
 	@Override
 	public int compareTo(Container<T> container)
 	{
-		return path.toLowerCase().compareTo(container.path.toLowerCase());
+		return path.compareToIgnoreCase(container.path);
 	}
 
 	public static Comparator<Container<?>> getNameComparator()
 	{
-		return (file1, file2) -> file1.getName().compareTo(file2.getName());
+		return (file1, file2) -> file1.getName().compareToIgnoreCase(file2.getName());
 	}
 
 	public static Comparator<Container<?>> getPathComparator()
 	{
-		return (file1, file2) -> file1.getPath().compareTo(file2.getPath());
+		return (file1, file2) -> file1.getPath().compareToIgnoreCase(file2.getPath());
 	}
 
 	public static Comparator<Container<?>> getSizeComparator()

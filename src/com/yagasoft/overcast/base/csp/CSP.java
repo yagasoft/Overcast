@@ -183,13 +183,13 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 		Logger.info("creating transfer job for " + container.getPath());
 
 		// overwrite if necessary.
-		Container<?>[] existingContainer = ((Folder<?>) destination).searchByName(container.getName(), false);
+		List<Container<?>> existingContainer = ((Folder<?>) destination).searchByName(container.getName(), false);
 
-		if ((existingContainer.length > 0) && (existingContainer[0].isFolder() == container.isFolder()))
+		if ((existingContainer.size() > 0) && (existingContainer.get(0).isFolder() == container.isFolder()))
 		{
 			if (overwrite)
 			{
-				existingContainer[0].delete();
+				existingContainer.get(0).delete();
 			}
 			else
 			{
@@ -256,11 +256,11 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 		Logger.info("downloading folder: " + folder.getPath());
 
 		// make sure the folder doesn't exist at the destination.
-		Container<?>[] result = parent.searchByName(folder.getName(), false);
+		List<Container<?>> result = parent.searchByName(folder.getName(), false);
 		LocalFolder localFolder = null;
 
 		// if it doesn't exist ...
-		if ((result.length <= 0) || !result[0].isFolder())
+		if ((result.size() <= 0) || !result.get(0).isFolder())
 		{
 			// ... create the folder at the destination.
 			localFolder = new LocalFolder();
@@ -269,7 +269,7 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 		}
 		else
 		{	// ... else, just use the one at the destination.
-			localFolder = (LocalFolder) result[0];
+			localFolder = (LocalFolder) result.get(0);
 		}
 
 		// link the remote and local folders.
@@ -482,11 +482,11 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 		Logger.info("uploading folder: " + folder.getPath());
 
 		// check if the folder exists at the CSP.
-		Container<?>[] result = parent.searchByName(folder.getName(), false);
+		List<Container<?>> result = parent.searchByName(folder.getName(), false);
 		RemoteFolder<?> remoteFolder = null;
 
 		// if it doesn't exist, create it.
-		if ((result.length <= 0) || !result[0].isFolder())
+		if ((result.size() <= 0) || !result.get(0).isFolder())
 		{
 			remoteFolder = getAbstractFactory().createFolder();
 			remoteFolder.setName(folder.getName());
@@ -495,7 +495,7 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 		}
 		else
 		{
-			remoteFolder = (RemoteFolder) result[0];
+			remoteFolder = (RemoteFolder) result.get(0);
 		}
 
 		remoteFolder.setLocalMapping(folder);
@@ -751,32 +751,32 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 		String containerName = splitPath.remove(splitPath.size() - 1);
 
 		// save intermediate nodes
-		Container<?>[] result = { remoteFileTree };
+		List<Container<?>> result = new ArrayList<Container<?>>();
+		result.add(remoteFileTree);
 
 		// search for each entry in the path ...
-		while ((result.length > 0) && (splitPath.size() > 0))
+		while ((result.size() > 0) && (splitPath.size() > 0))
 		{
-			if ( !result[0].isFolder())
+			if ( !result.get(0).isFolder())
 			{	// found a file in the middle of the path -- not what we're looking for.
 				Logger.error("failed to search " + path);
 				throw new OperationException("Couldn't complete search: " + path);
 			}
 			else
 			{	// search for the next node in this node.
-				((RemoteFolder<?>) result[0]).updateFromSource(true, false);
-				result = ((RemoteFolder<?>) result[0]).searchByName(splitPath.remove(0), false);
+				((RemoteFolder<?>) result.get(0)).updateFromSource(true, false);
+				result = ((RemoteFolder<?>) result.get(0)).searchByName(splitPath.remove(0), false);
 			}
 		}
 
 		// if part of the path is not found ...
-		if ((splitPath.size() > 0) || (result.length > 0))
+		if ((splitPath.size() > 0) || (result.size() > 0))
 		{
 			return null;		// ... return nothing.
 		}
 		else
 		{	// ... or search for the file in the end node. Might return null.
-			result = ((RemoteFolder<?>) result[0]).searchByName(containerName, false);
-			return result.length > 0 ? result[0] : null;
+			return ((RemoteFolder<?>) result.get(0)).searchByName(containerName, false).stream().findFirst().orElse(null);
 		}
 
 	}

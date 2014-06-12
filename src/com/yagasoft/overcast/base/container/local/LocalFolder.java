@@ -1,11 +1,11 @@
-/* 
+/*
  * Copyright (C) 2011-2014 by Ahmed Osama el-Sawalhy
- * 
+ *
  *		The Modified MIT Licence (GPL v3 compatible)
  * 			Licence terms are in a separate file (LICENCE.md)
- * 
+ *
  *		Project/File: Overcast/com.yagasoft.overcast.base.container.local/LocalFolder.java
- * 
+ *
  *			Modified: 26-May-2014 (21:54:52)
  *			   Using: Eclipse J-EE / JDK 8 / Windows 8.1 x64
  */
@@ -187,7 +187,7 @@ public class LocalFolder extends Folder<Path>
 		// HashMap<String, File<?>> newFiles = new HashMap<String, File<?>>();
 
 		// add new files and folders to this folder's list, and build recursively if required.
-		paths.parallelStream()
+		paths.stream()
 			.forEach(path ->
 			{
 				// if ( !folders.containsKey(path.toString()))

@@ -94,7 +94,7 @@ public abstract class Folder<T> extends Container<T>
 		// if there're sub-folders in the path
 		if (splitPath.size() > 0)
 		{
-			Container[] result;
+			List<Container<?>> result;
 
 			// search for the first sub-folder.
 			try
@@ -112,10 +112,10 @@ public abstract class Folder<T> extends Container<T>
 
 			// if it's found, and there're more sub-folders ...
 			// (if it's found but not sub-folders, then it's the parent we want to create in)
-			while ((result.length > 0) && (splitPath.size() > 0))
+			while ((result.size() > 0) && (splitPath.size() > 0))
 			{
 				// this it the intended parent for now ...
-				parent = (RemoteFolder) result[0];
+				parent = (RemoteFolder) result.get(0);
 				splitPath.remove(0);		// don't need it anymore in the node's list.
 
 				// more sub-folders?
@@ -154,10 +154,10 @@ public abstract class Folder<T> extends Container<T>
 		}
 
 		// done with creating/traversing the path, now search if this folder exists in the last node ...
-		Container<?>[] result = parent.searchByName(name, false);
+		List<Container<?>> result = parent.searchByName(name, false);
 
 		// ... if so, then it already exists.
-		if ((result.length > 0) && result[0].isFolder())
+		if ((result.size() > 0) && result.get(0).isFolder())
 		{
 			Logger.error("creating nodes to reach desired folder: " + parentPath + "/" + name);
 
@@ -211,10 +211,10 @@ public abstract class Folder<T> extends Container<T>
 		addTempOperationListener(listener, Operation.CREATE);
 
 		// check if the folder exists in the parent ...
-		Container<?>[] result = parent.searchByName(name, false);
+		List<Container<?>> result = parent.searchByName(name, false);
 
 		// if it exists, problem!
-		if ((result.length >= 1) && result[0].isFolder())
+		if ((result.size() >= 1) && result.get(0).isFolder())
 		{
 			Logger.error("creating folder -- already exists: " + parent.getPath() + "/" + name);
 			throw new CreationException("Folder already Exists!");
@@ -416,7 +416,7 @@ public abstract class Folder<T> extends Container<T>
 	protected void postBuildTree(final int numberOfLevels, List<Container<?>> childrenArray) throws OperationException
 	{
 		// add the resulting children to this folder's list
-		childrenArray.parallelStream().forEach(container -> add(container));
+		childrenArray.stream().forEach(container -> add(container));
 
 		slots.release();
 		// use a service to 'join' threads and not return before finishing the whole tree build.
@@ -567,7 +567,7 @@ public abstract class Folder<T> extends Container<T>
 	 *            Recursively or not.
 	 * @return The container list found
 	 */
-	public Container<?>[] searchByName(String name, boolean recursively)
+	public List<Container<?>> searchByName(String name, boolean recursively)
 	{
 		Logger.info("searching " + name + " in " + path);
 
@@ -585,7 +585,7 @@ public abstract class Folder<T> extends Container<T>
 		List<Container<?>> result = new ArrayList<Container<?>>();
 
 		// same as 'searchById', in THIS folder only ...
-		result.addAll(Arrays.stream(getChildrenArray()).parallel()		// get all children as a stream
+		result.addAll(getChildrenList().parallelStream()		// get all children as a stream
 				.filter(container -> name.equals(container.name))		// keep only containers with a matching name
 				.collect(Collectors.toList()));		// convert filtered result to an array
 
@@ -600,11 +600,11 @@ public abstract class Folder<T> extends Container<T>
 			result.addAll(folders.values().parallelStream()		// get sub-folders as a stream
 					// replace each folder with a stream containing its children that match the name, this effectively is
 					// recursive
-					.flatMap(folder -> Arrays.stream(folder.searchByName(name, recursively)).parallel())
+					.flatMap(folder -> folder.searchByName(name, recursively).parallelStream())
 					.collect(Collectors.toList()));	// convert to an array
 		}
 
-		return result.toArray(new Container<?>[result.size()]);
+		return result;
 	}
 
 	// ======================================================================================
@@ -634,23 +634,23 @@ public abstract class Folder<T> extends Container<T>
 		containers.addAll(files.keySet());
 
 		// go through the combined list.
-		containers.parallelStream()
-				.filter(container -> !ids.contains(container))		// keep only the containers in the list sent (not deleted on
-																// server)
+		containers.stream()
+				// keep only the containers in the list sent (not deleted on server)
+				.filter(container -> !ids.contains(container))
 				.forEach(container ->
 				{
 					// remove it.
-						folders.remove(container);
-						files.remove(container);
+					folders.remove(container);
+					files.remove(container);
 
-						Logger.info("removed obsolete: " + container);
-					});
+					Logger.info("removed obsolete: " + container);
+				});
 
 		// if it's required to filter (remove commons) the sent list as well ...
 		if (filter)
 		{
 			// go through the combined list again, but this time just remove from the sent list that exist in this folder.
-			containers.parallelStream()
+			containers.stream()
 					.forEach(container ->
 					{
 						ids.remove(container);
@@ -678,7 +678,7 @@ public abstract class Folder<T> extends Container<T>
 		List<String> foldersList = new ArrayList<String>();
 		foldersList.addAll(folders.keySet());
 
-		foldersList.parallelStream()
+		foldersList.stream()
 				.filter(folder -> !folderIds.contains(folder))
 				.forEach(folder ->
 				{
@@ -689,7 +689,7 @@ public abstract class Folder<T> extends Container<T>
 
 		if (filter)
 		{
-			foldersList.parallelStream()
+			foldersList.stream()
 					.forEach(folder ->
 					{
 						folderIds.remove(folder);
@@ -715,7 +715,7 @@ public abstract class Folder<T> extends Container<T>
 		List<String> filesList = new ArrayList<String>();
 		filesList.addAll(folders.keySet());
 
-		filesList.parallelStream()
+		filesList.stream()
 				.filter(file -> !fileIds.contains(file))
 				.forEach(file ->
 				{
@@ -726,7 +726,7 @@ public abstract class Folder<T> extends Container<T>
 
 		if (filter)
 		{
-			filesList.parallelStream()
+			filesList.stream()
 					.forEach(file ->
 					{
 						fileIds.remove(file);
@@ -758,7 +758,7 @@ public abstract class Folder<T> extends Container<T>
 		children.addAll(files.values());
 
 		// do it recursively.
-		getFoldersList().parallelStream()
+		getFoldersList().stream()
 				.forEach(folder -> children.addAll(folder.getWholeTreeList()));
 
 		return children;
