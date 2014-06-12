@@ -18,6 +18,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletionService;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
@@ -45,10 +46,10 @@ public abstract class Folder<T> extends Container<T>
 {
 
 	/** Folders inside this folder mapped by ID (tree implementation). */
-	protected HashMap<String, Folder<?>>	folders		= new HashMap<String, Folder<?>>();
+	protected Map<String, Folder<?>>	folders		= new HashMap<String, Folder<?>>();
 
 	/** Files inside this folder mapped by ID. */
-	protected HashMap<String, File<?>>		files		= new HashMap<String, File<?>>();
+	protected Map<String, File<?>>		files		= new HashMap<String, File<?>>();
 
 	/** Thread executor to be used to load sub-folders in the tree. */
 	protected static ExecutorService		executor	= Executors.newCachedThreadPool();

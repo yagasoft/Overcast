@@ -13,6 +13,7 @@
 package com.yagasoft.overcast.base.container;
 
 
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -605,6 +606,21 @@ public abstract class Container<T> implements IOperable, Comparable<Container<T>
 	public int compareTo(Container<T> container)
 	{
 		return path.toLowerCase().compareTo(container.path.toLowerCase());
+	}
+
+	public static Comparator<Container<?>> getNameComparator()
+	{
+		return (file1, file2) -> file1.getName().compareTo(file2.getName());
+	}
+
+	public static Comparator<Container<?>> getPathComparator()
+	{
+		return (file1, file2) -> file1.getPath().compareTo(file2.getPath());
+	}
+
+	public static Comparator<Container<?>> getSizeComparator()
+	{
+		return (file1, file2) -> new Long(file1.getSize()).compareTo(file2.getSize());
 	}
 
 	/**
