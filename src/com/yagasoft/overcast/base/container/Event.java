@@ -18,10 +18,10 @@ package com.yagasoft.overcast.base.container;
  */
 public class Event
 {
-
+	
 	/** The container. */
 	protected Container<?>	container;
-
+	
 	/**
 	 * Instantiates a new event.
 	 *
@@ -32,7 +32,7 @@ public class Event
 	{
 		this.container = container;
 	}
-
+	
 	/**
 	 * Gets the container.
 	 *
@@ -42,7 +42,7 @@ public class Event
 	{
 		return container;
 	}
-
+	
 	/**
 	 * Sets the container.
 	 *
@@ -53,5 +53,5 @@ public class Event
 	{
 		this.container = container;
 	}
-
+	
 }

@@ -23,7 +23,7 @@ package com.yagasoft.overcast.base.container.transfer.event;
 @FunctionalInterface
 public interface ITransferProgressListener
 {
-
+	
 	/**
 	 * Progress has changed. Can also notify of success or failure.
 	 *

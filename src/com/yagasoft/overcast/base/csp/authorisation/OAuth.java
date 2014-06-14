@@ -27,22 +27,22 @@ import com.yagasoft.overcast.exception.AuthorisationException;
  */
 public abstract class OAuth extends Authorisation
 {
-
+	
 	/** Info file parent. */
 	private Path	infoParent	= Paths.get(System.getProperty("user.dir") + "/etc/secrets");
-
+	
 	/** Parent folder to store tokens. */
 	protected Path	tokenParent	= Paths.get(System.getProperty("user.dir") + "/var/tokens");
-
-	/** Info file path. This file should contain the information required to identify the dev's account at the CSP.*/
+	
+	/** Info file path. This file should contain the information required to identify the dev's account at the CSP. */
 	protected Path	infoFile;
-
+	
 	/** Token value, if needed; usually saved to disk in JSON format). */
 	protected int	token;
-
+	
 	/** Refresh token value. */
 	protected int	refreshToken;
-
+	
 	/**
 	 * Instantiates a new OAuth.
 	 */
@@ -50,7 +50,7 @@ public abstract class OAuth extends Authorisation
 	{
 		super();
 	}
-
+	
 	/**
 	 * Instantiates a new OAuth.
 	 *
@@ -63,7 +63,7 @@ public abstract class OAuth extends Authorisation
 	{
 		super(userID, password);
 	}
-
+	
 	/**
 	 * Instantiates a new OAuth.
 	 *
@@ -75,7 +75,7 @@ public abstract class OAuth extends Authorisation
 	{
 		this(null, null, infoFile);
 	}
-
+	
 	/**
 	 * Instantiates a new OAuth.
 	 *
@@ -84,13 +84,13 @@ public abstract class OAuth extends Authorisation
 	 * @param password
 	 *            Password.
 	 * @param infoFile
-	 *           the info file path as a string, will be used to create its path object.
+	 *            the info file path as a string, will be used to create its path object.
 	 * @throws AuthorisationException
 	 */
 	public OAuth(String userID, String password, String infoFile) throws AuthorisationException
 	{
 		this(userID, password);
-
+		
 		try
 		{
 			Files.createDirectories(infoParent);
@@ -104,10 +104,10 @@ public abstract class OAuth extends Authorisation
 			
 			throw new AuthorisationException(e.getMessage());
 		}
-
+		
 		this.infoFile = infoParent.resolve(infoFile);		// create a path object for the info file.
 	}
-
+	
 	/**
 	 * Acquire permission from scratch.<br />
 	 * Might open the browser to get user's permission, then use the code returned to get a token.
@@ -116,7 +116,7 @@ public abstract class OAuth extends Authorisation
 	 *             the authorisation exception
 	 */
 	public abstract void acquirePermission() throws AuthorisationException;
-
+	
 	/**
 	 * Re-acquire permission using a saved code or refresh token.
 	 *
@@ -124,7 +124,7 @@ public abstract class OAuth extends Authorisation
 	 *             the authorisation exception
 	 */
 	public abstract void reacquirePermission() throws AuthorisationException;
-
+	
 	/**
 	 * Save token received to disk or field.
 	 *
@@ -132,12 +132,11 @@ public abstract class OAuth extends Authorisation
 	 *             the authorisation exception
 	 */
 	protected abstract void saveToken() throws AuthorisationException;
-
-
+	
 	// //////////////////////////////////////////////////////////////////////////////////////
 	// #region Getters and setters.
 	// ======================================================================================
-
+	
 	/**
 	 * Gets the token parent.
 	 *
@@ -147,7 +146,7 @@ public abstract class OAuth extends Authorisation
 	{
 		return tokenParent;
 	}
-
+	
 	/**
 	 * Sets the token parent.
 	 *
@@ -158,7 +157,7 @@ public abstract class OAuth extends Authorisation
 	{
 		tokenParent = parent;
 	}
-
+	
 	/**
 	 * Gets the info file.
 	 *
@@ -168,7 +167,7 @@ public abstract class OAuth extends Authorisation
 	{
 		return infoFile;
 	}
-
+	
 	/**
 	 * Sets the info file.
 	 *
@@ -179,7 +178,7 @@ public abstract class OAuth extends Authorisation
 	{
 		infoFile = value;
 	}
-
+	
 	/**
 	 * Gets the token.
 	 *
@@ -189,7 +188,7 @@ public abstract class OAuth extends Authorisation
 	{
 		return token;
 	}
-
+	
 	/**
 	 * Sets the token.
 	 *
@@ -200,7 +199,7 @@ public abstract class OAuth extends Authorisation
 	{
 		token = value;
 	}
-
+	
 	/**
 	 * Gets the refresh token.
 	 *
@@ -210,7 +209,7 @@ public abstract class OAuth extends Authorisation
 	{
 		return refreshToken;
 	}
-
+	
 	/**
 	 * Sets the refresh token.
 	 *
@@ -221,7 +220,7 @@ public abstract class OAuth extends Authorisation
 	{
 		refreshToken = value;
 	}
-
+	
 	/**
 	 * @return the infoParent
 	 */
@@ -229,7 +228,7 @@ public abstract class OAuth extends Authorisation
 	{
 		return infoParent;
 	}
-
+	
 	/**
 	 * @param infoParent
 	 *            the infoParent to set
@@ -237,11 +236,11 @@ public abstract class OAuth extends Authorisation
 	public void setInfoParent(Path infoParent)
 	{
 		this.infoParent = infoParent;
-		this.infoFile = infoParent.resolve(infoFile);
+		infoFile = infoParent.resolve(infoFile);
 	}
-
+	
 	// ======================================================================================
 	// #endregion Getters and setters.
 	// //////////////////////////////////////////////////////////////////////////////////////
-
+	
 }

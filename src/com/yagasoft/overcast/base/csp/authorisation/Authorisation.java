@@ -1,4 +1,4 @@
-/* 
+/*
  * Copyright (C) 2011-2014 by Ahmed Osama el-Sawalhy
  * 
  *		The Modified MIT Licence (GPL v3 compatible)
@@ -21,19 +21,19 @@ import com.yagasoft.overcast.exception.AuthorisationException;
  */
 public abstract class Authorisation
 {
-
+	
 	/** User ID, which can be an identifier for the account. */
 	protected String	userID;
-
+	
 	/** Password (if needed; most use OAuth anyway). */
 	protected String	password;
-
+	
 	/**
 	 * Instantiates a new authorisation.
 	 */
 	public Authorisation()
 	{}
-
+	
 	/**
 	 * Instantiates a new authorisation.
 	 *
@@ -47,7 +47,7 @@ public abstract class Authorisation
 		this.userID = userID;
 		this.password = password;
 	}
-
+	
 	/**
 	 * Go through the authorisation process.<br />
 	 * Might get a token using OAuth, or use a user and pass to access FTP, ... etc.<br />
@@ -58,7 +58,7 @@ public abstract class Authorisation
 	 *             the authorisation exception
 	 */
 	public abstract void authorise() throws AuthorisationException;
-
+	
 	/**
 	 * Gets the user id.
 	 *
@@ -68,7 +68,7 @@ public abstract class Authorisation
 	{
 		return userID;
 	}
-
+	
 	/**
 	 * Sets the user id.
 	 *
@@ -79,7 +79,7 @@ public abstract class Authorisation
 	{
 		userID = value;
 	}
-
+	
 	/**
 	 * Gets the password.
 	 *
@@ -89,7 +89,7 @@ public abstract class Authorisation
 	{
 		return password;
 	}
-
+	
 	/**
 	 * Sets the password.
 	 *

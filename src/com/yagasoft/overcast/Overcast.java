@@ -18,10 +18,10 @@ package com.yagasoft.overcast;
  */
 public final class Overcast
 {
-
+	
 	/** Version. */
 	public static final String	VERSION	= "4.19.0145";
-
+	
 	/**
 	 * This class provides only static info.
 	 */

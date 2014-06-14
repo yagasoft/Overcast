@@ -1,18 +1,19 @@
-/* 
+/*
  * Copyright (C) 2011-2014 by Ahmed Osama el-Sawalhy
- * 
+ *
  *		The Modified MIT Licence (GPL v3 compatible)
- * 			License terms are in a separate file (LICENCE.md)
- * 
- *		Project/File: Overcast/com.yagasoft.overcast.base.container.transfer/TransferEvent.java
- * 
- *			Modified: Apr 15, 2014 (9:28:29 AM)
- *			   Using: Eclipse J-EE / JDK 7 / Windows 8.1 x64
+ * 			Licence terms are in a separate file (LICENCE.md)
+ *
+ *		Project/File: Overcast/com.yagasoft.overcast.base.container.transfer.event/TransferEvent.java
+ *
+ *			Modified: 14-Jun-2014 (01:13:36)
+ *			   Using: Eclipse J-EE / JDK 8 / Windows 8.1 x64
  */
 
 package com.yagasoft.overcast.base.container.transfer.event;
 
 
+import com.yagasoft.overcast.base.container.Container;
 import com.yagasoft.overcast.base.container.Event;
 import com.yagasoft.overcast.base.container.transfer.TransferJob;
 
@@ -32,9 +33,12 @@ public class TransferEvent extends Event
 	/** Transfer job. */
 	protected TransferJob<?>	job;
 	
+	/** Destination container -- NOT destination parent. */
+	protected Container<?>		destination;
+	
 	/**
 	 * Instantiates a new transfer event.
-	 * 
+	 *
 	 * @param job
 	 *            the job.
 	 * @param state
@@ -48,6 +52,7 @@ public class TransferEvent extends Event
 		this.job = job;
 		this.state = state;
 		this.progress = progress;
+		destination = job.getDestinationFile();
 	}
 	
 	// --------------------------------------------------------------------------------------
@@ -55,7 +60,7 @@ public class TransferEvent extends Event
 	
 	/**
 	 * Gets the state.
-	 * 
+	 *
 	 * @return the state
 	 */
 	public TransferState getState()
@@ -65,7 +70,7 @@ public class TransferEvent extends Event
 	
 	/**
 	 * Sets the state.
-	 * 
+	 *
 	 * @param state
 	 *            the new state
 	 */
@@ -76,7 +81,7 @@ public class TransferEvent extends Event
 	
 	/**
 	 * Gets the progress.
-	 * 
+	 *
 	 * @return the progress
 	 */
 	public float getProgress()
@@ -86,7 +91,7 @@ public class TransferEvent extends Event
 	
 	/**
 	 * Sets the progress.
-	 * 
+	 *
 	 * @param progress
 	 *            the new progress
 	 */
@@ -110,6 +115,23 @@ public class TransferEvent extends Event
 	public void setJob(TransferJob<?> job)
 	{
 		this.job = job;
+	}
+	
+	/**
+	 * @return the destination
+	 */
+	public Container<?> getDestination()
+	{
+		return destination;
+	}
+	
+	/**
+	 * @param destination
+	 *            the destination to set
+	 */
+	public void setDestination(Container<?> destination)
+	{
+		this.destination = destination;
 	}
 	
 	// #endregion Getters and setters.

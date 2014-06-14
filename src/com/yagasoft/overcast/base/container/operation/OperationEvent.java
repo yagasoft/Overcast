@@ -22,24 +22,24 @@ import com.yagasoft.overcast.base.container.Event;
  */
 public class OperationEvent extends Event
 {
-
+	
 	/** The operation. */
 	protected Operation			operation;
-
+	
 	/** The state. */
 	protected OperationState	state;
-
+	
 	/** The progress. */
 	protected float				progress;
-
+	
 	/** The object of the change. */
-	protected Container<?>				object;
-
+	protected Container<?>		object;
+	
 	public OperationEvent(Container<?> container)
 	{
 		this(container, Operation.UPDATE, null);
 	}
-
+	
 	/**
 	 * Instantiates a new operation event.
 	 *
@@ -55,7 +55,7 @@ public class OperationEvent extends Event
 		this(container, operation, null, 1.0f);
 		this.object = object;
 	}
-
+	
 	/**
 	 * Instantiates a new operation event.
 	 *
@@ -75,7 +75,7 @@ public class OperationEvent extends Event
 		this.progress = progress;
 		this.operation = operation;
 	}
-
+	
 	public OperationEvent(Container<?> container, Operation operation, OperationState state, float progress, Container<?> object)
 	{
 		super(container);
@@ -84,11 +84,11 @@ public class OperationEvent extends Event
 		this.operation = operation;
 		this.object = object;
 	}
-
-	////////////////////////////////////////////////////////////////////////////////////////
+	
+	// //////////////////////////////////////////////////////////////////////////////////////
 	// #region Getters and setters.
-	//======================================================================================
-
+	// ======================================================================================
+	
 	/**
 	 * Gets the state.
 	 *
@@ -98,7 +98,7 @@ public class OperationEvent extends Event
 	{
 		return state;
 	}
-
+	
 	/**
 	 * Sets the state.
 	 *
@@ -109,7 +109,7 @@ public class OperationEvent extends Event
 	{
 		this.state = state;
 	}
-
+	
 	/**
 	 * Gets the progress.
 	 *
@@ -119,7 +119,7 @@ public class OperationEvent extends Event
 	{
 		return progress;
 	}
-
+	
 	/**
 	 * Sets the progress.
 	 *
@@ -130,7 +130,7 @@ public class OperationEvent extends Event
 	{
 		this.progress = progress;
 	}
-
+	
 	/**
 	 * Gets the operation.
 	 *
@@ -140,7 +140,7 @@ public class OperationEvent extends Event
 	{
 		return operation;
 	}
-
+	
 	/**
 	 * Sets the operation.
 	 *
@@ -151,8 +151,7 @@ public class OperationEvent extends Event
 	{
 		this.operation = operation;
 	}
-
-
+	
 	/**
 	 * @return the object
 	 */
@@ -160,18 +159,18 @@ public class OperationEvent extends Event
 	{
 		return object;
 	}
-
-
+	
 	/**
-	 * @param object the object to set
+	 * @param object
+	 *            the object to set
 	 */
 	public void setObject(Container<?> object)
 	{
 		this.object = object;
 	}
-
-	//======================================================================================
+	
+	// ======================================================================================
 	// #endregion Getters and setters.
-	////////////////////////////////////////////////////////////////////////////////////////
-
+	// //////////////////////////////////////////////////////////////////////////////////////
+	
 }

@@ -1,13 +1,13 @@
-/* 
+/*
  * Copyright (C) 2011-2014 by Ahmed Osama el-Sawalhy
- * 
+ *
  *		The Modified MIT Licence (GPL v3 compatible)
- * 			License terms are in a separate file (LICENCE.md)
- * 
+ * 			Licence terms are in a separate file (LICENCE.md)
+ *
  *		Project/File: Overcast/com.yagasoft.overcast.base.container.transfer/UploadJob.java
- * 
- *			Modified: Apr 15, 2014 (9:32:23 AM)
- *			   Using: Eclipse J-EE / JDK 7 / Windows 8.1 x64
+ *
+ *			Modified: 14-Jun-2014 (01:15:54)
+ *			   Using: Eclipse J-EE / JDK 8 / Windows 8.1 x64
  */
 
 package com.yagasoft.overcast.base.container.transfer;
@@ -24,7 +24,7 @@ import com.yagasoft.overcast.base.container.transfer.event.TransferState;
 /**
  * A class representing a job in the upload queue.<br />
  * It's needed to contain information vital to complete the upload process.
- * 
+ *
  * @param <T>
  *            the type of the object to perform the actual upload.
  * @param <S>
@@ -38,7 +38,7 @@ public abstract class UploadJob<T, S> extends TransferJob<T>
 	
 	/**
 	 * Instantiates a new upload job.
-	 * 
+	 *
 	 * @param localFile
 	 *            the local file
 	 * @param remoteFile
@@ -61,7 +61,7 @@ public abstract class UploadJob<T, S> extends TransferJob<T>
 	 * Do NOT use!<br />
 	 * As the CSP API file type can't be determined in this general implementation, so it has to be passed after creating an
 	 * object of this job in the CSP.
-	 * 
+	 *
 	 * @see com.yagasoft.overcast.base.container.transfer.TransferJob#success()
 	 */
 	@Override
@@ -72,7 +72,7 @@ public abstract class UploadJob<T, S> extends TransferJob<T>
 	
 	/**
 	 * Perform stuff on successful upload.
-	 * 
+	 *
 	 * @param file
 	 *            the file object from the original CSP API.
 	 */
@@ -102,6 +102,15 @@ public abstract class UploadJob<T, S> extends TransferJob<T>
 	public File<?> getSourceFile()
 	{
 		return localFile;
+	}
+	
+	/**
+	 * @see com.yagasoft.overcast.base.container.transfer.TransferJob#getDestinationFile()
+	 */
+	@Override
+	public File<?> getDestinationFile()
+	{
+		return remoteFile;
 	}
 	
 	// --------------------------------------------------------------------------------------

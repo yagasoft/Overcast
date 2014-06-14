@@ -39,25 +39,25 @@ import com.yagasoft.overcast.exception.OperationException;
 @SuppressWarnings("rawtypes")
 public class RemoteFactory<FolderSourceType, FolderType extends RemoteFolder<FolderSourceType>, FileSourceType, FileType extends RemoteFile<FileSourceType>, CspType extends CSP>
 {
-
+	
 	/** CspType object to be passed to created files and folders. */
-	protected CspType				csp;
-
+	protected CspType			csp;
+	
 	/** Path prefix, which will be used to clean-up the path sent by the CspType -- for API path standardisation. */
 	protected String			pathPrefix;
-
+	
 	/**
 	 * Folder type as passed during creation of this factory.<br />
 	 * Will be used to create folders -- set their type.
 	 */
 	protected Class<FolderType>	folderType;
-
+	
 	/**
 	 * File type as passed during creation of this factory.<br />
 	 * Will be used to create files -- set their type.
 	 */
 	protected Class<FileType>	fileType;
-
+	
 	/**
 	 * Instantiates a new remote factory.
 	 *
@@ -77,10 +77,10 @@ public class RemoteFactory<FolderSourceType, FolderType extends RemoteFolder<Fol
 		this.fileType = fileType;
 		this.pathPrefix = pathPrefix;
 	}
-
+	
 	// --------------------------------------------------------------------------------------
 	// #region Create basic.
-
+	
 	/**
 	 * Creates a new remote folder object.
 	 *
@@ -93,7 +93,7 @@ public class RemoteFactory<FolderSourceType, FolderType extends RemoteFolder<Fol
 		{
 			FolderType folder = folderType.newInstance();	// new RemoteFolder()
 			postObjectCreation(folder);		// init object.
-
+			
 			return folder;
 		}
 		catch (InstantiationException | IllegalAccessException e)
@@ -101,11 +101,11 @@ public class RemoteFactory<FolderSourceType, FolderType extends RemoteFolder<Fol
 			Logger.error("creating folder object");
 			Logger.except(e);
 			e.printStackTrace();
-
+			
 			throw new CreationException("Couldn't create object in factory.");
 		}
 	}
-
+	
 	/**
 	 * Creates a new remote file object.
 	 *
@@ -118,7 +118,7 @@ public class RemoteFactory<FolderSourceType, FolderType extends RemoteFolder<Fol
 		{
 			FileType file = fileType.newInstance();		// new RemoteFile()
 			postObjectCreation(file);		// init object.
-
+			
 			return file;
 		}
 		catch (InstantiationException | IllegalAccessException e)
@@ -126,11 +126,11 @@ public class RemoteFactory<FolderSourceType, FolderType extends RemoteFolder<Fol
 			Logger.error("creating file object");
 			Logger.except(e);
 			e.printStackTrace();
-
+			
 			throw new CreationException("Couldn't create object in factory.");
 		}
 	}
-
+	
 	/**
 	 * Do stuff after object creation.
 	 *
@@ -143,13 +143,13 @@ public class RemoteFactory<FolderSourceType, FolderType extends RemoteFolder<Fol
 		container.setCsp(csp);
 		container.setPathPrefix(pathPrefix);
 	}
-
+	
 	// #endregion Create basic.
 	// --------------------------------------------------------------------------------------
-
+	
 	// --------------------------------------------------------------------------------------
 	// #region Create out of sent sourceObject.
-
+	
 	/**
 	 * Creates a new remote folder object.
 	 *
@@ -165,10 +165,10 @@ public class RemoteFactory<FolderSourceType, FolderType extends RemoteFolder<Fol
 		FolderType folder = createFolder();		// get the basic folder object
 		folder.setSourceObject(sourceObject);	// add the CspType folder object to it
 		updateContainer(folder, fetchInfoOnline);		// update folder meta info
-
+		
 		return folder;
 	}
-
+	
 	/**
 	 * Creates a new remote file object.
 	 *
@@ -184,10 +184,10 @@ public class RemoteFactory<FolderSourceType, FolderType extends RemoteFolder<Fol
 		FileType file = createFile();
 		file.setSourceObject(sourceObject);
 		updateContainer(file, fetchInfoOnline);
-
+		
 		return file;
 	}
-
+	
 	/**
 	 * Update container's meta info.
 	 *
@@ -210,10 +210,10 @@ public class RemoteFactory<FolderSourceType, FolderType extends RemoteFolder<Fol
 			}
 		}
 	}
-
+	
 	// #endregion Create out of sent sourceObject.
 	// --------------------------------------------------------------------------------------
-
+	
 	// //--------------------------------------------------------------------------------------
 	// // #region Create using the sent ID.
 	//
@@ -241,10 +241,10 @@ public class RemoteFactory<FolderSourceType, FolderType extends RemoteFolder<Fol
 	//
 	// // #endregion Create using the sent ID.
 	// //--------------------------------------------------------------------------------------
-
+	
 	// --------------------------------------------------------------------------------------
 	// #region Create using the sent path.
-
+	
 	/**
 	 * Creates a new remote folder object.
 	 *
@@ -259,7 +259,7 @@ public class RemoteFactory<FolderSourceType, FolderType extends RemoteFolder<Fol
 		try
 		{
 			FolderType container = folderType.newInstance();	// new folder()
-
+			
 			// post creation stuff, and make sure it doesn't already exist
 			return (FolderType) postObjectCreationByPath(container, path);
 		}
@@ -269,10 +269,10 @@ public class RemoteFactory<FolderSourceType, FolderType extends RemoteFolder<Fol
 			Logger.except(e);
 			e.printStackTrace();
 		}
-
+		
 		return null;
 	}
-
+	
 	/**
 	 * Creates a new remote file object.
 	 *
@@ -287,7 +287,7 @@ public class RemoteFactory<FolderSourceType, FolderType extends RemoteFolder<Fol
 		try
 		{
 			FileType container = fileType.newInstance();	// new file()
-
+			
 			// post creation stuff, and make sure it doesn't already exist
 			return (FileType) postObjectCreationByPath(container, path);
 		}
@@ -297,10 +297,10 @@ public class RemoteFactory<FolderSourceType, FolderType extends RemoteFolder<Fol
 			Logger.except(e);
 			e.printStackTrace();
 		}
-
+		
 		return null;
 	}
-
+	
 	/**
 	 * Do stuff after creating the component.
 	 *
@@ -314,7 +314,7 @@ public class RemoteFactory<FolderSourceType, FolderType extends RemoteFolder<Fol
 	protected Container<?> postObjectCreationByPath(Container<?> container, String path) throws OperationException
 	{
 		Container<?> result;
-
+		
 		// look for the container in file tree.
 		if (container instanceof RemoteFolder)
 		{
@@ -328,17 +328,17 @@ public class RemoteFactory<FolderSourceType, FolderType extends RemoteFolder<Fol
 		{
 			return container;
 		}
-
+		
 		return result != null ? result : container;
 	}
-
+	
 	// #endregion Create using the sent path.
 	// --------------------------------------------------------------------------------------
-
+	
 	// //////////////////////////////////////////////////////////////////////////////////////
 	// #region Getters and setters.
 	// ======================================================================================
-
+	
 	/**
 	 * @return the csp
 	 */
@@ -346,7 +346,7 @@ public class RemoteFactory<FolderSourceType, FolderType extends RemoteFolder<Fol
 	{
 		return csp;
 	}
-
+	
 	/**
 	 * @param csp
 	 *            the csp to set
@@ -355,7 +355,7 @@ public class RemoteFactory<FolderSourceType, FolderType extends RemoteFolder<Fol
 	{
 		this.csp = csp;
 	}
-
+	
 	/**
 	 * @return the pathPrefix
 	 */
@@ -363,7 +363,7 @@ public class RemoteFactory<FolderSourceType, FolderType extends RemoteFolder<Fol
 	{
 		return pathPrefix;
 	}
-
+	
 	/**
 	 * @param pathPrefix
 	 *            the pathPrefix to set
@@ -372,7 +372,7 @@ public class RemoteFactory<FolderSourceType, FolderType extends RemoteFolder<Fol
 	{
 		this.pathPrefix = pathPrefix;
 	}
-
+	
 	/**
 	 * @return the folderType
 	 */
@@ -380,7 +380,7 @@ public class RemoteFactory<FolderSourceType, FolderType extends RemoteFolder<Fol
 	{
 		return folderType;
 	}
-
+	
 	/**
 	 * @param folderType
 	 *            the folderType to set
@@ -389,7 +389,7 @@ public class RemoteFactory<FolderSourceType, FolderType extends RemoteFolder<Fol
 	{
 		this.folderType = folderType;
 	}
-
+	
 	/**
 	 * @return the fileType
 	 */
@@ -397,7 +397,7 @@ public class RemoteFactory<FolderSourceType, FolderType extends RemoteFolder<Fol
 	{
 		return fileType;
 	}
-
+	
 	/**
 	 * @param fileType
 	 *            the fileType to set
@@ -406,9 +406,9 @@ public class RemoteFactory<FolderSourceType, FolderType extends RemoteFolder<Fol
 	{
 		this.fileType = fileType;
 	}
-
+	
 	// ======================================================================================
 	// #endregion Getters and setters.
 	// //////////////////////////////////////////////////////////////////////////////////////
-
+	
 }

@@ -71,10 +71,10 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public final class FolderHelper
 {
-
+	
 	// --------------------------------------------------------------------------------------
 	// #region copy.
-
+	
 	/**
 	 * Copy source file to target location. If {@code prompt} is true then prompt user to overwrite target if it exists. The
 	 * {@code preserve} parameter determines if file attributes should be copied/preserved.
@@ -96,18 +96,18 @@ public final class FolderHelper
 			}
 		}
 	}
-
+	
 	/**
 	 * A {@code FileVisitor} that copies a file-tree ("cp -r")
 	 */
 	public static class TreeCopier implements FileVisitor<Path>
 	{
-
+		
 		private final Path		source;
 		private final Path		target;
 		private final boolean	prompt;
 		private final boolean	preserve;
-
+		
 		public TreeCopier(Path source, Path target, boolean prompt, boolean preserve)
 		{
 			this.source = source;
@@ -115,7 +115,7 @@ public final class FolderHelper
 			this.prompt = prompt;
 			this.preserve = preserve;
 		}
-
+		
 		@Override
 		public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs)
 		{
@@ -123,7 +123,7 @@ public final class FolderHelper
 			// (okay if directory already exists).
 			CopyOption[] options = (preserve) ?
 					new CopyOption[] { COPY_ATTRIBUTES } : new CopyOption[0];
-
+			
 			Path newdir = target.resolve(source.relativize(dir));
 			try
 			{
@@ -140,7 +140,7 @@ public final class FolderHelper
 			}
 			return CONTINUE;
 		}
-
+		
 		@Override
 		public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
 		{
@@ -148,7 +148,7 @@ public final class FolderHelper
 					prompt, preserve);
 			return CONTINUE;
 		}
-
+		
 		@Override
 		public FileVisitResult postVisitDirectory(Path dir, IOException exc)
 		{
@@ -168,7 +168,7 @@ public final class FolderHelper
 			}
 			return CONTINUE;
 		}
-
+		
 		@Override
 		public FileVisitResult visitFileFailed(Path file, IOException exc)
 		{
@@ -183,17 +183,17 @@ public final class FolderHelper
 			return CONTINUE;
 		}
 	}
-
+	
 	// #endregion copy.
 	// --------------------------------------------------------------------------------------
-
+	
 	// --------------------------------------------------------------------------------------
 	// #region move.
-
+	
 	private static void moveFile(Path source, Path target, boolean prompt)
 	{
 		CopyOption[] options = new CopyOption[] { REPLACE_EXISTING };
-
+		
 		if ( !prompt || Files.notExists(target)) // || okayToOverwrite(target))
 		{
 			try
@@ -206,26 +206,26 @@ public final class FolderHelper
 			}
 		}
 	}
-
+	
 	public static class TreeMover implements FileVisitor<Path>
 	{
-
+		
 		private final Path		source;
 		private final Path		target;
 		private final boolean	prompt;
-
+		
 		public TreeMover(Path source, Path target, boolean prompt)
 		{
 			this.source = source;
 			this.target = target;
 			this.prompt = prompt;
 		}
-
+		
 		@Override
 		public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs)
 		{
 			Path newdir = target.resolve(source.relativize(dir));
-
+			
 			try
 			{
 				Files.copy(dir, newdir);
@@ -241,14 +241,14 @@ public final class FolderHelper
 			}
 			return CONTINUE;
 		}
-
+		
 		@Override
 		public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
 		{
 			moveFile(file, target.resolve(source.relativize(file)), prompt);
 			return CONTINUE;
 		}
-
+		
 		@Override
 		public FileVisitResult postVisitDirectory(Path dir, IOException exc)
 		{
@@ -256,17 +256,17 @@ public final class FolderHelper
 			if ((exc == null))
 			{
 				Path newdir = target.resolve(source.relativize(dir));
-
+				
 				try
 				{
 					FileTime time = Files.getLastModifiedTime(dir);
 					Files.setLastModifiedTime(newdir, time);
-
+					
 					if (source.toAbsolutePath().equals(newdir.toAbsolutePath()))
 					{
 						source.resolve(newdir.toAbsolutePath());
 					}
-
+					
 					Files.deleteIfExists(dir);
 				}
 				catch (IOException x)
@@ -274,10 +274,10 @@ public final class FolderHelper
 					System.err.format("Unable to copy all attributes to: %s: %s%n", newdir, x);
 				}
 			}
-
+			
 			return CONTINUE;
 		}
-
+		
 		@Override
 		public FileVisitResult visitFileFailed(Path file, IOException exc)
 		{
@@ -289,17 +289,17 @@ public final class FolderHelper
 			{
 				System.err.format("Unable to copy: %s: %s%n", file, exc);
 			}
-
+			
 			return CONTINUE;
 		}
 	}
-
+	
 	// #endregion move.
 	// --------------------------------------------------------------------------------------
-
+	
 	// --------------------------------------------------------------------------------------
 	// #region delete.
-
+	
 	private static void deleteFile(Path file)
 	{
 		try
@@ -311,17 +311,17 @@ public final class FolderHelper
 			System.err.format("Unable to copy: %s: %s%n", file, x);
 		}
 	}
-
+	
 	public static class TreeDeleter implements FileVisitor<Path>
 	{
-
+		
 		@Override
 		public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
 		{
 			deleteFile(file);
 			return CONTINUE;
 		}
-
+		
 		@Override
 		public FileVisitResult postVisitDirectory(Path dir, IOException exc)
 		{
@@ -337,10 +337,10 @@ public final class FolderHelper
 					e.printStackTrace();
 				}
 			}
-
+			
 			return CONTINUE;
 		}
-
+		
 		@Override
 		public FileVisitResult visitFileFailed(Path file, IOException exc)
 		{
@@ -352,20 +352,20 @@ public final class FolderHelper
 			{
 				System.err.format("Unable to copy: %s: %s%n", file, exc);
 			}
-
+			
 			return CONTINUE;
 		}
-
+		
 		@Override
 		public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException
 		{
 			return CONTINUE;
 		}
 	}
-
+	
 	// #endregion delete.
 	// --------------------------------------------------------------------------------------
-
+	
 	/**
 	 * Gets the size.<br />
 	 * <br/>
@@ -381,17 +381,17 @@ public final class FolderHelper
 	{
 		final AtomicLong size = new AtomicLong(0);
 		Path path = Paths.get(startPath);
-
+		
 		Files.walkFileTree(path, new SimpleFileVisitor<Path>()
 		{
-
+			
 			@Override
 			public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException
 			{
 				size.addAndGet(attrs.size());
 				return FileVisitResult.CONTINUE;
 			}
-
+			
 			@Override
 			public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException
 			{
@@ -400,12 +400,10 @@ public final class FolderHelper
 				return FileVisitResult.CONTINUE;
 			}
 		});
-
+		
 		return size.get();
 	}
-
-
-
+	
 	private FolderHelper()
 	{}
 }

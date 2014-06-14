@@ -18,12 +18,12 @@ import com.yagasoft.overcast.base.container.Container;
 
 /**
  * Classes that can have operations performed on them should implement this interface.
- * Out of all the 'notify' methods, only {@link #notifyOperationListeners(Operation, OperationState, float, Container)}
- * should be implemented, the rest have a default suitable behaviour.
+ * Out of all the 'notify' methods, only {@link #notifyOperationListeners(Operation, OperationState, float, Container)} should be
+ * implemented, the rest have a default suitable behaviour.
  */
 public interface IOperable
 {
-
+	
 	/**
 	 * Adds a operation listener to the operations in this container.
 	 *
@@ -33,7 +33,7 @@ public interface IOperable
 	 *            the operation
 	 */
 	void addOperationListener(IOperationListener listener, Operation operation);
-
+	
 	/**
 	 * Removes the operation listener.
 	 *
@@ -41,7 +41,7 @@ public interface IOperable
 	 *            Listener object to be removed.
 	 */
 	void removeOperationListener(IOperationListener listener);
-
+	
 	/**
 	 * Removes the operation from the listener list.
 	 *
@@ -51,7 +51,7 @@ public interface IOperable
 	 *            Operation.
 	 */
 	void removeOperationListener(IOperationListener listener, Operation operation);
-
+	
 	/**
 	 * Adds a temp operation listener to the operations in this container.
 	 *
@@ -61,7 +61,7 @@ public interface IOperable
 	 *            the operation
 	 */
 	void addTempOperationListener(IOperationListener listener, Operation operation);
-
+	
 	/**
 	 * Removes the temp operation listener.
 	 *
@@ -69,7 +69,7 @@ public interface IOperable
 	 *            Listener object to be removed.
 	 */
 	void removeTempOperationListener(IOperationListener listener);
-
+	
 	/**
 	 * Removes the operation from the temp listener list.
 	 *
@@ -79,7 +79,7 @@ public interface IOperable
 	 *            Operation.
 	 */
 	void removeTempOperationListener(IOperationListener listener, Operation operation);
-
+	
 	/**
 	 * Notify operation listeners.
 	 */
@@ -87,7 +87,7 @@ public interface IOperable
 	{
 		notifyOperationListeners(Operation.UPDATE, null);
 	}
-
+	
 	/**
 	 * Notify operation listeners.
 	 *
@@ -100,7 +100,7 @@ public interface IOperable
 	{
 		notifyOperationListeners(operation, null, 1.0f, object);
 	}
-
+	
 	/**
 	 * Notify listeners of the state (stated, cancelled, ...etc.) of the operation, and the progress in the range from 0 to 1.
 	 *
@@ -115,7 +115,7 @@ public interface IOperable
 	{
 		notifyOperationListeners(operation, state, progress, null);
 	}
-
+	
 	/**
 	 * Notify operation listeners.
 	 *
@@ -129,7 +129,7 @@ public interface IOperable
 	 *            Object.
 	 */
 	void notifyOperationListeners(Operation operation, OperationState state, float progress, Container<?> object);
-
+	
 	/**
 	 * Clear all listeners to the operations.
 	 *

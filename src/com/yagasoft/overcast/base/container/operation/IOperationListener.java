@@ -26,7 +26,7 @@ package com.yagasoft.overcast.base.container.operation;
  */
 public interface IOperationListener
 {
-
+	
 	/**
 	 * Progress has changed. It might also be invoked in case of success or failure.
 	 *
@@ -34,5 +34,5 @@ public interface IOperationListener
 	 *            the event object containing info about the change.
 	 */
 	public void operationChange(OperationEvent event);
-
+	
 }

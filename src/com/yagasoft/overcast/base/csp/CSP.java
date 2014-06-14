@@ -182,10 +182,11 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 	{
 		Logger.info("creating transfer job for " + container.getPath());
 
+		// TODO check the queue as well for files with the same name.
 		// overwrite if necessary.
 		List<Container<?>> existingContainer = ((Folder<?>) destination).searchByName(container.getName(), false);
 
-		if ((existingContainer.size() > 0) && (existingContainer.get(0).isFolder() == container.isFolder()))
+		if ( !existingContainer.isEmpty() && (existingContainer.get(0).isFolder() == container.isFolder()))
 		{
 			if (overwrite)
 			{
@@ -260,7 +261,7 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 		LocalFolder localFolder = null;
 
 		// if it doesn't exist ...
-		if ((result.size() <= 0) || !result.get(0).isFolder())
+		if ((result.isEmpty()) || !result.get(0).isFolder())
 		{
 			// ... create the folder at the destination.
 			localFolder = new LocalFolder();
@@ -401,19 +402,19 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 			{
 				try
 				{	// start the transfer (starts when thread starts below).
-					initiateDownload();
-					Logger.info("finished download (" + name + "): " + currentDownloadJob.getRemoteFile().getPath());
-				}
-				catch (TransferException e)
-				{	// in case of failure, notify the listeners of the failure, and check for more jobs.
-					e.printStackTrace();
-					currentDownloadJob.failure();
-				}
-				finally
-				{
-					resetDownload();
-				}
-			});
+						initiateDownload();
+						Logger.info("finished download (" + name + "): " + currentDownloadJob.getRemoteFile().getPath());
+					}
+					catch (TransferException e)
+					{	// in case of failure, notify the listeners of the failure, and check for more jobs.
+						e.printStackTrace();
+						currentDownloadJob.failure();
+					}
+					finally
+					{
+						resetDownload();
+					}
+				});
 
 			// go ...
 			currentDownloadThread.start();
@@ -486,12 +487,12 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 		RemoteFolder<?> remoteFolder = null;
 
 		// if it doesn't exist, create it.
-		if ((result.size() <= 0) || !result.get(0).isFolder())
+		if ((result.isEmpty()) || !result.get(0).isFolder())
 		{
 			remoteFolder = getAbstractFactory().createFolder();
 			remoteFolder.setName(folder.getName());
 			remoteFolder.create(parent, event -> {});
-			remoteFolder.updateFromSource(true, false);
+//			remoteFolder.updateFromSource(true, false);
 		}
 		else
 		{
@@ -755,7 +756,7 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 		result.add(remoteFileTree);
 
 		// search for each entry in the path ...
-		while ((result.size() > 0) && (splitPath.size() > 0))
+		while ( !result.isEmpty() && !splitPath.isEmpty())
 		{
 			if ( !result.get(0).isFolder())
 			{	// found a file in the middle of the path -- not what we're looking for.
@@ -764,13 +765,12 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 			}
 			else
 			{	// search for the next node in this node.
-				((RemoteFolder<?>) result.get(0)).updateFromSource(true, false);
 				result = ((RemoteFolder<?>) result.get(0)).searchByName(splitPath.remove(0), false);
 			}
 		}
 
 		// if part of the path is not found ...
-		if ((splitPath.size() > 0) || (result.size() > 0))
+		if ( !splitPath.isEmpty() || (result.isEmpty()))
 		{
 			return null;		// ... return nothing.
 		}

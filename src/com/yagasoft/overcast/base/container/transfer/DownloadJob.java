@@ -1,13 +1,13 @@
-/* 
+/*
  * Copyright (C) 2011-2014 by Ahmed Osama el-Sawalhy
- * 
+ *
  *		The Modified MIT Licence (GPL v3 compatible)
- * 			License terms are in a separate file (LICENCE.md)
- * 
+ * 			Licence terms are in a separate file (LICENCE.md)
+ *
  *		Project/File: Overcast/com.yagasoft.overcast.base.container.transfer/DownloadJob.java
- * 
- *			Modified: Apr 15, 2014 (9:24:26 AM)
- *			   Using: Eclipse J-EE / JDK 7 / Windows 8.1 x64
+ *
+ *			Modified: 14-Jun-2014 (01:16:18)
+ *			   Using: Eclipse J-EE / JDK 8 / Windows 8.1 x64
  */
 
 package com.yagasoft.overcast.base.container.transfer;
@@ -26,7 +26,7 @@ import com.yagasoft.overcast.base.container.transfer.event.TransferState;
 /**
  * A class representing a job in the download queue.<br />
  * It's needed to contain information vital to complete the download process.
- * 
+ *
  * @param <T>
  *            the type of the object to perform the actual download.
  */
@@ -38,7 +38,7 @@ public abstract class DownloadJob<T> extends TransferJob<T>
 	
 	/**
 	 * Instantiates a new download job.
-	 * 
+	 *
 	 * @param remoteFile
 	 *            the remote file
 	 * @param parent
@@ -75,7 +75,7 @@ public abstract class DownloadJob<T> extends TransferJob<T>
 	
 	/**
 	 * ...
-	 * 
+	 *
 	 * @param path
 	 *            the path
 	 */
@@ -98,6 +98,15 @@ public abstract class DownloadJob<T> extends TransferJob<T>
 	public File<?> getSourceFile()
 	{
 		return remoteFile;
+	}
+	
+	/**
+	 * @see com.yagasoft.overcast.base.container.transfer.TransferJob#getDestinationFile()
+	 */
+	@Override
+	public File<?> getDestinationFile()
+	{
+		return localFile;
 	}
 	
 	// --------------------------------------------------------------------------------------
