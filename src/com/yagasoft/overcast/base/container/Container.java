@@ -39,45 +39,45 @@ import com.yagasoft.overcast.exception.OperationException;
  */
 public abstract class Container<T> implements IOperable, Comparable<Container<T>>
 {
-	
+
 	/** Unique identifier for the container -- implementation specific. */
 	protected String										id;
-	
+
 	/** Name of the container. */
 	protected String										name;
-	
+
 	/** Path of the container at the source, including its name. */
 	protected String										path;
-	
+
 	/** Path prefix, which will be used to clean-up the path sent by the CSP -- for API path standardisation. */
 	protected String										pathPrefix;
-	
+
 	/** Size of the container in bytes. */
 	protected long											size;
-	
+
 	/** Modified date in ms since 1970. */
 	protected long											date;
-	
+
 	/** Container object created by the original API of the CSP. */
 	protected T												sourceObject;
-	
+
 	/** Parent folder containing this container. */
 	protected Folder<?>										parent;
-	
+
 	/** Listeners to the operations in this container. */
 	protected Map<IOperationListener, HashSet<Operation>>	operationListeners		= new HashMap<IOperationListener, HashSet<Operation>>();
-	
+
 	/** Temporary listeners to the operations in this container; they're added through the operation methods themselves. */
 	protected Map<IOperationListener, HashSet<Operation>>	tempOperationListeners	= new HashMap<IOperationListener, HashSet<Operation>>();
-	
+
 	/** CSP object related to this container, or where the container is stored at. */
 	protected CSP<T, ?, ?>									csp;
-	
+
 	/**
 	 * Generate unique ID for this container.
 	 */
 	public abstract void generateId();
-	
+
 	/**
 	 * Checks if the file exists physically or not.
 	 *
@@ -88,14 +88,21 @@ public abstract class Container<T> implements IOperable, Comparable<Container<T>
 	 *             the operation exception
 	 */
 	public abstract boolean isExist() throws AccessException, OperationException;
-	
+
 	/**
 	 * Is this a folder?.
 	 *
 	 * @return true, if it is a folder
 	 */
 	public abstract boolean isFolder();
-	
+
+	/**
+	 * Is this a local container (on this host)?.
+	 *
+	 * @return true, if it is a local container
+	 */
+	public abstract boolean isLocal();
+
 	/**
 	 * Update the fields (class attributes) in this file object from the in-memory info (nothing is done outside the program). <br />
 	 * Set the path, at the end of the method implementation, in this preferred format to make it standardised across the API:
@@ -106,7 +113,7 @@ public abstract class Container<T> implements IOperable, Comparable<Container<T>
 	 * </pre>
 	 */
 	public abstract void updateInfo();
-	
+
 	/**
 	 * Update from where the container resides. It reads the meta of the container.<br />
 	 * For folders, it reads the children list. It might go online to do both.
@@ -115,11 +122,11 @@ public abstract class Container<T> implements IOperable, Comparable<Container<T>
 	 *             the operation exception
 	 */
 	public abstract void updateFromSource() throws OperationException;
-	
+
 	// //////////////////////////////////////////////////////////////////////////////////////
 	// #region Operations.
 	// ======================================================================================
-	
+
 	/**
 	 * Initialises a basic operation. Includes checking on container existence in destination, and adding operation listener to
 	 * list.
@@ -142,21 +149,21 @@ public abstract class Container<T> implements IOperable, Comparable<Container<T>
 			throws OperationException
 	{
 		Logger.info(operation + " container: " + path);
-		
+
 		addTempOperationListener(listener, operation);
-		
+
 		String name = this.name;
-		
+
 		if (operation == Operation.RENAME)
 		{
 			name = newName[0];
 		}
-		
+
 		// if it's not a delete, then check for existence at destination
 		if (operation != Operation.DELETE)
 		{
-			List<Container<?>> existingContainer = destination.searchByName(name, false);
-			
+			List<Container<?>> existingContainer = destination.searchByName(name, false, false);
+
 			if ( !existingContainer.isEmpty() && (existingContainer.get(0).isFolder() == isFolder()))
 			{
 				if (overwrite)
@@ -171,7 +178,7 @@ public abstract class Container<T> implements IOperable, Comparable<Container<T>
 			}
 		}
 	}
-	
+
 	/**
 	 * Post operation stuff. Includes removing this container from the old parent upon move or delete,
 	 * adding the copied or moved container to the new parent, and notifying listeners of success.
@@ -193,18 +200,18 @@ public abstract class Container<T> implements IOperable, Comparable<Container<T>
 		{
 			getParent().remove(this);
 		}
-		
+
 		// copy or move adds a container to the destination
 		if ((operation == Operation.COPY) || (operation == Operation.MOVE))
 		{
 			destination.add(affectedContainer);
 		}
-		
+
 		notifyOperationListeners(operation, OperationState.COMPLETED, 1.0f);
-		
+
 		Logger.info("finished " + operation + ": " + affectedContainer.getPath());
 	}
-	
+
 	/**
 	 * Stuff to do when an operation fails. Includes logging, and throwing an exception.
 	 *
@@ -220,16 +227,16 @@ public abstract class Container<T> implements IOperable, Comparable<Container<T>
 		Logger.error("moving file: " + path);
 		Logger.except(e);
 		e.printStackTrace();
-		
+
 		throw new OperationException(operation + " failed! "
 				+ ((e != null) ? e.getMessage() : ""));
 	}
-	
+
 	public synchronized Container<?> copy(Folder<?> destination, boolean overwrite) throws OperationException
 	{
 		return copy(destination, overwrite, null);
 	}
-	
+
 	/**
 	 * Copy this container to the destination folder.
 	 *
@@ -251,7 +258,7 @@ public abstract class Container<T> implements IOperable, Comparable<Container<T>
 			initOperation(destination, overwrite, listener, Operation.COPY);
 			Container<?> copiedContainer = copyProcess(destination);
 			postOperation(destination, copiedContainer, Operation.COPY);
-			
+
 			return copiedContainer;
 		}
 		catch (OperationException e)
@@ -262,10 +269,10 @@ public abstract class Container<T> implements IOperable, Comparable<Container<T>
 		{
 			removeTempOperationListener(listener, Operation.COPY);
 		}
-		
+
 		return null;
 	}
-	
+
 	/**
 	 * Copy process logic. This includes how the copy process is performed. It should return a {@link Container} representing the
 	 * new container copied over.
@@ -277,12 +284,12 @@ public abstract class Container<T> implements IOperable, Comparable<Container<T>
 	 *             the operation exception
 	 */
 	protected abstract Container<?> copyProcess(Folder<?> destination) throws OperationException;
-	
+
 	public synchronized void move(Folder<?> destination, boolean overwrite) throws OperationException
 	{
 		move(destination, overwrite, null);
 	}
-	
+
 	/**
 	 * Move this container to the destination folder.
 	 *
@@ -313,7 +320,7 @@ public abstract class Container<T> implements IOperable, Comparable<Container<T>
 			removeTempOperationListener(listener, Operation.MOVE);
 		}
 	}
-	
+
 	/**
 	 * Move process logic. This includes how the move process is performed. It should return an
 	 * object representing the new {@link #sourceObject} returned by the server.
@@ -325,12 +332,12 @@ public abstract class Container<T> implements IOperable, Comparable<Container<T>
 	 *             the operation exception
 	 */
 	protected abstract T moveProcess(Folder<?> destination) throws OperationException;
-	
+
 	public synchronized void rename(String newName) throws OperationException
 	{
 		rename(newName, null);
 	}
-	
+
 	/**
 	 * Rename this container.
 	 *
@@ -358,7 +365,7 @@ public abstract class Container<T> implements IOperable, Comparable<Container<T>
 			removeTempOperationListener(listener, Operation.RENAME);
 		}
 	}
-	
+
 	/**
 	 * Rename process logic. This includes how the rename process is performed. It should return an
 	 * object representing the new {@link #sourceObject} returned by the server.
@@ -370,12 +377,12 @@ public abstract class Container<T> implements IOperable, Comparable<Container<T>
 	 *             the operation exception
 	 */
 	protected abstract T renameProcess(String newName) throws OperationException;
-	
+
 	public synchronized void delete() throws OperationException
 	{
 		delete(null);
 	}
-	
+
 	/**
 	 * Delete this container.
 	 *
@@ -401,7 +408,7 @@ public abstract class Container<T> implements IOperable, Comparable<Container<T>
 			removeTempOperationListener(listener, Operation.DELETE);
 		}
 	}
-	
+
 	/**
 	 * Delete process logic.
 	 *
@@ -409,15 +416,15 @@ public abstract class Container<T> implements IOperable, Comparable<Container<T>
 	 *             the operation exception
 	 */
 	protected abstract void deleteProcess() throws OperationException;
-	
+
 	// ======================================================================================
 	// #endregion Operations.
 	// //////////////////////////////////////////////////////////////////////////////////////
-	
+
 	// //////////////////////////////////////////////////////////////////////////////////////
 	// #region Listeners.
 	// ======================================================================================
-	
+
 	/**
 	 * @see com.yagasoft.overcast.base.container.operation.IOperable#addOperationListener(com.yagasoft.overcast.base.container.operation.IOperationListener,
 	 *      Operation)
@@ -430,10 +437,10 @@ public abstract class Container<T> implements IOperable, Comparable<Container<T>
 		{
 			operationListeners.put(listener, new HashSet<Operation>());
 		}
-		
+
 		// add the operation to the set associated to the key.
 		operationListeners.get(listener).add(operation);
-		
+
 		// remove listener from temp list as it will now monitor this for a while
 		if (tempOperationListeners.containsKey(listener)
 				&& tempOperationListeners.get(listener).contains(operation))
@@ -441,7 +448,7 @@ public abstract class Container<T> implements IOperable, Comparable<Container<T>
 			removeTempOperationListener(listener, operation);
 		}
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.base.container.operation.IOperable#addTempOperationListener(com.yagasoft.overcast.base.container.operation.IOperationListener,
 	 *      com.yagasoft.overcast.base.container.operation.Operation)
@@ -453,23 +460,23 @@ public abstract class Container<T> implements IOperable, Comparable<Container<T>
 		{
 			return;
 		}
-		
+
 		// if it's already monitoring, then don't add it
 		if (operationListeners.containsKey(listener)
 				&& operationListeners.get(listener).contains(operation))
 		{
 			return;
 		}
-		
+
 		if ( !tempOperationListeners.containsKey(listener))
 		{
 			tempOperationListeners.put(listener, new HashSet<Operation>());
 		}
-		
+
 		// add the operation to the set associated to the key.
 		tempOperationListeners.get(listener).add(operation);
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.base.container.operation.IOperable#removeOperationListener(com.yagasoft.overcast.base.container.operation.IOperationListener)
 	 */
@@ -478,7 +485,7 @@ public abstract class Container<T> implements IOperable, Comparable<Container<T>
 	{
 		operationListeners.remove(listener);
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.base.container.operation.IOperable#removeOperationListener(com.yagasoft.overcast.base.container.operation.IOperationListener,
 	 *      com.yagasoft.overcast.base.container.operation.Operation)
@@ -487,14 +494,14 @@ public abstract class Container<T> implements IOperable, Comparable<Container<T>
 	public void removeOperationListener(IOperationListener listener, Operation operation)
 	{
 		operationListeners.get(listener).remove(operation);
-		
+
 		// if the operations set is empty, then remove the listener.
 		if (operationListeners.get(listener).isEmpty())
 		{
 			removeOperationListener(listener);
 		}
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.base.container.operation.IOperable#removeTempOperationListener(com.yagasoft.overcast.base.container.operation.IOperationListener)
 	 */
@@ -505,10 +512,10 @@ public abstract class Container<T> implements IOperable, Comparable<Container<T>
 		{
 			return;
 		}
-		
+
 		tempOperationListeners.remove(listener);
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.base.container.operation.IOperable#removeTempOperationListener(com.yagasoft.overcast.base.container.operation.IOperationListener,
 	 *      com.yagasoft.overcast.base.container.operation.Operation)
@@ -520,16 +527,16 @@ public abstract class Container<T> implements IOperable, Comparable<Container<T>
 		{
 			return;
 		}
-		
+
 		tempOperationListeners.get(listener).remove(operation);
-		
+
 		// if the operations set is empty, then remove the listener.
 		if (tempOperationListeners.get(listener).isEmpty())
 		{
 			removeTempOperationListener(listener);
 		}
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.base.container.operation.IOperable#notifyOperationListeners(com.yagasoft.overcast.base.container.operation.Operation,
 	 *      com.yagasoft.overcast.base.container.operation.OperationState, float, com.yagasoft.overcast.base.container.Container)
@@ -541,7 +548,7 @@ public abstract class Container<T> implements IOperable, Comparable<Container<T>
 		operationListeners.keySet().parallelStream()
 				.filter(listener -> operationListeners.get(listener).contains(operation))
 				.forEach(listener -> listener.operationChange(new OperationEvent(this, operation, state, progress, object)));
-		
+
 		// go through the temp listeners' list and notify whoever is concerned with this operation.
 		tempOperationListeners.keySet().parallelStream()
 				.filter(listener ->
@@ -550,7 +557,7 @@ public abstract class Container<T> implements IOperable, Comparable<Container<T>
 								&& operationListeners.get(listener).contains(operation)))
 				.forEach(listener -> listener.operationChange(new OperationEvent(this, operation, state, progress, object)));
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.base.container.operation.IOperable#clearOperationListeners(com.yagasoft.overcast.base.container.operation.Operation)
 	 */
@@ -560,7 +567,7 @@ public abstract class Container<T> implements IOperable, Comparable<Container<T>
 		operationListeners.keySet().parallelStream()
 				.forEach(listener -> removeOperationListener(listener, operation));
 	}
-	
+
 	/**
 	 * Remove all types of listeners that was added to this container before.<br />
 	 * Override this in sub-classes if more types of listeners were added.
@@ -569,11 +576,11 @@ public abstract class Container<T> implements IOperable, Comparable<Container<T>
 	{
 		operationListeners.clear();
 	}
-	
+
 	// ======================================================================================
 	// #endregion Listeners.
 	// //////////////////////////////////////////////////////////////////////////////////////
-	
+
 	/**
 	 * Removes the prefix from the path to make it standardised with this API's paths.<br />
 	 * It should be added before communicating with the service using its path format.
@@ -592,7 +599,7 @@ public abstract class Container<T> implements IOperable, Comparable<Container<T>
 			}
 		}
 	}
-	
+
 	/**
 	 * Checks if the object passed is identical to this one. It checks if it's a container in the first place, and if so, checks
 	 * the ID, and as it's unique, there won't be conflicts.
@@ -607,7 +614,7 @@ public abstract class Container<T> implements IOperable, Comparable<Container<T>
 	{
 		return ((object instanceof Container) && (((Container<?>) object).id.equalsIgnoreCase(getId())));
 	}
-	
+
 	/**
 	 * Compares names, used for sorting.
 	 *
@@ -621,22 +628,22 @@ public abstract class Container<T> implements IOperable, Comparable<Container<T>
 	{
 		return path.compareToIgnoreCase(container.path);
 	}
-	
+
 	public static Comparator<Container<?>> getNameComparator()
 	{
 		return ((file1, file2) -> file1.getName().compareToIgnoreCase(file2.getName()));
 	}
-	
+
 	public static Comparator<Container<?>> getPathComparator()
 	{
 		return ((file1, file2) -> file1.getPath().compareToIgnoreCase(file2.getPath()));
 	}
-	
+
 	public static Comparator<Container<?>> getSizeComparator()
 	{
 		return ((file1, file2) -> new Long(file1.getSize()).compareTo(file2.getSize()));
 	}
-	
+
 	/**
 	 * Returns the name of the container.
 	 *
@@ -648,11 +655,11 @@ public abstract class Container<T> implements IOperable, Comparable<Container<T>
 	{
 		return name;
 	}
-	
+
 	// //////////////////////////////////////////////////////////////////////////////////////
 	// #region Getters and setters.
 	// ======================================================================================
-	
+
 	/**
 	 * Gets the id.
 	 *
@@ -662,7 +669,7 @@ public abstract class Container<T> implements IOperable, Comparable<Container<T>
 	{
 		return id;
 	}
-	
+
 	/**
 	 * Sets the id.
 	 *
@@ -673,7 +680,7 @@ public abstract class Container<T> implements IOperable, Comparable<Container<T>
 	{
 		this.id = id;
 	}
-	
+
 	/**
 	 * Gets the name.
 	 *
@@ -683,7 +690,7 @@ public abstract class Container<T> implements IOperable, Comparable<Container<T>
 	{
 		return this.name;
 	}
-	
+
 	/**
 	 * Sets the name.
 	 *
@@ -695,7 +702,7 @@ public abstract class Container<T> implements IOperable, Comparable<Container<T>
 		this.name = value;
 		updateInfo();		// the path is affected.
 	}
-	
+
 	/**
 	 * Gets the path.
 	 *
@@ -705,7 +712,7 @@ public abstract class Container<T> implements IOperable, Comparable<Container<T>
 	{
 		return this.path;
 	}
-	
+
 	/**
 	 * Sets the path. I advise against using this manually.
 	 *
@@ -717,7 +724,7 @@ public abstract class Container<T> implements IOperable, Comparable<Container<T>
 		this.path = value;
 		cleanPath();
 	}
-	
+
 	/**
 	 * @return the pathPrefix
 	 */
@@ -725,7 +732,7 @@ public abstract class Container<T> implements IOperable, Comparable<Container<T>
 	{
 		return pathPrefix;
 	}
-	
+
 	/**
 	 * @param pathPrefix
 	 *            the pathPrefix to set
@@ -735,7 +742,7 @@ public abstract class Container<T> implements IOperable, Comparable<Container<T>
 		this.pathPrefix = pathPrefix;
 		cleanPath();
 	}
-	
+
 	/**
 	 * Gets the size.
 	 *
@@ -745,7 +752,7 @@ public abstract class Container<T> implements IOperable, Comparable<Container<T>
 	{
 		return size;
 	}
-	
+
 	/**
 	 * Sets the size.
 	 *
@@ -756,7 +763,7 @@ public abstract class Container<T> implements IOperable, Comparable<Container<T>
 	{
 		this.size = size;
 	}
-	
+
 	/**
 	 * @return the date
 	 */
@@ -764,7 +771,7 @@ public abstract class Container<T> implements IOperable, Comparable<Container<T>
 	{
 		return date;
 	}
-	
+
 	/**
 	 * @param date
 	 *            the date to set
@@ -773,7 +780,7 @@ public abstract class Container<T> implements IOperable, Comparable<Container<T>
 	{
 		this.date = date;
 	}
-	
+
 	/**
 	 * Gets the source object.
 	 *
@@ -783,7 +790,7 @@ public abstract class Container<T> implements IOperable, Comparable<Container<T>
 	{
 		return sourceObject;
 	}
-	
+
 	/**
 	 * Sets the source object, and updates the info.
 	 *
@@ -795,7 +802,7 @@ public abstract class Container<T> implements IOperable, Comparable<Container<T>
 		this.sourceObject = sourceObject;
 		updateInfo();		// all info are affected. (fields)
 	}
-	
+
 	/**
 	 * Gets the parent.
 	 *
@@ -805,7 +812,7 @@ public abstract class Container<T> implements IOperable, Comparable<Container<T>
 	{
 		return parent;
 	}
-	
+
 	/**
 	 * Sets the parent.
 	 *
@@ -817,7 +824,7 @@ public abstract class Container<T> implements IOperable, Comparable<Container<T>
 		this.parent = parent;
 		updateInfo();
 	}
-	
+
 	/**
 	 * Gets the csp.
 	 *
@@ -827,7 +834,7 @@ public abstract class Container<T> implements IOperable, Comparable<Container<T>
 	{
 		return csp;
 	}
-	
+
 	/**
 	 * Sets the csp.
 	 *
@@ -838,9 +845,9 @@ public abstract class Container<T> implements IOperable, Comparable<Container<T>
 	{
 		this.csp = csp;
 	}
-	
+
 	// ======================================================================================
 	// #endregion Getters and setters.
 	// //////////////////////////////////////////////////////////////////////////////////////
-	
+
 }

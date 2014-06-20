@@ -2,12 +2,12 @@
  * Copyright (C) 2011-2014 by Ahmed Osama el-Sawalhy
  *
  *		The Modified MIT Licence (GPL v3 compatible)
- * 			License terms are in a separate file (LICENCE.md)
+ * 			Licence terms are in a separate file (LICENCE.md)
  *
  *		Project/File: Overcast/com.yagasoft.overcast.base.container.local/LocalFile.java
  *
- *			Modified: Apr 15, 2014 (8:08:39 AM)
- *			   Using: Eclipse J-EE / JDK 7 / Windows 8.1 x64
+ *			Modified: 20-Jun-2014 (20:50:20)
+ *			   Using: Eclipse J-EE / JDK 8 / Windows 8.1 x64
  */
 
 package com.yagasoft.overcast.base.container.local;
@@ -41,16 +41,16 @@ import com.yagasoft.overcast.exception.TransferException;
  */
 public class LocalFile extends File<Path>
 {
-	
+
 	/** The {@link RemoteFile} corresponding to this local file if applicable. */
 	protected RemoteFile<?>	remoteMapping;
-	
+
 	/**
 	 * Instantiates a new local file.
 	 */
 	public LocalFile()
 	{}
-	
+
 	/**
 	 * Instantiates a new local file.
 	 *
@@ -69,7 +69,7 @@ public class LocalFile extends File<Path>
 			e.printStackTrace();
 		}		// updating the info locally costs nothing, so do it automatically.
 	}
-	
+
 	/**
 	 * Instantiates a new local file.
 	 *
@@ -80,7 +80,7 @@ public class LocalFile extends File<Path>
 	{
 		this(Paths.get(path));		// get the file object and pass it to the other constructor.
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.base.container.Container#generateId()
 	 */
@@ -89,7 +89,7 @@ public class LocalFile extends File<Path>
 	{
 		id = path;
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.base.container.Container#isExist()
 	 */
@@ -97,7 +97,7 @@ public class LocalFile extends File<Path>
 	public synchronized boolean isExist() throws AccessException
 	{
 		Logger.info("checking file existence: " + path);
-		
+
 		// if the Java library says the file doesn't exist, and at same time it says the file doesn't 'not exist', then ...
 		// obviously a problem.
 		if ( !Files.exists(sourceObject) && !Files.notExists(sourceObject))
@@ -105,10 +105,19 @@ public class LocalFile extends File<Path>
 			Logger.error("determine if file exists or not: " + path);
 			throw new AccessException("Can't determine if file exists or not!");
 		}
-		
+
 		return Files.exists(sourceObject);
 	}
-	
+
+	/**
+	 * @see com.yagasoft.overcast.base.container.Container#isLocal()
+	 */
+	@Override
+	public boolean isLocal()
+	{
+		return true;
+	}
+
 	/**
 	 * @see com.yagasoft.overcast.base.container.Container#updateInfo()
 	 */
@@ -119,10 +128,10 @@ public class LocalFile extends File<Path>
 		{
 			name = "";
 		}
-		
+
 		path = (((parent == null) || parent.getPath().equals("/")) ? "/" : (parent.getPath() + "/")) + name;
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.base.container.Container#updateFromSource()
 	 */
@@ -130,13 +139,13 @@ public class LocalFile extends File<Path>
 	public synchronized void updateFromSource() throws OperationException
 	{
 //		Logger.info("updating info from source: " + path);
-		
+
 		name = sourceObject.getFileName().toString();
 		path = sourceObject.toAbsolutePath().toString();
 		type = URLConnection.guessContentTypeFromName(path);		// guess type of file (MIME)
-		
+
 		parent = new LocalFolder(sourceObject.getParent());
-		
+
 		try
 		{
 			size = Files.size(sourceObject);
@@ -148,12 +157,12 @@ public class LocalFile extends File<Path>
 			e.printStackTrace();
 			throw new OperationException("Couldn't update info! " + e.getMessage());
 		}
-		
+
 		generateId();
-		
+
 //		Logger.info("updating info from source: " + path);
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.base.container.Container#copyProcess(com.yagasoft.overcast.base.container.Folder)
 	 */
@@ -174,7 +183,7 @@ public class LocalFile extends File<Path>
 			throw new OperationException(e.getMessage());
 		}
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.base.container.Container#moveProcess(com.yagasoft.overcast.base.container.Folder)
 	 */
@@ -194,7 +203,7 @@ public class LocalFile extends File<Path>
 			throw new OperationException(e.getMessage());
 		}
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.base.container.Container#renameProcess(java.lang.String)
 	 */
@@ -210,7 +219,7 @@ public class LocalFile extends File<Path>
 			throw new OperationException(e.getMessage());
 		}
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.base.container.Container#deleteProcess()
 	 */
@@ -226,7 +235,7 @@ public class LocalFile extends File<Path>
 			throw new OperationException(e.getMessage());
 		}
 	}
-	
+
 	/**
 	 * Upload the container to the server.<br />
 	 * This should just call the one in {@link CSP}.
@@ -247,7 +256,7 @@ public class LocalFile extends File<Path>
 	{
 		return parent.getCsp().upload(this, parent, overwrite, listener);
 	}
-	
+
 	/**
 	 * @return the remoteMapping
 	 */
@@ -255,7 +264,7 @@ public class LocalFile extends File<Path>
 	{
 		return remoteMapping;
 	}
-	
+
 	/**
 	 * @param remoteMapping
 	 *            the remoteMapping to set
@@ -264,19 +273,19 @@ public class LocalFile extends File<Path>
 	{
 		this.remoteMapping = remoteMapping;
 	}
-	
+
 	@Override
 	public CSP<Path, ?, ?> getCsp()
 	{
 		throw new UnsupportedOperationException("DO NOT USE!");
 	}
-	
+
 	@Override
 	public void setCsp(CSP<Path, ?, ?> csp)
 	{
 		throw new UnsupportedOperationException("DO NOT USE!");
 	}
-	
+
 	@Override
 	public void setPath(String value)
 	{

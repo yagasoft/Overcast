@@ -44,26 +44,26 @@ import com.yagasoft.overcast.exception.OperationException;
 @SuppressWarnings("unchecked")
 public abstract class Folder<T> extends Container<T>
 {
-	
+
 	/** Folders inside this folder mapped by ID (tree implementation). */
 	protected Map<String, Folder<?>>	folders		= new HashMap<String, Folder<?>>();
-	
+
 	/** Files inside this folder mapped by ID. */
 	protected Map<String, File<?>>		files		= new HashMap<String, File<?>>();
-	
+
 	/** Thread executor to be used to load sub-folders in the tree. */
 	protected static ExecutorService	executor	= Executors.newCachedThreadPool();
-	
+
 	/**
 	 * Number of slots to be used to load folder tree, fixed and low to reduce the load on the server; we don't want to be
 	 * throttled!
 	 */
 	protected static Semaphore			slots		= new Semaphore(2);
-	
+
 	// //////////////////////////////////////////////////////////////////////////////////////
 	// #region Create folder.
 	// ======================================================================================
-	
+
 	/**
 	 * Creates the folder at the source with the name set as a field and the parent path passed.
 	 *
@@ -78,27 +78,27 @@ public abstract class Folder<T> extends Container<T>
 	public void create(String parentPath, IOperationListener listener) throws CreationException
 	{
 		Logger.info("creating folder from path: " + parentPath + "/" + name);
-		
+
 		// split the parent path into nodes.
 		ArrayList<String> splitPath = new ArrayList<String>(Arrays.asList(parentPath.split("/")));
-		
+
 		// remove the first node as it's the root
 		if ( !splitPath.isEmpty() && splitPath.get(0).equals(""))
 		{
 			splitPath.remove(0);
 		}
-		
+
 		// start from the root.
 		RemoteFolder parent = csp.getRemoteFileTree();
-		
+
 		// if there're sub-folders in the path
 		if ( !splitPath.isEmpty())
 		{
 			List<Container<?>> result;
-			
+
 			// search for the first sub-folder.
-			result = parent.searchByName(splitPath.get(0), false);
-			
+			result = parent.searchByName(splitPath.get(0), false, false);
+
 			// if it's found, and there're more sub-folders ...
 			// (if it's found but not sub-folders, then it's the parent we want to create in)
 			while ( !result.isEmpty() && !splitPath.isEmpty())
@@ -106,11 +106,11 @@ public abstract class Folder<T> extends Container<T>
 				// this it the intended parent for now ...
 				parent = (RemoteFolder) result.get(0);
 				splitPath.remove(0);		// don't need it anymore in the node's list.
-				
+
 				// more sub-folders?
 				if ( !splitPath.isEmpty())
 				{
-					result = parent.searchByName(splitPath.get(0), false);
+					result = parent.searchByName(splitPath.get(0), false, false);
 				}
 				else
 				{	// no more sub-folders, this is the parent for now.
@@ -118,7 +118,7 @@ public abstract class Folder<T> extends Container<T>
 				}
 			}
 		}
-		
+
 		// couldn't find a node in the first iteration, so start creating the folders in the rest of the path.
 		while ( !splitPath.isEmpty())
 		{
@@ -126,18 +126,18 @@ public abstract class Folder<T> extends Container<T>
 			tempFolder.setName(splitPath.remove(0));
 			tempFolder.create(parent, listener);
 			parent = tempFolder;		// new parent is the newly created folder.
-			
+
 			Logger.info("created mid folder: " + parent.path);
 		}
-		
+
 		// done with creating/traversing the path, now search if this folder exists in the last node ...
-		List<Container<?>> result = parent.searchByName(name, false);
-		
+		List<Container<?>> result = parent.searchByName(name, false, false);
+
 		// ... if so, then it already exists.
 		if ( !result.isEmpty() && result.get(0).isFolder())
 		{
 			Logger.error("creating nodes to reach desired folder: " + parentPath + "/" + name);
-			
+
 			throw new CreationException("Folder already exists!");
 		}
 		else
@@ -145,7 +145,7 @@ public abstract class Folder<T> extends Container<T>
 			create(parent, listener);		// create the folder in the reached parent.
 		}
 	}
-	
+
 	/**
 	 * Creates the folder at the source with the info set (class attributes).
 	 *
@@ -169,7 +169,7 @@ public abstract class Folder<T> extends Container<T>
 			Logger.error("creating folder: " + parent.getPath() + "/" + name);
 			Logger.except(e);
 			e.printStackTrace();
-			
+
 			throw new CreationException("Couldn't create folder! " + e.getMessage());
 		}
 		finally
@@ -177,19 +177,19 @@ public abstract class Folder<T> extends Container<T>
 			removeTempOperationListener(listener, Operation.CREATE);
 		}
 	}
-	
+
 	/**
 	 * Initialises the folder creation process.
 	 */
 	protected void initCreate(Folder<?> parent, IOperationListener listener) throws CreationException
 	{
 		Logger.info("creating folder: " + parent.getPath() + "/" + name);
-		
+
 		addTempOperationListener(listener, Operation.CREATE);
-		
+
 		// check if the folder exists in the parent ...
-		List<Container<?>> result = parent.searchByName(name, false);
-		
+		List<Container<?>> result = parent.searchByName(name, false, false);
+
 		// if it exists, problem!
 		if ((result.size() >= 1) && result.get(0).isFolder())
 		{
@@ -197,7 +197,7 @@ public abstract class Folder<T> extends Container<T>
 			throw new CreationException("Folder already Exists!");
 		}
 	}
-	
+
 	/**
 	 * Process of creating the folder. It should create the folder at the CSP,
 	 * and return an object representing the created folder in the type used by the CSP.
@@ -209,7 +209,7 @@ public abstract class Folder<T> extends Container<T>
 	 *             the creation exception
 	 */
 	protected abstract T createProcess(Folder<?> parent) throws CreationException;
-	
+
 	/**
 	 * Post folder creation.
 	 */
@@ -217,14 +217,14 @@ public abstract class Folder<T> extends Container<T>
 	{
 		parent.add(this);
 		notifyOperationListeners(Operation.CREATE, OperationState.COMPLETED, 1.0f);
-		
+
 		Logger.info("finished creating folder: " + path);
 	}
-	
+
 	// ======================================================================================
 	// #endregion Create folder.
 	// //////////////////////////////////////////////////////////////////////////////////////
-	
+
 	/**
 	 * Adds the container passed to the list of containers in this folder.
 	 *
@@ -241,13 +241,13 @@ public abstract class Folder<T> extends Container<T>
 		{
 			files.put(container.id, (File<?>) container);
 		}
-		
+
 		container.setParent(this);				// set the parent of the container passed as this folder.
 		notifyOperationListeners(Operation.ADD, container);
-		
+
 		Logger.info("added: " + container.path + ", to parent: " + path);
 	}
-	
+
 	/**
 	 * Removes the container from the list of containers in this folder.
 	 *
@@ -262,14 +262,14 @@ public abstract class Folder<T> extends Container<T>
 		{
 			container.setParent(null);
 			notifyOperationListeners(Operation.REMOVE, container);
-			
+
 			// the container is an orphan and not needed, so remove its listeners.
 			container.clearAllListeners();
-			
+
 			Logger.info("removed: " + container.path + ", from parent: " + path);
 		}
 	}
-	
+
 	/**
 	 * Removes the file/folder from either list in this folder based on ID -- should search both lists.
 	 *
@@ -284,11 +284,11 @@ public abstract class Folder<T> extends Container<T>
 			Logger.info("removed file/folder: " + id);
 		}
 	}
-	
+
 	// //////////////////////////////////////////////////////////////////////////////////////
 	// #region Tree operations.
 	// ======================================================================================
-	
+
 	/**
 	 * Builds the sub-tree of this folder, adding sub-folders and files to the map.<br />
 	 * Should check the levels reached on each recursion.
@@ -305,15 +305,15 @@ public abstract class Folder<T> extends Container<T>
 		{
 			return;
 		}
-		
+
 		ArrayList<Container<?>> childrenArray = new ArrayList<Container<?>>();
-		
+
 		try
 		{
 			initBuildTree();
 			buildTreeProcess(numberOfLevels, childrenArray);
 			postBuildTree(numberOfLevels, childrenArray);
-			
+
 			Logger.info("processed folder: " + path);
 		}
 		catch (OperationException e)
@@ -321,11 +321,11 @@ public abstract class Folder<T> extends Container<T>
 			Logger.error("building folder tree: " + path);
 			Logger.except(e);
 			e.printStackTrace();
-			
+
 			throw new OperationException("Failed to build tree! " + e.getMessage());
 		}
 	}
-	
+
 	/**
 	 * Equivalent to {@link Folder#buildTree(int)} with Integer.MAX_VALUE passed if recursive, or passing zero if not.
 	 *
@@ -345,7 +345,7 @@ public abstract class Folder<T> extends Container<T>
 			buildTree(0);		// if not recursive, then build only the first level.
 		}
 	}
-	
+
 	/**
 	 * Initialises the build tree process.
 	 *
@@ -355,7 +355,7 @@ public abstract class Folder<T> extends Container<T>
 	protected void initBuildTree() throws OperationException
 	{
 		Logger.info("building folder tree: " + path);
-		
+
 		// going to work on a branch, so grab a thread.
 		try
 		{
@@ -366,7 +366,7 @@ public abstract class Folder<T> extends Container<T>
 			e.printStackTrace();
 		}
 	}
-	
+
 	/**
 	 * Builds the tree. It should fetch the children list from the server, remove obsolete using member methods in here,
 	 * create a container object using the factory methods from the CSP, and then add those to the childrenArray.
@@ -379,7 +379,7 @@ public abstract class Folder<T> extends Container<T>
 	 *             the operation exception
 	 */
 	protected abstract void buildTreeProcess(int numberOfLevels, List<Container<?>> childrenArray) throws OperationException;
-	
+
 	/**
 	 * Post build tree.
 	 *
@@ -394,12 +394,12 @@ public abstract class Folder<T> extends Container<T>
 	{
 		// add the resulting children to this folder's list
 		childrenArray.stream().forEach(container -> add(container));
-		
+
 		slots.release();
 		// use a service to 'join' threads and not return before finishing the whole tree build.
 		CompletionService<Boolean> service = new ExecutorCompletionService<Boolean>(executor);
 		int jobs = 0;		// count the submissions to know what to wait for.
-		
+
 		for (final Folder<?> folder : getFoldersArray())
 		{
 			try
@@ -417,7 +417,7 @@ public abstract class Folder<T> extends Container<T>
 						throw new RuntimeException(e.getMessage());
 					}
 				});
-				
+
 				jobs++;		// job submitted, count!
 			}
 			catch (RuntimeException e)
@@ -425,7 +425,7 @@ public abstract class Folder<T> extends Container<T>
 				throw new OperationException(e.getMessage());
 			}
 		}
-		
+
 		// join threads ...
 		try
 		{
@@ -439,11 +439,11 @@ public abstract class Folder<T> extends Container<T>
 			e1.printStackTrace();
 		}
 	}
-	
+
 	// ======================================================================================
 	// #endregion Tree operations.
 	// //////////////////////////////////////////////////////////////////////////////////////
-	
+
 	/**
 	 * I chose to add it here and not in updateFromSource because it's an intensive operation that should be done manually only.
 	 *
@@ -452,7 +452,7 @@ public abstract class Folder<T> extends Container<T>
 	 *             the operation exception
 	 */
 	public abstract long calculateSize() throws OperationException;
-	
+
 	/**
 	 * @see com.yagasoft.overcast.base.container.Container#isFolder()
 	 */
@@ -461,7 +461,7 @@ public abstract class Folder<T> extends Container<T>
 	{
 		return true;		// this is a folder!
 	}
-	
+
 	/**
 	 * Update from where the folder resides. It updates the info of the folder from the source itself
 	 * , and can be done recursively (tree). It refreshes the children list if 'contents' flag is true.
@@ -474,11 +474,11 @@ public abstract class Folder<T> extends Container<T>
 	 *             the operation exception
 	 */
 	public abstract void updateFromSource(boolean folderContents, boolean recursively) throws OperationException;
-	
+
 	// //////////////////////////////////////////////////////////////////////////////////////
 	// #region Searching.
 	// ======================================================================================
-	
+
 	/**
 	 * Checks if this file/folder exists in this folder (searches by ID), and whether to do it recursively.
 	 *
@@ -493,7 +493,7 @@ public abstract class Folder<T> extends Container<T>
 	public <S extends Container<?>> S searchById(String id, boolean recursively)
 	{
 		Logger.info("searching: " + id + ", in: " + path);
-		
+
 		try
 		{
 			// save some time if this folder was already loaded before.
@@ -508,7 +508,7 @@ public abstract class Folder<T> extends Container<T>
 			Logger.except(e);
 			e.printStackTrace();
 		}
-		
+
 		// if the folders list contains the passed ID (mapped), return it.
 		if (folders.containsKey(id))
 		{
@@ -526,7 +526,7 @@ public abstract class Folder<T> extends Container<T>
 			{
 				// search each by calling this method repeatedly for each.
 				Container<?> container = folder.searchById(id, recursively);
-				
+
 				// if something was returned at any point, then return it and end.
 				if (container != null)
 				{
@@ -534,11 +534,11 @@ public abstract class Folder<T> extends Container<T>
 				}
 			}
 		}
-		
+
 		// nothing was found.
 		return null;
 	}
-	
+
 	/**
 	 * Search by name.
 	 *
@@ -548,10 +548,10 @@ public abstract class Folder<T> extends Container<T>
 	 *            Recursively or not.
 	 * @return The container list found
 	 */
-	public List<Container<?>> searchByName(String name, boolean recursively)
+	public List<Container<?>> searchByName(String name, boolean partial, boolean recursively)
 	{
 		Logger.info("searching " + name + " in " + path);
-		
+
 		try
 		{
 			// save some time if this folder was already loaded before.
@@ -566,39 +566,51 @@ public abstract class Folder<T> extends Container<T>
 			Logger.except(e);
 			e.printStackTrace();
 		}
-		
+
 		List<Container<?>> result = new ArrayList<Container<?>>();
-		
+
 		// same as 'searchById', in THIS folder only ...
 		result.addAll(getChildrenList().parallelStream()		// get all children as a stream
-				.filter(container -> name.equals(container.name))		// keep only containers with a matching name
+				.filter(container ->
+				{
+					if (partial)
+					{
+						// keep containers with a similar name
+						return container.name.toLowerCase().contains(name.toLowerCase());
+					}
+					else
+					{
+						// keep only containers with a matching name
+						return container.name.equalsIgnoreCase(name);
+					}
+				})
 				.collect(Collectors.toList()));		// convert filtered result to an array
-		
+
 		if ( !result.isEmpty())
 		{
 			Logger.info("found " + result.get(0) + " in " + path);
 		}
-		
+
 		// search sub-folders
 		if (recursively)
 		{
 			result.addAll(folders.values().parallelStream()		// get sub-folders as a stream
 					// replace each folder with a stream containing its children that match the name
-					.flatMap(folder -> folder.searchByName(name, recursively).parallelStream())
+					.flatMap(folder -> folder.searchByName(name, partial, recursively).parallelStream())
 					.collect(Collectors.toList()));	// convert to an array
 		}
-		
+
 		return result;
 	}
-	
+
 	// ======================================================================================
 	// #endregion Searching.
 	// //////////////////////////////////////////////////////////////////////////////////////
-	
+
 	// //////////////////////////////////////////////////////////////////////////////////////
 	// #region Filtering.
 	// ======================================================================================
-	
+
 	/**
 	 * Removes the obsolete members from the list in this folder using the fresh list sent as an argument.
 	 *
@@ -611,12 +623,12 @@ public abstract class Folder<T> extends Container<T>
 	public void removeObsolete(List<String> ids, boolean filter)
 	{
 		Logger.info("removing obsolete containers: " + path);
-		
+
 		// combine lists in this folder (IDs only, not containers themselves).
 		List<String> containers = new ArrayList<String>();
 		containers.addAll(folders.keySet());
 		containers.addAll(files.keySet());
-		
+
 		// go through the combined list.
 		containers.stream()
 				// keep only the containers in the list sent (not deleted on server)
@@ -626,10 +638,10 @@ public abstract class Folder<T> extends Container<T>
 					// remove it.
 						folders.remove(container);
 						files.remove(container);
-						
+
 						Logger.info("removed obsolete: " + container);
 					});
-		
+
 		// if it's required to filter (remove commons) the sent list as well ...
 		if (filter)
 		{
@@ -638,14 +650,14 @@ public abstract class Folder<T> extends Container<T>
 					.forEach(container ->
 					{
 						ids.remove(container);
-						
+
 						Logger.info("filtering existing: " + container);
 					});
 		}
-		
+
 		Logger.info("finished removing obsolete containers: " + path);
 	}
-	
+
 	/**
 	 * Removes the obsolete folders from the list in this folder using the fresh list sent as an argument.
 	 *
@@ -658,31 +670,31 @@ public abstract class Folder<T> extends Container<T>
 	public void removeObsoleteFolders(List<String> folderIds, boolean filter)
 	{
 		Logger.info("removing obsolete folders: " + path);
-		
+
 		List<String> foldersList = new ArrayList<String>();
 		foldersList.addAll(folders.keySet());
-		
+
 		foldersList.stream()
 				.filter(folder -> !folderIds.contains(folder))
 				.forEach(folder ->
 				{
 					folders.remove(folder);
-					
+
 					Logger.info("removed obsolete: " + folder);
 				});
-		
+
 		if (filter)
 		{
 			foldersList.stream()
 					.forEach(folder ->
 					{
 						folderIds.remove(folder);
-						
+
 						Logger.info("filtering existing: " + folder);
 					});
 		}
 	}
-	
+
 	/**
 	 * Removes the obsolete files from the list in this folder using the fresh list sent as an argument.
 	 *
@@ -695,39 +707,39 @@ public abstract class Folder<T> extends Container<T>
 	public void removeObsoleteFiles(List<String> fileIds, boolean filter)
 	{
 		Logger.info("removing obsolete files: " + path);
-		
+
 		List<String> filesList = new ArrayList<String>();
 		filesList.addAll(folders.keySet());
-		
+
 		filesList.stream()
 				.filter(file -> !fileIds.contains(file))
 				.forEach(file ->
 				{
 					files.remove(file);
-					
+
 					Logger.info("removed obsolete: " + file);
 				});
-		
+
 		if (filter)
 		{
 			filesList.stream()
 					.forEach(file ->
 					{
 						fileIds.remove(file);
-						
+
 						Logger.info("filtering existing: " + file);
 					});
 		}
 	}
-	
+
 	// ======================================================================================
 	// #endregion Filtering.
 	// //////////////////////////////////////////////////////////////////////////////////////
-	
+
 	// //////////////////////////////////////////////////////////////////////////////////////
 	// #region Children listing.
 	// ======================================================================================
-	
+
 	/**
 	 * Gets the whole tree as a sequential list. First adds the children to a new list, and then goes through each folder and gets
 	 * its tree and adds it recursively.
@@ -740,14 +752,14 @@ public abstract class Folder<T> extends Container<T>
 		List<Container<?>> children = new ArrayList<Container<?>>();
 		children.addAll(folders.values());
 		children.addAll(files.values());
-		
+
 		// do it recursively.
 		getFoldersList().stream()
 				.forEach(folder -> children.addAll(folder.getWholeTreeList()));
-		
+
 		return children;
 	}
-	
+
 	/**
 	 * Gets the children as a list, including folders and files.
 	 *
@@ -758,10 +770,10 @@ public abstract class Folder<T> extends Container<T>
 		List<Container<?>> children = new ArrayList<Container<?>>();
 		children.addAll(folders.values());
 		children.addAll(files.values());
-		
+
 		return children;
 	}
-	
+
 	/**
 	 * Gets the folders list only.
 	 *
@@ -771,7 +783,7 @@ public abstract class Folder<T> extends Container<T>
 	{
 		return new ArrayList<Folder<?>>(folders.values());
 	}
-	
+
 	/**
 	 * Gets the files list only.
 	 *
@@ -781,7 +793,7 @@ public abstract class Folder<T> extends Container<T>
 	{
 		return new ArrayList<File<?>>(files.values());
 	}
-	
+
 	/**
 	 * Gets the children as an array, including folders and files.
 	 *
@@ -792,10 +804,10 @@ public abstract class Folder<T> extends Container<T>
 		List<Container<?>> children = new ArrayList<Container<?>>();
 		children.addAll(folders.values());
 		children.addAll(files.values());
-		
+
 		return children.toArray(new Container<?>[children.size()]);		// convert to array before returning.
 	}
-	
+
 	/**
 	 * Gets the folders array.
 	 *
@@ -805,7 +817,7 @@ public abstract class Folder<T> extends Container<T>
 	{
 		return folders.values().toArray(new Folder<?>[folders.size()]);
 	}
-	
+
 	/**
 	 * Gets the files array.
 	 *
@@ -815,7 +827,7 @@ public abstract class Folder<T> extends Container<T>
 	{
 		return files.values().toArray(new File<?>[files.size()]);
 	}
-	
+
 	/**
 	 * Gets the children iterator, including folders and files.
 	 *
@@ -825,7 +837,7 @@ public abstract class Folder<T> extends Container<T>
 	{
 		return getChildrenList().iterator();
 	}
-	
+
 	/**
 	 * Gets the folders iterator.
 	 *
@@ -835,7 +847,7 @@ public abstract class Folder<T> extends Container<T>
 	{
 		return getFoldersList().iterator();
 	}
-	
+
 	/**
 	 * Gets the files iterator.
 	 *
@@ -845,11 +857,11 @@ public abstract class Folder<T> extends Container<T>
 	{
 		return getFilesList().iterator();
 	}
-	
+
 	// ======================================================================================
 	// #endregion Children listing.
 	// //////////////////////////////////////////////////////////////////////////////////////
-	
+
 	/**
 	 * @return the executor
 	 */
@@ -857,7 +869,7 @@ public abstract class Folder<T> extends Container<T>
 	{
 		return executor;
 	}
-	
+
 	/**
 	 * @param executor
 	 *            the executor to set
@@ -866,5 +878,5 @@ public abstract class Folder<T> extends Container<T>
 	{
 		Folder.executor = executor;
 	}
-	
+
 }

@@ -32,10 +32,10 @@ import com.yagasoft.overcast.base.container.transfer.event.TransferState;
  */
 public abstract class DownloadJob<T> extends TransferJob<T>
 {
-	
+
 	/** The remote file to download. */
 	protected RemoteFile<?>	remoteFile;
-	
+
 	/**
 	 * Instantiates a new download job.
 	 *
@@ -53,12 +53,12 @@ public abstract class DownloadJob<T> extends TransferJob<T>
 		super(new LocalFile(), parent, remoteFile.getCsp(), overwrite, cspTransferer);
 		this.parent = parent;
 		this.remoteFile = remoteFile;
-		
+
 		// prepare the local file object
 		localFile.setSourceObject(Paths.get(parent.getPath(), remoteFile.getName()));
 		localFile.setPath(localFile.getSourceObject().toString());
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.base.container.transfer.TransferJob#success()
 	 */
@@ -72,7 +72,7 @@ public abstract class DownloadJob<T> extends TransferJob<T>
 		Logger.info("downloaded successfully: " + localFile.getPath());
 		notifyProgressListeners(TransferState.COMPLETED, 1.0f);
 	}
-	
+
 	/**
 	 * ...
 	 *
@@ -81,7 +81,7 @@ public abstract class DownloadJob<T> extends TransferJob<T>
 	 */
 	public void success(String path)
 	{}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.base.container.transfer.TransferJob#failure()
 	 */
@@ -90,7 +90,7 @@ public abstract class DownloadJob<T> extends TransferJob<T>
 	{
 		notifyProgressListeners(TransferState.FAILED, 0.0f);
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.base.container.transfer.TransferJob#getSourceFile()
 	 */
@@ -99,7 +99,7 @@ public abstract class DownloadJob<T> extends TransferJob<T>
 	{
 		return remoteFile;
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.base.container.transfer.TransferJob#getDestinationFile()
 	 */
@@ -108,10 +108,10 @@ public abstract class DownloadJob<T> extends TransferJob<T>
 	{
 		return localFile;
 	}
-	
+
 	// --------------------------------------------------------------------------------------
 	// #region Getters and setters.
-	
+
 	/**
 	 * @return the remoteFile
 	 */
@@ -119,7 +119,7 @@ public abstract class DownloadJob<T> extends TransferJob<T>
 	{
 		return remoteFile;
 	}
-	
+
 	/**
 	 * @param remoteFile
 	 *            the remoteFile to set
@@ -128,8 +128,8 @@ public abstract class DownloadJob<T> extends TransferJob<T>
 	{
 		this.remoteFile = remoteFile;
 	}
-	
+
 	// #endregion Getters and setters.
 	// --------------------------------------------------------------------------------------
-	
+
 }

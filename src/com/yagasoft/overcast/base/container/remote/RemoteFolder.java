@@ -1,13 +1,13 @@
 /*
  * Copyright (C) 2011-2014 by Ahmed Osama el-Sawalhy
- * 
+ *
  *		The Modified MIT Licence (GPL v3 compatible)
- * 			License terms are in a separate file (LICENCE.md)
- * 
+ * 			Licence terms are in a separate file (LICENCE.md)
+ *
  *		Project/File: Overcast/com.yagasoft.overcast.base.container.remote/RemoteFolder.java
- * 
- *			Modified: Apr 15, 2014 (9:21:10 AM)
- *			   Using: Eclipse J-EE / JDK 7 / Windows 8.1 x64
+ *
+ *			Modified: 20-Jun-2014 (20:51:44)
+ *			   Using: Eclipse J-EE / JDK 8 / Windows 8.1 x64
  */
 
 package com.yagasoft.overcast.base.container.remote;
@@ -28,23 +28,32 @@ import com.yagasoft.overcast.exception.TransferException;
 /**
  * A class representing the folders on the server.<br />
  * All methods in this class must be synchronised in the implementation.
- * 
+ *
  * @param <T>
  *            The source folder type (folder type from the original CSP API) must be passed to this class.
  */
 public abstract class RemoteFolder<T> extends Folder<T>
 {
-	
+
 	/** Pointless for most CSPs! Could be used to display to the user. */
 	protected URL			link;
-	
+
 	/** The {@link RemoteFolder} corresponding to this remote folder if applicable. */
 	protected LocalFolder	localMapping;
-	
+
+	/**
+	 * @see com.yagasoft.overcast.base.container.Container#isLocal()
+	 */
+	@Override
+	public boolean isLocal()
+	{
+		return false;
+	}
+
 	/**
 	 * Download the container (passed) from the server.<br />
 	 * This should just call the one in {@link CSP}.
-	 * 
+	 *
 	 * @param parent
 	 *            The local folder to download to. Must pass a {@link LocalFolder} with the path initialised in it.
 	 * @param overwrite
@@ -64,10 +73,10 @@ public abstract class RemoteFolder<T> extends Folder<T>
 	{
 		return csp.download(this, parent, overwrite, listener);
 	}
-	
+
 	// --------------------------------------------------------------------------------------
 	// #region Getters and setters.
-	
+
 	/**
 	 * @return the link
 	 */
@@ -75,7 +84,7 @@ public abstract class RemoteFolder<T> extends Folder<T>
 	{
 		return link;
 	}
-	
+
 	/**
 	 * @param link
 	 *            the link to set
@@ -84,7 +93,7 @@ public abstract class RemoteFolder<T> extends Folder<T>
 	{
 		this.link = link;
 	}
-	
+
 	/**
 	 * @return the localMapping
 	 */
@@ -92,7 +101,7 @@ public abstract class RemoteFolder<T> extends Folder<T>
 	{
 		return localMapping;
 	}
-	
+
 	/**
 	 * @param localMapping
 	 *            the localMapping to set
@@ -101,8 +110,8 @@ public abstract class RemoteFolder<T> extends Folder<T>
 	{
 		this.localMapping = localMapping;
 	}
-	
+
 	// #endregion Getters and setters.
 	// --------------------------------------------------------------------------------------
-	
+
 }

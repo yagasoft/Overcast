@@ -1,13 +1,13 @@
 /*
  * Copyright (C) 2011-2014 by Ahmed Osama el-Sawalhy
- * 
+ *
  *		The Modified MIT Licence (GPL v3 compatible)
- * 			License terms are in a separate file (LICENCE.md)
- * 
+ * 			Licence terms are in a separate file (LICENCE.md)
+ *
  *		Project/File: Overcast/com.yagasoft.overcast.base.container.remote/RemoteFile.java
- * 
- *			Modified: Apr 15, 2014 (9:20:21 AM)
- *			   Using: Eclipse J-EE / JDK 7 / Windows 8.1 x64
+ *
+ *			Modified: 20-Jun-2014 (20:51:53)
+ *			   Using: Eclipse J-EE / JDK 8 / Windows 8.1 x64
  */
 
 package com.yagasoft.overcast.base.container.remote;
@@ -28,23 +28,32 @@ import com.yagasoft.overcast.exception.TransferException;
 /**
  * A class representing the files on the server.<br />
  * All methods in this class must be synchronised in the implementation.
- * 
+ *
  * @param <T>
  *            The source file type (file type from the original CSP API) must be passed to this class.
  */
 public abstract class RemoteFile<T> extends File<T>
 {
-	
+
 	/** The direct link to the file (can be used to download the file). */
 	protected URL		link;
-	
+
 	/** The {@link LocalFile} corresponding to this remote file if applicable. */
 	protected LocalFile	localMapping;
-	
+
+	/**
+	 * @see com.yagasoft.overcast.base.container.Container#isLocal()
+	 */
+	@Override
+	public boolean isLocal()
+	{
+		return false;
+	}
+
 	/**
 	 * Download the container (passed) from the server.<br />
 	 * This should just call the one in {@link CSP}.
-	 * 
+	 *
 	 * @param parent
 	 *            The local folder to download to. Must pass a {@link LocalFolder} with the path initialised in it.
 	 * @param overwrite
@@ -62,10 +71,10 @@ public abstract class RemoteFile<T> extends File<T>
 	{
 		return csp.download(this, parent, overwrite, listener);
 	}
-	
+
 	// --------------------------------------------------------------------------------------
 	// #region Getters and setters.
-	
+
 	/**
 	 * @return the link
 	 */
@@ -73,7 +82,7 @@ public abstract class RemoteFile<T> extends File<T>
 	{
 		return link;
 	}
-	
+
 	/**
 	 * @param link
 	 *            the link to set
@@ -82,7 +91,7 @@ public abstract class RemoteFile<T> extends File<T>
 	{
 		this.link = link;
 	}
-	
+
 	/**
 	 * @return the localMapping
 	 */
@@ -90,7 +99,7 @@ public abstract class RemoteFile<T> extends File<T>
 	{
 		return localMapping;
 	}
-	
+
 	/**
 	 * @param localMapping
 	 *            the localMapping to set
@@ -99,8 +108,8 @@ public abstract class RemoteFile<T> extends File<T>
 	{
 		this.localMapping = localMapping;
 	}
-	
+
 	// #endregion Getters and setters.
 	// --------------------------------------------------------------------------------------
-	
+
 }

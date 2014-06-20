@@ -6,7 +6,7 @@
  *
  *		Project/File: Overcast/com.yagasoft.overcast.base.container.transfer/UploadJob.java
  *
- *			Modified: 14-Jun-2014 (01:15:54)
+ *			Modified: 17-Jun-2014 (00:21:47)
  *			   Using: Eclipse J-EE / JDK 8 / Windows 8.1 x64
  */
 
@@ -32,10 +32,10 @@ import com.yagasoft.overcast.base.container.transfer.event.TransferState;
  */
 public abstract class UploadJob<T, S> extends TransferJob<T>
 {
-	
+
 	/** The remote file object. */
 	protected RemoteFile<S>	remoteFile;
-	
+
 	/**
 	 * Instantiates a new upload job.
 	 *
@@ -56,7 +56,7 @@ public abstract class UploadJob<T, S> extends TransferJob<T>
 		this.parent = parent;
 		this.remoteFile = remoteFile;
 	}
-	
+
 	/**
 	 * Do NOT use!<br />
 	 * As the CSP API file type can't be determined in this general implementation, so it has to be passed after creating an
@@ -69,7 +69,7 @@ public abstract class UploadJob<T, S> extends TransferJob<T>
 	{
 		throw new UnsupportedOperationException();
 	}
-	
+
 	/**
 	 * Perform stuff on successful upload.
 	 *
@@ -85,7 +85,7 @@ public abstract class UploadJob<T, S> extends TransferJob<T>
 		Logger.info("uploaded successfully: " + remoteFile.getPath());
 		notifyProgressListeners(TransferState.COMPLETED, 1.0f);
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.base.container.transfer.TransferJob#failure()
 	 */
@@ -94,7 +94,7 @@ public abstract class UploadJob<T, S> extends TransferJob<T>
 	{
 		notifyProgressListeners(TransferState.FAILED, 0.0f);
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.base.container.transfer.TransferJob#getSourceFile()
 	 */
@@ -103,7 +103,7 @@ public abstract class UploadJob<T, S> extends TransferJob<T>
 	{
 		return localFile;
 	}
-	
+
 	/**
 	 * @see com.yagasoft.overcast.base.container.transfer.TransferJob#getDestinationFile()
 	 */
@@ -112,10 +112,10 @@ public abstract class UploadJob<T, S> extends TransferJob<T>
 	{
 		return remoteFile;
 	}
-	
+
 	// --------------------------------------------------------------------------------------
 	// #region Getters and setters.
-	
+
 	/**
 	 * @return the remoteFile
 	 */
@@ -123,7 +123,7 @@ public abstract class UploadJob<T, S> extends TransferJob<T>
 	{
 		return remoteFile;
 	}
-	
+
 	/**
 	 * @param remoteFile
 	 *            the remoteFile to set
@@ -132,8 +132,8 @@ public abstract class UploadJob<T, S> extends TransferJob<T>
 	{
 		this.remoteFile = remoteFile;
 	}
-	
+
 	// #endregion Getters and setters.
 	// --------------------------------------------------------------------------------------
-	
+
 }

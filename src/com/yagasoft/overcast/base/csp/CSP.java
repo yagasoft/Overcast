@@ -184,7 +184,7 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 
 		// TODO check the queue as well for files with the same name.
 		// overwrite if necessary.
-		List<Container<?>> existingContainer = ((Folder<?>) destination).searchByName(container.getName(), false);
+		List<Container<?>> existingContainer = ((Folder<?>) destination).searchByName(container.getName(), false, false);
 
 		if ( !existingContainer.isEmpty() && (existingContainer.get(0).isFolder() == container.isFolder()))
 		{
@@ -198,9 +198,6 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 			}
 		}
 	}
-
-	// --------------------------------------------------------------------------------------
-	// #region Download.
 
 	/**
 	 * Checks the queues, if it's the same job passed, then call cancel;
@@ -228,6 +225,9 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 			downloadQueue.remove(job);
 		}
 	}
+
+	// --------------------------------------------------------------------------------------
+	// #region Download.
 
 	// TODO Test folder download.
 	/**
@@ -257,7 +257,7 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 		Logger.info("downloading folder: " + folder.getPath());
 
 		// make sure the folder doesn't exist at the destination.
-		List<Container<?>> result = parent.searchByName(folder.getName(), false);
+		List<Container<?>> result = parent.searchByName(folder.getName(), false, false);
 		LocalFolder localFolder = null;
 
 		// if it doesn't exist ...
@@ -322,8 +322,8 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 		try
 		{
 			initTransfer(file, parent, overwrite);
-			DownloadJob<?> downloadJob = downloadProcess(file, parent, overwrite);
-			postDownloadInit(file, (DownloadJob<DownloaderType>) downloadJob, listener);
+			DownloadJob<?> downloadJob = initDownload(file, parent, overwrite);
+			postInitDownload(file, (DownloadJob<DownloaderType>) downloadJob, listener);
 
 			return downloadJob;
 		}
@@ -340,7 +340,7 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 	/**
 	 * Stuff to do before creating the job. Probably creating a 'LocalFile'.
 	 */
-	protected void initDownload() throws CreationException
+	protected void preInitDownload() throws CreationException
 	{}
 
 	/**
@@ -359,7 +359,7 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 	 * @throws TransferException
 	 *             the transfer exception
 	 */
-	protected abstract DownloadJob<DownloaderType> downloadProcess(RemoteFile<?> file, LocalFolder parent, boolean overwrite)
+	protected abstract DownloadJob<DownloaderType> initDownload(RemoteFile<?> file, LocalFolder parent, boolean overwrite)
 			throws TransferException;
 
 	/**
@@ -372,7 +372,7 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 	 * @param listener
 	 *            Listener.
 	 */
-	protected void postDownloadInit(RemoteFile<?> file, DownloadJob<DownloaderType> downloadJob,
+	protected void postInitDownload(RemoteFile<?> file, DownloadJob<DownloaderType> downloadJob,
 			ITransferProgressListener listener)
 	{
 		downloadJob.addProgressListener(listener);
@@ -483,7 +483,7 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 		Logger.info("uploading folder: " + folder.getPath());
 
 		// check if the folder exists at the CSP.
-		List<Container<?>> result = parent.searchByName(folder.getName(), false);
+		List<Container<?>> result = parent.searchByName(folder.getName(), false, false);
 		RemoteFolder<?> remoteFolder = null;
 
 		// if it doesn't exist, create it.
@@ -543,8 +543,8 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 		try
 		{
 			initTransfer(file, parent, overwrite);
-			UploadJob<?, ?> uploadJob = uploadProcess(file, parent, overwrite, initUpload());
-			postUploadInit(file, (UploadJob<UploaderType, SourceFileType>) uploadJob, listener);
+			UploadJob<?, ?> uploadJob = initUpload(file, parent, overwrite, preInitUpload());
+			postInitUpload(file, (UploadJob<UploaderType, SourceFileType>) uploadJob, listener);
 
 			return uploadJob;
 		}
@@ -565,7 +565,7 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 	 * @throws CreationException
 	 *             the creation exception
 	 */
-	protected RemoteFile<?> initUpload() throws CreationException
+	protected RemoteFile<?> preInitUpload() throws CreationException
 	{
 		// create an object for the file that's going to be uploaded to be linked to.
 		return getAbstractFactory().createFile();
@@ -587,7 +587,7 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 	 * @throws TransferException
 	 *             the transfer exception
 	 */
-	protected abstract UploadJob<UploaderType, SourceFileType> uploadProcess(LocalFile file, RemoteFolder<?> parent,
+	protected abstract UploadJob<UploaderType, SourceFileType> initUpload(LocalFile file, RemoteFolder<?> parent,
 			boolean overwrite,
 			RemoteFile<?> remoteFile)
 			throws TransferException;
@@ -602,7 +602,7 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 	 * @param listener
 	 *            Listener.
 	 */
-	protected void postUploadInit(LocalFile file, UploadJob<UploaderType, SourceFileType> uploadJob,
+	protected void postInitUpload(LocalFile file, UploadJob<UploaderType, SourceFileType> uploadJob,
 			ITransferProgressListener listener)
 	{
 		uploadJob.addProgressListener(listener);
@@ -765,7 +765,7 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 			}
 			else
 			{	// search for the next node in this node.
-				result = ((RemoteFolder<?>) result.get(0)).searchByName(splitPath.remove(0), false);
+				result = ((RemoteFolder<?>) result.get(0)).searchByName(splitPath.remove(0), false, false);
 			}
 		}
 
@@ -776,7 +776,7 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 		}
 		else
 		{	// ... or search for the file in the end node. Might return null.
-			return ((RemoteFolder<?>) result.get(0)).searchByName(containerName, false).stream().findFirst().orElse(null);
+			return ((RemoteFolder<?>) result.get(0)).searchByName(containerName, false, false).stream().findFirst().orElse(null);
 		}
 
 	}
