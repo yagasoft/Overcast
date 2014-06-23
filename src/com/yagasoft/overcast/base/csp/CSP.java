@@ -6,8 +6,8 @@
  *
  *		Project/File: Overcast/com.yagasoft.overcast.base.csp/CSP.java
  *
- *			Modified: 25-May-2014 (22:45:26)
- *			   Using: Eclipse J-EE / JDK 7 / Windows 8.1 x64
+ *			Modified: 23-Jun-2014 (21:08:34)
+ *			   Using: Eclipse J-EE / JDK 8 / Windows 8.1 x64
  */
 
 package com.yagasoft.overcast.base.csp;
@@ -42,6 +42,7 @@ import com.yagasoft.overcast.exception.TransferException;
 /**
  * The class representing the Cloud Storage Provider.<br />
  * The constructors should throw a {@link CSPBuildException} if it can't go through to the end.
+ * you should add a RemoteFactory object in the subclasses.
  *
  * @param <SourceFileType>
  *            The source file type (file type from the original CSP API) must be passed to this class.<br />
@@ -93,7 +94,10 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 	/** Current upload thread. */
 	protected Thread											currentUploadThread;
 
-	// you should add a RemoteFactory object in the subclasses.
+	/**
+	 * Destroy instance. Useful if this is a singleton in implementation.
+	 */
+	public abstract void destroyInstance();
 
 	/**
 	 * Initialises the tree -- only reads the root's own info but none of the children.
@@ -163,6 +167,14 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 	public void updateExistingTree() throws OperationException
 	{
 		remoteFileTree.updateFromSource(true, true);
+	}
+
+	/**
+	 * Sets the tree root to null. You have to rebuild it manually by calling {@link #buildFileTree(int)}.
+	 */
+	public void resetTree()
+	{
+		remoteFileTree = null;
 	}
 
 	/**
