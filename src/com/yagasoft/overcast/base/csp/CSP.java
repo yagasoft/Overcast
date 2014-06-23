@@ -6,7 +6,7 @@
  *
  *		Project/File: Overcast/com.yagasoft.overcast.base.csp/CSP.java
  *
- *			Modified: 23-Jun-2014 (21:08:34)
+ *			Modified: 24-Jun-2014 (01:22:46)
  *			   Using: Eclipse J-EE / JDK 8 / Windows 8.1 x64
  */
 
@@ -33,6 +33,7 @@ import com.yagasoft.overcast.base.container.transfer.TransferJob;
 import com.yagasoft.overcast.base.container.transfer.UploadJob;
 import com.yagasoft.overcast.base.container.transfer.event.ITransferProgressListener;
 import com.yagasoft.overcast.base.csp.authorisation.Authorisation;
+import com.yagasoft.overcast.exception.AuthorisationException;
 import com.yagasoft.overcast.exception.CSPBuildException;
 import com.yagasoft.overcast.exception.CreationException;
 import com.yagasoft.overcast.exception.OperationException;
@@ -140,7 +141,7 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 		// build more levels if required.
 		remoteFileTree.buildTree(recursively);
 
-		Logger.info("finished building the root tree: " + name);
+		Logger.info(name.toUpperCase() + ": CSP: finished building the root tree");
 	}
 
 	/**
@@ -155,7 +156,7 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 	{
 		remoteFileTree.buildTree(numberOfLevels);
 
-		Logger.info("finished building the root tree (" + name + ") up to level: " + numberOfLevels);
+		Logger.info(name.toUpperCase() + ": CSP: finished building the root tree up to level: " + numberOfLevels);
 	}
 
 	/**
@@ -178,6 +179,17 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 	}
 
 	/**
+	 * Reset permission. Usually calls {@link #resetPermission()} from {@link Authorisation} object.
+	 * It might need to do some extra work, like rebuilding the tree, and store a new CSP service object.
+	 *
+	 * @throws AuthorisationException
+	 *             the authorisation exception
+	 * @throws OperationException
+	 *             the operation exception
+	 */
+	public abstract void resetPermission() throws AuthorisationException, OperationException;
+
+	/**
 	 * Calculate remote free space available on the CSP.
 	 *
 	 * @return the free space in bytes.
@@ -192,7 +204,7 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 
 	protected void initTransfer(Container<?> container, Container<?> destination, boolean overwrite) throws OperationException
 	{
-		Logger.info("creating transfer job for " + container.getPath());
+		Logger.info(name.toUpperCase() + ": CSP: creating transfer job for " + container.getPath());
 
 		// TODO check the queue as well for files with the same name.
 		// overwrite if necessary.
@@ -231,7 +243,7 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 		}
 		else
 		{
-			Logger.info("cancelling transfer: " + job.getSourceFile().getPath());
+			Logger.info(name.toUpperCase() + ": CSP: cancelling transfer: " + job.getSourceFile().getPath());
 
 			uploadQueue.remove(job);
 			downloadQueue.remove(job);
@@ -266,7 +278,7 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 	public DownloadJob<?>[] download(RemoteFolder<?> folder, LocalFolder parent, boolean overwrite
 			, ITransferProgressListener listener) throws TransferException, OperationException, CreationException
 	{
-		Logger.info("downloading folder: " + folder.getPath());
+		Logger.info(name.toUpperCase() + ": CSP DOWNLOAD: started folder: " + folder.getPath());
 
 		// make sure the folder doesn't exist at the destination.
 		List<Container<?>> result = parent.searchByName(folder.getName(), false, false);
@@ -341,7 +353,7 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 		}
 		catch (OperationException e)
 		{
-			Logger.error("downloading, can't init transfer");
+			Logger.error(name.toUpperCase() + ": CSP DOWNLOAD: can't init transfer");
 			Logger.except(e);
 			e.printStackTrace();
 
@@ -389,7 +401,7 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 	{
 		downloadJob.addProgressListener(listener);
 		downloadQueue.add(downloadJob);		// add it to the queue.
-		Logger.info("created download job: " + file.getPath());
+		Logger.info(name.toUpperCase() + ": CSP DOWNLOAD: created job: " + file.getPath());
 
 		nextDownloadJob();		// check if it can be executed immediately.
 	}
@@ -408,14 +420,14 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 			// ... take one job from the queue ...
 			currentDownloadJob = downloadQueue.remove();
 
-			Logger.info("starting a new download (" + name + "): " + currentDownloadJob.getRemoteFile().getPath());
+			Logger.info(name.toUpperCase() + ": CSP DOWNLOAD: starting a new download: " + currentDownloadJob.getRemoteFile().getPath());
 
 			currentDownloadThread = new Thread(() ->
 			{
 				try
 				{	// start the transfer (starts when thread starts below).
 						initiateDownload();
-						Logger.info("finished download (" + name + "): " + currentDownloadJob.getRemoteFile().getPath());
+						Logger.info(name.toUpperCase() + ": CSP DOWNLOAD: finished: " + currentDownloadJob.getRemoteFile().getPath());
 					}
 					catch (TransferException e)
 					{	// in case of failure, notify the listeners of the failure, and check for more jobs.
@@ -447,7 +459,7 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 	 */
 	public void cancelCurrentDownload()
 	{
-		Logger.info("cancelling download: " + currentDownloadJob.getRemoteFile().getPath());
+		Logger.info(name.toUpperCase() + ": CSP DOWNLOAD: cancelling: " + currentDownloadJob.getRemoteFile().getPath());
 
 		currentDownloadJob.cancelTransfer();
 	}
@@ -492,7 +504,7 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 	public UploadJob<?, ?>[] upload(LocalFolder folder, RemoteFolder<?> parent, boolean overwrite
 			, ITransferProgressListener listener) throws TransferException, OperationException, CreationException
 	{
-		Logger.info("uploading folder: " + folder.getPath());
+		Logger.info(name.toUpperCase() + ": CSP UPLOAD: folder: " + folder.getPath());
 
 		// check if the folder exists at the CSP.
 		List<Container<?>> result = parent.searchByName(folder.getName(), false, false);
@@ -562,7 +574,7 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 		}
 		catch (OperationException | CreationException e)
 		{
-			Logger.error("uploading, can't init transfer");
+			Logger.error(name.toUpperCase() + ": CSP UPLOAD: can't init transfer");
 			Logger.except(e);
 			e.printStackTrace();
 
@@ -619,7 +631,7 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 	{
 		uploadJob.addProgressListener(listener);
 		uploadQueue.add(uploadJob);		// add it to the queue.
-		Logger.info("created upload job: " + file.getPath());
+		Logger.info(name.toUpperCase() + ": CSP UPLOAD: created job: " + file.getPath());
 
 		nextUploadJob();		// check if it can be executed immediately.
 	}
@@ -635,7 +647,7 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 		{
 			currentUploadJob = uploadQueue.remove();
 
-			Logger.info("starting a new upload (" + name + "): " + currentUploadJob.getLocalFile().getPath());
+			Logger.info(name.toUpperCase() + ": CSP UPLOAD: starting a new upload: " + currentUploadJob.getLocalFile().getPath());
 
 			currentUploadThread = new Thread(() ->
 			{
@@ -644,7 +656,7 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 					// start the transfer (starts when thread starts below).
 					initiateUpload();
 
-					Logger.info("finished upload (" + name + "): " + currentUploadJob.getLocalFile().getPath());
+					Logger.info(name.toUpperCase() + ": CSP UPLOAD: finished: " + currentUploadJob.getLocalFile().getPath());
 				}
 				catch (TransferException e)
 				{
@@ -676,7 +688,7 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 	 */
 	public void cancelCurrentUpload()
 	{
-		Logger.info("cancelling upload: " + currentUploadJob.getLocalFile().getPath());
+		Logger.info(name.toUpperCase() + ": CSP UPLOAD: cancelling: " + currentUploadJob.getLocalFile().getPath());
 
 		currentUploadJob.cancelTransfer();
 	}
@@ -772,7 +784,7 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 		{
 			if ( !result.get(0).isFolder())
 			{	// found a file in the middle of the path -- not what we're looking for.
-				Logger.error("failed to search " + path);
+				Logger.error(name.toUpperCase() + ": CSP SEARCH: failed " + path);
 				throw new OperationException("Couldn't complete search: " + path);
 			}
 			else

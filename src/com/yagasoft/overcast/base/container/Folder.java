@@ -77,7 +77,7 @@ public abstract class Folder<T> extends Container<T>
 	@SuppressWarnings("rawtypes")
 	public void create(String parentPath, IOperationListener listener) throws CreationException
 	{
-		Logger.info("creating folder from path: " + parentPath + "/" + name);
+		Logger.info("OVERCAST: FOLDER: CREATING from path: " + parentPath + "/" + name);
 
 		// split the parent path into nodes.
 		ArrayList<String> splitPath = new ArrayList<String>(Arrays.asList(parentPath.split("/")));
@@ -127,7 +127,7 @@ public abstract class Folder<T> extends Container<T>
 			tempFolder.create(parent, listener);
 			parent = tempFolder;		// new parent is the newly created folder.
 
-			Logger.info("created mid folder: " + parent.path);
+			Logger.info("OVERCAST: FOLDER: CREATED mid folder: " + parent.path);
 		}
 
 		// done with creating/traversing the path, now search if this folder exists in the last node ...
@@ -136,7 +136,7 @@ public abstract class Folder<T> extends Container<T>
 		// ... if so, then it already exists.
 		if ( !result.isEmpty() && result.get(0).isFolder())
 		{
-			Logger.error("creating nodes to reach desired folder: " + parentPath + "/" + name);
+			Logger.error("OVERCAST: FOLDER: CREATING nodes to reach desired folder: " + parentPath + "/" + name);
 
 			throw new CreationException("Folder already exists!");
 		}
@@ -166,7 +166,7 @@ public abstract class Folder<T> extends Container<T>
 		}
 		catch (CreationException e)
 		{
-			Logger.error("creating folder: " + parent.getPath() + "/" + name);
+			Logger.error("OVERCAST: FOLDER: FAILED in creating folder: " + parent.getPath() + "/" + name);
 			Logger.except(e);
 			e.printStackTrace();
 
@@ -183,7 +183,7 @@ public abstract class Folder<T> extends Container<T>
 	 */
 	protected void initCreate(Folder<?> parent, IOperationListener listener) throws CreationException
 	{
-		Logger.info("creating folder: " + parent.getPath() + "/" + name);
+		Logger.info("OVERCAST: FOLDER: CREATING folder: " + parent.getPath() + "/" + name);
 
 		addTempOperationListener(listener, Operation.CREATE);
 
@@ -193,7 +193,7 @@ public abstract class Folder<T> extends Container<T>
 		// if it exists, problem!
 		if ((result.size() >= 1) && result.get(0).isFolder())
 		{
-			Logger.error("creating folder -- already exists: " + parent.getPath() + "/" + name);
+			Logger.error("OVERCAST: FOLDER: FAILED in creating folder -- already exists: " + parent.getPath() + "/" + name);
 			throw new CreationException("Folder already Exists!");
 		}
 	}
@@ -218,7 +218,7 @@ public abstract class Folder<T> extends Container<T>
 		parent.add(this);
 		notifyOperationListeners(Operation.CREATE, OperationState.COMPLETED, 1.0f);
 
-		Logger.info("finished creating folder: " + path);
+		Logger.info("OVERCAST: FOLDER: FINISHED creating folder: " + path);
 	}
 
 	// ======================================================================================
@@ -245,7 +245,7 @@ public abstract class Folder<T> extends Container<T>
 		container.setParent(this);				// set the parent of the container passed as this folder.
 		notifyOperationListeners(Operation.ADD, container);
 
-		Logger.info("added: " + container.path + ", to parent: " + path);
+		Logger.info("OVERCAST: FOLDER: ADDED: " + container.path + ", to parent: " + path);
 	}
 
 	/**
@@ -266,7 +266,7 @@ public abstract class Folder<T> extends Container<T>
 			// the container is an orphan and not needed, so remove its listeners.
 			container.clearAllListeners();
 
-			Logger.info("removed: " + container.path + ", from parent: " + path);
+			Logger.info("OVERCAST: FOLDER: REMOVED: " + container.path + ", from parent: " + path);
 		}
 	}
 
@@ -281,7 +281,7 @@ public abstract class Folder<T> extends Container<T>
 		// try to remove from both lists, it will fail quietly if it doesn't exist in either.
 		if ((folders.remove(id) != null) || (files.remove(id) != null))
 		{
-			Logger.info("removed file/folder: " + id);
+			Logger.info("OVERCAST: FOLDER: REMOVED file/folder: " + id);
 		}
 	}
 
@@ -314,11 +314,11 @@ public abstract class Folder<T> extends Container<T>
 			buildTreeProcess(numberOfLevels, childrenArray);
 			postBuildTree(numberOfLevels, childrenArray);
 
-			Logger.info("processed folder: " + path);
+			Logger.info("OVERCAST: FOLDER: PROCESSED folder: " + path);
 		}
 		catch (OperationException e)
 		{
-			Logger.error("building folder tree: " + path);
+			Logger.error("OVERCAST: FOLDER: FAILED in building folder tree: " + path);
 			Logger.except(e);
 			e.printStackTrace();
 
@@ -354,7 +354,7 @@ public abstract class Folder<T> extends Container<T>
 	 */
 	protected void initBuildTree() throws OperationException
 	{
-		Logger.info("building folder tree: " + path);
+		Logger.info("OVERCAST: FOLDER: BUILDING folder tree: " + path);
 
 		// going to work on a branch, so grab a thread.
 		try
@@ -492,7 +492,7 @@ public abstract class Folder<T> extends Container<T>
 	 */
 	public <S extends Container<?>> S searchById(String id, boolean recursively)
 	{
-		Logger.info("searching: " + id + ", in: " + path);
+		Logger.info("OVERCAST: FOLDER: searching: " + id + ", in: " + path);
 
 		try
 		{
@@ -504,7 +504,7 @@ public abstract class Folder<T> extends Container<T>
 		}
 		catch (OperationException e)
 		{
-			Logger.error("failed to update from source " + id + ", searching from memory ...");
+			Logger.error("OVERCAST: FOLDER: SEARCH: FAILED to update from source " + id + ", searching from memory ...");
 			Logger.except(e);
 			e.printStackTrace();
 		}
@@ -512,12 +512,12 @@ public abstract class Folder<T> extends Container<T>
 		// if the folders list contains the passed ID (mapped), return it.
 		if (folders.containsKey(id))
 		{
-			Logger.info("found: " + folders.get(id).path + ", in: " + path);
+			Logger.info("OVERCAST: FOLDER: SEARCH: FOUND: " + folders.get(id).path + ", in: " + path);
 			return (S) folders.get(id);
 		}
 		else if (files.containsKey(id))
 		{	// else, check the files list.
-			Logger.info("found: " + files.get(id).path + ", in: " + path);
+			Logger.info("OVERCAST: FOLDER: SEARCH: FOUND: " + files.get(id).path + ", in: " + path);
 			return (S) files.get(id);
 		}
 		else if (recursively)
@@ -562,7 +562,7 @@ public abstract class Folder<T> extends Container<T>
 		}
 		catch (OperationException e)
 		{
-			Logger.error("failed to update from source " + id + ", searching from memory ...");
+			Logger.error("OVERCAST: FOLDER: SEARCH: FAILED to update from source " + id + ", searching from memory ...");
 			Logger.except(e);
 			e.printStackTrace();
 		}
@@ -588,7 +588,7 @@ public abstract class Folder<T> extends Container<T>
 
 		if ( !result.isEmpty())
 		{
-			Logger.info("found " + result.get(0) + " in " + path);
+			Logger.info("OVERCAST: FOLDER: SEARCH: FOUND " + result.get(0) + " in " + path);
 		}
 
 		// search sub-folders
@@ -622,7 +622,7 @@ public abstract class Folder<T> extends Container<T>
 	 */
 	public void removeObsolete(List<String> ids, boolean filter)
 	{
-		Logger.info("removing obsolete containers: " + path);
+		Logger.info("OVERCAST: FOLDER: REMOVING OBSOLETE containers: " + path);
 
 		// combine lists in this folder (IDs only, not containers themselves).
 		List<String> containers = new ArrayList<String>();
@@ -639,7 +639,7 @@ public abstract class Folder<T> extends Container<T>
 						folders.remove(container);
 						files.remove(container);
 
-						Logger.info("removed obsolete: " + container);
+						Logger.info("OVERCAST: FOLDER: REMOVED OBSOLETE: " + container);
 					});
 
 		// if it's required to filter (remove commons) the sent list as well ...
@@ -651,11 +651,11 @@ public abstract class Folder<T> extends Container<T>
 					{
 						ids.remove(container);
 
-						Logger.info("filtering existing: " + container);
+						Logger.info("OVERCAST: FOLDER: FILTERING existing: " + container);
 					});
 		}
 
-		Logger.info("finished removing obsolete containers: " + path);
+		Logger.info("OVERCAST: FOLDER: FINISHED removing OBSOLETE containers: " + path);
 	}
 
 	/**
@@ -669,7 +669,7 @@ public abstract class Folder<T> extends Container<T>
 	 */
 	public void removeObsoleteFolders(List<String> folderIds, boolean filter)
 	{
-		Logger.info("removing obsolete folders: " + path);
+		Logger.info("OVERCAST: FOLDER: removing obsolete folders: " + path);
 
 		List<String> foldersList = new ArrayList<String>();
 		foldersList.addAll(folders.keySet());
@@ -680,7 +680,7 @@ public abstract class Folder<T> extends Container<T>
 				{
 					folders.remove(folder);
 
-					Logger.info("removed obsolete: " + folder);
+					Logger.info("OVERCAST: FOLDER: REMOVED OBSOLETE: " + folder);
 				});
 
 		if (filter)
@@ -690,7 +690,7 @@ public abstract class Folder<T> extends Container<T>
 					{
 						folderIds.remove(folder);
 
-						Logger.info("filtering existing: " + folder);
+						Logger.info("OVERCAST: FOLDER: FILTERING existing: " + folder);
 					});
 		}
 	}
@@ -706,7 +706,7 @@ public abstract class Folder<T> extends Container<T>
 	 */
 	public void removeObsoleteFiles(List<String> fileIds, boolean filter)
 	{
-		Logger.info("removing obsolete files: " + path);
+		Logger.info("OVERCAST: FOLDER: removing obsolete files: " + path);
 
 		List<String> filesList = new ArrayList<String>();
 		filesList.addAll(folders.keySet());
@@ -717,7 +717,7 @@ public abstract class Folder<T> extends Container<T>
 				{
 					files.remove(file);
 
-					Logger.info("removed obsolete: " + file);
+					Logger.info("OVERCAST: FOLDER: REMOVED OBSOLETE: " + file);
 				});
 
 		if (filter)
@@ -727,7 +727,7 @@ public abstract class Folder<T> extends Container<T>
 					{
 						fileIds.remove(file);
 
-						Logger.info("filtering existing: " + file);
+						Logger.info("OVERCAST: FOLDER: FILTERING existing: " + file);
 					});
 		}
 	}

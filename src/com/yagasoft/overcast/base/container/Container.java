@@ -148,7 +148,7 @@ public abstract class Container<T> implements IOperable, Comparable<Container<T>
 			, String... newName)
 			throws OperationException
 	{
-		Logger.info(operation + " container: " + path);
+		Logger.info(csp.getName().toUpperCase() + ": CONTAINER: " + operation + " on " + path);
 
 		addTempOperationListener(listener, operation);
 
@@ -172,7 +172,7 @@ public abstract class Container<T> implements IOperable, Comparable<Container<T>
 				}
 				else
 				{
-					Logger.error("container -- already exists: " + path);
+					Logger.error(csp.getName().toUpperCase() + ": CONTAINER: " + "already exists: " + path);
 					throw new OperationException("Already exists!");
 				}
 			}
@@ -209,7 +209,7 @@ public abstract class Container<T> implements IOperable, Comparable<Container<T>
 
 		notifyOperationListeners(operation, OperationState.COMPLETED, 1.0f);
 
-		Logger.info("finished " + operation + ": " + affectedContainer.getPath());
+		Logger.info(csp.getName().toUpperCase() + ": CONTAINER: " + " finished " + operation + ": " + affectedContainer.getPath());
 	}
 
 	/**
@@ -224,7 +224,7 @@ public abstract class Container<T> implements IOperable, Comparable<Container<T>
 	 */
 	protected void operationFailed(Operation operation, Exception e) throws OperationException
 	{
-		Logger.error("moving file: " + path);
+		Logger.error(csp.getName().toUpperCase() + ": CONTAINER: " + "moving file: " + path);
 		Logger.except(e);
 		e.printStackTrace();
 

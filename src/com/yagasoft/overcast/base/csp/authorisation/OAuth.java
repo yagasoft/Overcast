@@ -2,12 +2,12 @@
  * Copyright (C) 2011-2014 by Ahmed Osama el-Sawalhy
  *
  *		The Modified MIT Licence (GPL v3 compatible)
- * 			License terms are in a separate file (LICENCE.md)
+ * 			Licence terms are in a separate file (LICENCE.md)
  *
  *		Project/File: Overcast/com.yagasoft.overcast.base.csp.authorisation/OAuth.java
  *
- *			Modified: Apr 14, 2014 (10:32:53 AM)
- *			   Using: Eclipse J-EE / JDK 7 / Windows 8.1 x64
+ *			Modified: 24-Jun-2014 (01:07:36)
+ *			   Using: Eclipse J-EE / JDK 8 / Windows 8.1 x64
  */
 
 package com.yagasoft.overcast.base.csp.authorisation;
@@ -27,22 +27,22 @@ import com.yagasoft.overcast.exception.AuthorisationException;
  */
 public abstract class OAuth extends Authorisation
 {
-	
+
 	/** Info file parent. */
 	private Path	infoParent	= Paths.get(System.getProperty("user.dir") + "/etc/secrets");
-	
+
 	/** Parent folder to store tokens. */
 	protected Path	tokenParent	= Paths.get(System.getProperty("user.dir") + "/var/tokens");
-	
+
 	/** Info file path. This file should contain the information required to identify the dev's account at the CSP. */
 	protected Path	infoFile;
-	
+
 	/** Token value, if needed; usually saved to disk in JSON format). */
 	protected int	token;
-	
+
 	/** Refresh token value. */
 	protected int	refreshToken;
-	
+
 	/**
 	 * Instantiates a new OAuth.
 	 */
@@ -50,7 +50,7 @@ public abstract class OAuth extends Authorisation
 	{
 		super();
 	}
-	
+
 	/**
 	 * Instantiates a new OAuth.
 	 *
@@ -63,7 +63,7 @@ public abstract class OAuth extends Authorisation
 	{
 		super(userID, password);
 	}
-	
+
 	/**
 	 * Instantiates a new OAuth.
 	 *
@@ -75,7 +75,7 @@ public abstract class OAuth extends Authorisation
 	{
 		this(null, null, infoFile);
 	}
-	
+
 	/**
 	 * Instantiates a new OAuth.
 	 *
@@ -90,7 +90,7 @@ public abstract class OAuth extends Authorisation
 	public OAuth(String userID, String password, String infoFile) throws AuthorisationException
 	{
 		this(userID, password);
-		
+
 		try
 		{
 			Files.createDirectories(infoParent);
@@ -98,16 +98,16 @@ public abstract class OAuth extends Authorisation
 		}
 		catch (IOException e)
 		{
-			Logger.error("creating authorisation object -- creating folders: " + infoFile);
+			Logger.error("OVERCAST: OAuth: creating authorisation object -- creating folders: " + infoFile);
 			Logger.except(e);
 			e.printStackTrace();
-			
+
 			throw new AuthorisationException(e.getMessage());
 		}
-		
+
 		this.infoFile = infoParent.resolve(infoFile);		// create a path object for the info file.
 	}
-	
+
 	/**
 	 * Acquire permission from scratch.<br />
 	 * Might open the browser to get user's permission, then use the code returned to get a token.
@@ -116,7 +116,7 @@ public abstract class OAuth extends Authorisation
 	 *             the authorisation exception
 	 */
 	public abstract void acquirePermission() throws AuthorisationException;
-	
+
 	/**
 	 * Re-acquire permission using a saved code or refresh token.
 	 *
@@ -124,7 +124,15 @@ public abstract class OAuth extends Authorisation
 	 *             the authorisation exception
 	 */
 	public abstract void reacquirePermission() throws AuthorisationException;
-	
+
+	/**
+	 * Reset token and try to acquire permission.
+	 *
+	 * @throws AuthorisationException
+	 *             the authorisation exception
+	 */
+	public abstract void resetPermission() throws AuthorisationException;
+
 	/**
 	 * Save token received to disk or field.
 	 *
@@ -132,11 +140,11 @@ public abstract class OAuth extends Authorisation
 	 *             the authorisation exception
 	 */
 	protected abstract void saveToken() throws AuthorisationException;
-	
+
 	// //////////////////////////////////////////////////////////////////////////////////////
 	// #region Getters and setters.
 	// ======================================================================================
-	
+
 	/**
 	 * Gets the token parent.
 	 *
@@ -146,7 +154,7 @@ public abstract class OAuth extends Authorisation
 	{
 		return tokenParent;
 	}
-	
+
 	/**
 	 * Sets the token parent.
 	 *
@@ -157,7 +165,7 @@ public abstract class OAuth extends Authorisation
 	{
 		tokenParent = parent;
 	}
-	
+
 	/**
 	 * Gets the info file.
 	 *
@@ -167,7 +175,7 @@ public abstract class OAuth extends Authorisation
 	{
 		return infoFile;
 	}
-	
+
 	/**
 	 * Sets the info file.
 	 *
@@ -178,7 +186,7 @@ public abstract class OAuth extends Authorisation
 	{
 		infoFile = value;
 	}
-	
+
 	/**
 	 * Gets the token.
 	 *
@@ -188,7 +196,7 @@ public abstract class OAuth extends Authorisation
 	{
 		return token;
 	}
-	
+
 	/**
 	 * Sets the token.
 	 *
@@ -199,7 +207,7 @@ public abstract class OAuth extends Authorisation
 	{
 		token = value;
 	}
-	
+
 	/**
 	 * Gets the refresh token.
 	 *
@@ -209,7 +217,7 @@ public abstract class OAuth extends Authorisation
 	{
 		return refreshToken;
 	}
-	
+
 	/**
 	 * Sets the refresh token.
 	 *
@@ -220,7 +228,7 @@ public abstract class OAuth extends Authorisation
 	{
 		refreshToken = value;
 	}
-	
+
 	/**
 	 * @return the infoParent
 	 */
@@ -228,7 +236,7 @@ public abstract class OAuth extends Authorisation
 	{
 		return infoParent;
 	}
-	
+
 	/**
 	 * @param infoParent
 	 *            the infoParent to set
@@ -238,9 +246,9 @@ public abstract class OAuth extends Authorisation
 		this.infoParent = infoParent;
 		infoFile = infoParent.resolve(infoFile);
 	}
-	
+
 	// ======================================================================================
 	// #endregion Getters and setters.
 	// //////////////////////////////////////////////////////////////////////////////////////
-	
+
 }

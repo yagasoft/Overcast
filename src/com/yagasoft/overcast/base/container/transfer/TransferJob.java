@@ -142,7 +142,7 @@ public abstract class TransferJob<T> implements ITransferrable
 	@Override
 	public void notifyProgressListeners(TransferState state, float progress)
 	{
-		Logger.info("transfer event: " + state + " => " + progress);
+		Logger.info("OVERCAST: JOB: transfer event: " + state + " => " + progress);
 
 		for (ITransferProgressListener listener : progressListeners)
 		{

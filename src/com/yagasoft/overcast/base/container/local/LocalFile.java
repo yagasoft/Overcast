@@ -96,13 +96,13 @@ public class LocalFile extends File<Path>
 	@Override
 	public synchronized boolean isExist() throws AccessException
 	{
-		Logger.info("checking file existence: " + path);
+		Logger.info("OVERCAST: LOCALFILE: checking file existence: " + path);
 
 		// if the Java library says the file doesn't exist, and at same time it says the file doesn't 'not exist', then ...
 		// obviously a problem.
 		if ( !Files.exists(sourceObject) && !Files.notExists(sourceObject))
 		{
-			Logger.error("determine if file exists or not: " + path);
+			Logger.error("OVERCAST: LOCALFILE: failed to determine if file exists or not: " + path);
 			throw new AccessException("Can't determine if file exists or not!");
 		}
 
@@ -138,8 +138,6 @@ public class LocalFile extends File<Path>
 	@Override
 	public synchronized void updateFromSource() throws OperationException
 	{
-//		Logger.info("updating info from source: " + path);
-
 		name = sourceObject.getFileName().toString();
 		path = sourceObject.toAbsolutePath().toString();
 		type = URLConnection.guessContentTypeFromName(path);		// guess type of file (MIME)
@@ -159,8 +157,6 @@ public class LocalFile extends File<Path>
 		}
 
 		generateId();
-
-//		Logger.info("updating info from source: " + path);
 	}
 
 	/**

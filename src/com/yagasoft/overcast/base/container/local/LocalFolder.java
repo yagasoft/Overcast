@@ -112,7 +112,7 @@ public class LocalFolder extends Folder<Path>
 	@Override
 	public synchronized void create(String parentPath, IOperationListener listener) throws CreationException
 	{
-		Logger.info("creating folder from path: " + parentPath + "/" + name);
+		Logger.info("OVERCAST: LOCALFOLDER: creating folder from path: " + parentPath + "/" + name);
 
 		addOperationListener(listener, Operation.CREATE);
 
@@ -122,11 +122,11 @@ public class LocalFolder extends Folder<Path>
 			updateFromSource();
 			notifyOperationListeners(Operation.CREATE, OperationState.COMPLETED, 1.0f);
 
-			Logger.info("finished creating folder: " + path);
+			Logger.info("OVERCAST: LOCALFOLDER: finished creating folder: " + path);
 		}
 		catch (IOException | OperationException e)
 		{
-			Logger.error("creating folder: " + parentPath + "/" + name);
+			Logger.error("OVERCAST: LOCALFOLDER: failed to create folder: " + parentPath + "/" + name);
 			Logger.except(e);
 			e.printStackTrace();
 
@@ -145,13 +145,13 @@ public class LocalFolder extends Folder<Path>
 	@Override
 	public synchronized boolean isExist() throws AccessException
 	{
-		Logger.info("checking existence: " + path);
+		Logger.info("OVERCAST: LOCALFOLDER: checking existence: " + path);
 
 		// if the Java library says the folder doesn't exist, and at same time it says the folder doesn't 'not exist', then ...
 		// obviously a problem.
 		if ( !Files.exists(sourceObject) && !Files.notExists(sourceObject))
 		{
-			Logger.error("can't determine if folder exists or not: " + path);
+			Logger.error("OVERCAST: LOCALFOLDER: failed to determine if folder exists or not: " + path);
 			throw new AccessException("Can't determine if folder exists or not!");
 		}
 
@@ -250,17 +250,17 @@ public class LocalFolder extends Folder<Path>
 	@Override
 	public synchronized long calculateSize() throws OperationException
 	{
-		Logger.info("calculating size: " + path);
+		Logger.info("OVERCAST: LOCALFOLDER: calculating size: " + path);
 
 		try
 		{
 			size = FolderHelper.getSize(path);		// this will calculate the whole folder size, including sub-folders.
 
-			Logger.info("finished calc size: " + path);
+			Logger.info("OVERCAST: LOCALFOLDER: finished calc size: " + path);
 		}
 		catch (IOException e)
 		{
-			Logger.error("calc size: " + path);
+			Logger.error("OVERCAST: LOCALFOLDER: failed to calc size: " + path);
 			Logger.except(e);
 			e.printStackTrace();
 
@@ -293,8 +293,6 @@ public class LocalFolder extends Folder<Path>
 	{
 		// TODO re-write this method
 
-//		Logger.info("updating info from source: " + path);
-
 		if (folderContents)
 		{
 			buildTree(false);
@@ -326,8 +324,6 @@ public class LocalFolder extends Folder<Path>
 		}
 
 		generateId();
-
-//		Logger.info("finished updating info from source: " + path);
 	}
 
 	/**
@@ -442,7 +438,7 @@ public class LocalFolder extends Folder<Path>
 	 */
 	public synchronized long calculateLocalFreeSpace() throws OperationException
 	{
-		Logger.info("calculating local free space");
+		Logger.info("OVERCAST: LOCALFOLDER: calculating local free space");
 
 		try
 		{
@@ -450,7 +446,7 @@ public class LocalFolder extends Folder<Path>
 		}
 		catch (IOException e)
 		{
-			Logger.error("calculating local free space");
+			Logger.error("OVERCAST: LOCALFOLDER: failed to calculate local free space");
 			Logger.except(e);
 			e.printStackTrace();
 

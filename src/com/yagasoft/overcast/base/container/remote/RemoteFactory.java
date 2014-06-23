@@ -98,7 +98,7 @@ public class RemoteFactory<FolderSourceType, FolderType extends RemoteFolder<Fol
 		}
 		catch (InstantiationException | IllegalAccessException e)
 		{
-			Logger.error("creating folder object");
+			Logger.error("OVERCAST: REMOTE FACTORY: failed to create folder object");
 			Logger.except(e);
 			e.printStackTrace();
 			
@@ -123,7 +123,7 @@ public class RemoteFactory<FolderSourceType, FolderType extends RemoteFolder<Fol
 		}
 		catch (InstantiationException | IllegalAccessException e)
 		{
-			Logger.error("creating file object");
+			Logger.error("OVERCAST: REMOTE FACTORY: failed to create file object");
 			Logger.except(e);
 			e.printStackTrace();
 			
@@ -265,7 +265,7 @@ public class RemoteFactory<FolderSourceType, FolderType extends RemoteFolder<Fol
 		}
 		catch (InstantiationException | IllegalAccessException e)
 		{
-			Logger.error("creating folder object: " + path);
+			Logger.error("OVERCAST: REMOTE FACTORY: failed to create folder object: " + path);
 			Logger.except(e);
 			e.printStackTrace();
 		}
@@ -293,7 +293,7 @@ public class RemoteFactory<FolderSourceType, FolderType extends RemoteFolder<Fol
 		}
 		catch (InstantiationException | IllegalAccessException e)
 		{
-			Logger.error("creating file object: " + path);
+			Logger.error("OVERCAST: REMOTE FACTORY: failed to create file object: " + path);
 			Logger.except(e);
 			e.printStackTrace();
 		}
