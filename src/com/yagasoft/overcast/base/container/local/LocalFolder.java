@@ -279,14 +279,14 @@ public class LocalFolder extends Folder<Path>
 	@Override
 	public synchronized void updateInfo()
 	{
-		if (name == null)
+		try
 		{
-			name = "";
+			updateFromSource(false, false);
 		}
-
-		path = (((parent == null) || parent.getPath().equals("/")) ? "/" : (parent.getPath() + "/")) + name;
-		
-		generateId();
+		catch (OperationException e)
+		{
+			e.printStackTrace();
+		}
 	}
 
 	/**
@@ -302,22 +302,26 @@ public class LocalFolder extends Folder<Path>
 			buildTree(false);
 		}
 
-		name = sourceObject.getFileName().toString();
-		path = sourceObject.toAbsolutePath().toString();
-		localFreeSpace = calculateLocalFreeSpace();
+		Path nameObject = sourceObject.getFileName();
 
-		String parentString = sourceObject.getParent().toString();
-
-		if (parentString.equals(sourceObject.getRoot().toString()))
+		if (nameObject == null)
 		{
-			parent = new LocalFolder();
-			parent.setName("root");
+			name = "root";
 		}
 		else
 		{
-			parent = new LocalFolder(parentString);
+			name = nameObject.toString();
 		}
 
+		path = sourceObject.toAbsolutePath().toString();
+		localFreeSpace = calculateLocalFreeSpace();
+
+		Path parentObject = sourceObject.getParent();
+
+		if (parentObject != null)
+		{
+			parent = new LocalFolder(parentObject);
+		}
 
 		try
 		{
@@ -325,10 +329,10 @@ public class LocalFolder extends Folder<Path>
 		}
 		catch (IOException e)
 		{
-			e.printStackTrace();
+			date = 0;
 		}
 
-		updateInfo();
+		generateId();
 	}
 
 	/**
@@ -443,8 +447,6 @@ public class LocalFolder extends Folder<Path>
 	 */
 	public synchronized long calculateLocalFreeSpace() throws OperationException
 	{
-		Logger.info("OVERCAST: LOCALFOLDER: calculating local free space");
-
 		try
 		{
 			return localFreeSpace = Files.getFileStore(sourceObject.getRoot()).getUnallocatedSpace();
@@ -523,6 +525,13 @@ public class LocalFolder extends Folder<Path>
 	protected Path createProcess(Folder<?> parent) throws CreationException
 	{
 		return null;
+	}
+
+	@Override
+	public void setName(String value)
+	{
+		name = value;
+		path = Paths.get(path).getParent().resolve(name).toAbsolutePath().toString();
 	}
 
 	@Override

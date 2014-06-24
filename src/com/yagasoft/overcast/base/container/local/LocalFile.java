@@ -127,14 +127,14 @@ public class LocalFile extends File<Path>
 	@Override
 	public synchronized void updateInfo()
 	{
-		if (name == null)
+		try
 		{
-			name = "";
+			updateFromSource();
 		}
-
-		path = (((parent == null) || parent.getPath().equals("/")) ? "/" : (parent.getPath() + "/")) + name;
-		
-		generateId();
+		catch (OperationException e)
+		{
+			e.printStackTrace();
+		}
 	}
 
 	/**
@@ -147,21 +147,30 @@ public class LocalFile extends File<Path>
 		path = sourceObject.toAbsolutePath().toString();
 		type = URLConnection.guessContentTypeFromName(path);		// guess type of file (MIME)
 
-		parent = new LocalFolder(sourceObject.getParent());
+		if (sourceObject.getParent() != null)
+		{
+			parent = new LocalFolder(sourceObject.getParent());
+		}
 
 		try
 		{
-			size = Files.size(sourceObject);
 			date = Files.getLastModifiedTime(sourceObject).toMillis();
 		}
 		catch (IOException e)
 		{
-			size = 0;
-			e.printStackTrace();
-			throw new OperationException("Couldn't update info! " + e.getMessage());
+			date = 0;
 		}
 
-		updateInfo();
+		try
+		{
+			size = Files.size(sourceObject);
+		}
+		catch (IOException e)
+		{
+			size = 0;
+		}
+
+		generateId();
 	}
 
 	/**
@@ -285,6 +294,13 @@ public class LocalFile extends File<Path>
 	public void setCsp(CSP<Path, ?, ?> csp)
 	{
 		throw new UnsupportedOperationException("DO NOT USE!");
+	}
+
+	@Override
+	public void setName(String value)
+	{
+		name = value;
+		path = Paths.get(path).getParent().resolve(name).toAbsolutePath().toString();
 	}
 
 	@Override
