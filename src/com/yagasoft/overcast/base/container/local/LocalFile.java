@@ -133,6 +133,8 @@ public class LocalFile extends File<Path>
 		}
 
 		path = (((parent == null) || parent.getPath().equals("/")) ? "/" : (parent.getPath() + "/")) + name;
+		
+		generateId();
 	}
 
 	/**
@@ -147,8 +149,6 @@ public class LocalFile extends File<Path>
 
 		parent = new LocalFolder(sourceObject.getParent());
 
-		generateId();
-
 		try
 		{
 			size = Files.size(sourceObject);
@@ -160,6 +160,8 @@ public class LocalFile extends File<Path>
 			e.printStackTrace();
 			throw new OperationException("Couldn't update info! " + e.getMessage());
 		}
+
+		updateInfo();
 	}
 
 	/**
@@ -291,12 +293,12 @@ public class LocalFile extends File<Path>
 		path = value;
 		setPathPrefix("");
 	}
-	
+
 	@Override
 	public void setDate(long date)
 	{
 		super.setDate(date);
-		
+
 		try
 		{
 			Files.setLastModifiedTime(sourceObject, FileTime.fromMillis(date));

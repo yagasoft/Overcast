@@ -285,6 +285,8 @@ public class LocalFolder extends Folder<Path>
 		}
 
 		path = (((parent == null) || parent.getPath().equals("/")) ? "/" : (parent.getPath() + "/")) + name;
+		
+		generateId();
 	}
 
 	/**
@@ -316,7 +318,6 @@ public class LocalFolder extends Folder<Path>
 			parent = new LocalFolder(parentString);
 		}
 
-		generateId();
 
 		try
 		{
@@ -326,6 +327,8 @@ public class LocalFolder extends Folder<Path>
 		{
 			e.printStackTrace();
 		}
+
+		updateInfo();
 	}
 
 	/**
