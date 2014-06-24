@@ -6,7 +6,7 @@
  *
  *		Project/File: Overcast/com.yagasoft.overcast.base.container.transfer/UploadJob.java
  *
- *			Modified: 17-Jun-2014 (00:21:47)
+ *			Modified: 24-Jun-2014 (21:33:14)
  *			   Using: Eclipse J-EE / JDK 8 / Windows 8.1 x64
  */
 
@@ -55,6 +55,15 @@ public abstract class UploadJob<T, S> extends TransferJob<T>
 		super(localFile, parent, remoteFile.getCsp(), overwrite, cspTransferer);
 		this.parent = parent;
 		this.remoteFile = remoteFile;
+	}
+
+	/**
+	 * @see com.yagasoft.overcast.base.container.transfer.TransferJob#isDownloadJob()
+	 */
+	@Override
+	public boolean isDownloadJob()
+	{
+		return false;
 	}
 
 	/**

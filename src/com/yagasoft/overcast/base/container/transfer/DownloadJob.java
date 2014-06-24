@@ -6,7 +6,7 @@
  *
  *		Project/File: Overcast/com.yagasoft.overcast.base.container.transfer/DownloadJob.java
  *
- *			Modified: 14-Jun-2014 (01:16:18)
+ *			Modified: 24-Jun-2014 (21:33:03)
  *			   Using: Eclipse J-EE / JDK 8 / Windows 8.1 x64
  */
 
@@ -57,6 +57,15 @@ public abstract class DownloadJob<T> extends TransferJob<T>
 		// prepare the local file object
 		localFile.setSourceObject(Paths.get(parent.getPath(), remoteFile.getName()));
 		localFile.setPath(localFile.getSourceObject().toString());
+	}
+
+	/**
+	 * @see com.yagasoft.overcast.base.container.transfer.TransferJob#isDownloadJob()
+	 */
+	@Override
+	public boolean isDownloadJob()
+	{
+		return true;
 	}
 
 	/**

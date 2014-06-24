@@ -21,6 +21,7 @@ import java.nio.file.CopyOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.attribute.FileTime;
 
 import com.yagasoft.logger.Logger;
 import com.yagasoft.overcast.base.container.Container;
@@ -31,6 +32,7 @@ import com.yagasoft.overcast.base.container.remote.RemoteFolder;
 import com.yagasoft.overcast.base.container.transfer.UploadJob;
 import com.yagasoft.overcast.base.container.transfer.event.ITransferProgressListener;
 import com.yagasoft.overcast.base.csp.CSP;
+import com.yagasoft.overcast.base.csp.LocalCSP;
 import com.yagasoft.overcast.exception.AccessException;
 import com.yagasoft.overcast.exception.OperationException;
 import com.yagasoft.overcast.exception.TransferException;
@@ -63,6 +65,7 @@ public class LocalFile extends File<Path>
 		{
 			sourceObject = file;
 			updateFromSource();
+			csp = new LocalCSP();
 		}
 		catch (OperationException e)
 		{
@@ -144,6 +147,8 @@ public class LocalFile extends File<Path>
 
 		parent = new LocalFolder(sourceObject.getParent());
 
+		generateId();
+
 		try
 		{
 			size = Files.size(sourceObject);
@@ -155,8 +160,6 @@ public class LocalFile extends File<Path>
 			e.printStackTrace();
 			throw new OperationException("Couldn't update info! " + e.getMessage());
 		}
-
-		generateId();
 	}
 
 	/**
@@ -287,5 +290,20 @@ public class LocalFile extends File<Path>
 	{
 		path = value;
 		setPathPrefix("");
+	}
+	
+	@Override
+	public void setDate(long date)
+	{
+		super.setDate(date);
+		
+		try
+		{
+			Files.setLastModifiedTime(sourceObject, FileTime.fromMillis(date));
+		}
+		catch (IOException e)
+		{
+			e.printStackTrace();
+		}
 	}
 }

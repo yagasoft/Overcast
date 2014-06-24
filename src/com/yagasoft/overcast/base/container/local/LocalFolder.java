@@ -36,6 +36,7 @@ import com.yagasoft.overcast.base.container.remote.RemoteFolder;
 import com.yagasoft.overcast.base.container.transfer.UploadJob;
 import com.yagasoft.overcast.base.container.transfer.event.ITransferProgressListener;
 import com.yagasoft.overcast.base.csp.CSP;
+import com.yagasoft.overcast.base.csp.LocalCSP;
 import com.yagasoft.overcast.exception.AccessException;
 import com.yagasoft.overcast.exception.CreationException;
 import com.yagasoft.overcast.exception.OperationException;
@@ -60,6 +61,7 @@ public class LocalFolder extends Folder<Path>
 	public LocalFolder()
 	{
 		setExecutor(Executors.newFixedThreadPool(10));
+		csp = new LocalCSP();
 	}
 
 	/**
@@ -314,6 +316,8 @@ public class LocalFolder extends Folder<Path>
 			parent = new LocalFolder(parentString);
 		}
 
+		generateId();
+
 		try
 		{
 			date = Files.getLastModifiedTime(sourceObject).toMillis();
@@ -322,8 +326,6 @@ public class LocalFolder extends Folder<Path>
 		{
 			e.printStackTrace();
 		}
-
-		generateId();
 	}
 
 	/**

@@ -742,7 +742,7 @@ public abstract class CSP<SourceFileType, DownloaderType, UploaderType>
 	 *
 	 * @param path
 	 *            Path.
-	 * @return Remote file
+	 * @return Remote file or null if it doesn't exist.
 	 * @throws OperationException
 	 *             the operation exception
 	 */
