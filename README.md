@@ -16,15 +16,19 @@ A façade that facilitates creating APIs to deal with Cloud Storage Providers (C
   + Google, and Dropbox are implemented as add-ons.
 
 ### Implementation instructions:
+	
+###### Dependencies:
+
+	+	Java 8
+	+	Logger: https://github.com/os008/Logger
 
 ###### CSP:
 
     +	To be filled later ...
 
-### Developers' notes:
+### Notes:
 
-  + You have to manually download the libraries and import them into your project, for now.
-
+  + You have to manually download the libraries and import them into your project.
 
 <br>
 <br>
