@@ -50,11 +50,11 @@ import com.yagasoft.overcast.exception.TransferException;
  */
 public class LocalFolder extends Folder<Path>
 {
-
+	
 	/** The {@link RemoteFolder} corresponding to this local folder if applicable. */
 	protected RemoteFolder<?>	remoteMapping;
 	protected long				localFreeSpace;
-
+	
 	/**
 	 * Instantiates a new local folder.
 	 */
@@ -63,7 +63,7 @@ public class LocalFolder extends Folder<Path>
 		setExecutor(Executors.newFixedThreadPool(10));
 		csp = new LocalCSP();
 	}
-
+	
 	/**
 	 * Instantiates a new local folder.
 	 *
@@ -77,7 +77,7 @@ public class LocalFolder extends Folder<Path>
 		sourceObject = file;
 		updateFromSource(false, false);		// updating the info locally costs nothing, so do it automatically.
 	}
-
+	
 	/**
 	 * Instantiates a new local folder.
 	 *
@@ -89,7 +89,7 @@ public class LocalFolder extends Folder<Path>
 	{
 		this(Paths.get(path));		// get the folder object and pass it to the other constructor.
 	}
-
+	
 	/**
 	 * @see com.yagasoft.overcast.base.container.Container#generateId()
 	 */
@@ -98,32 +98,32 @@ public class LocalFolder extends Folder<Path>
 	{
 		id = path;
 	}
-
+	
 	/**
 	 * @see com.yagasoft.overcast.container.Folder#create(Folder<?>, IOperationListener)
 	 */
 	@Override
-	public synchronized void create(Folder<?> parent, IOperationListener listener) throws CreationException
+	public synchronized void create(Folder<?> parent, IOperationListener... listeners) throws CreationException
 	{
-		create(parent.getPath(), listener);		// extract path and call overloaded string function.
+		create(parent.getPath(), listeners);		// extract path and call overloaded string function.
 	}
-
+	
 	/**
 	 * @see com.yagasoft.overcast.base.container.Folder#create(java.lang.String, IOperationListener)
 	 */
 	@Override
-	public synchronized void create(String parentPath, IOperationListener listener) throws CreationException
+	public synchronized void create(String parentPath, IOperationListener... listeners) throws CreationException
 	{
 		Logger.info("OVERCAST: LOCALFOLDER: creating folder from path: " + parentPath + "/" + name);
-
-		addOperationListener(listener, Operation.CREATE);
-
+		
+		addTempOperationListeners(Operation.CREATE, listeners);
+		
 		try
 		{
 			Files.createDirectories(Paths.get(parentPath, name));
 			updateFromSource();
 			notifyOperationListeners(Operation.CREATE, OperationState.COMPLETED, 1.0f);
-
+			
 			Logger.info("OVERCAST: LOCALFOLDER: finished creating folder: " + path);
 		}
 		catch (IOException | OperationException e)
@@ -131,7 +131,7 @@ public class LocalFolder extends Folder<Path>
 			Logger.error("OVERCAST: LOCALFOLDER: failed to create folder: " + parentPath + "/" + name);
 			Logger.except(e);
 			e.printStackTrace();
-
+			
 			notifyOperationListeners(Operation.CREATE, OperationState.FAILED, 0f);
 			throw new CreationException("Couldn't create folder! " + e.getMessage());
 		}
@@ -140,7 +140,7 @@ public class LocalFolder extends Folder<Path>
 			clearOperationListeners(Operation.CREATE);
 		}
 	}
-
+	
 	/**
 	 * @see com.yagasoft.overcast.base.container.Container#isExist()
 	 */
@@ -148,7 +148,7 @@ public class LocalFolder extends Folder<Path>
 	public synchronized boolean isExist() throws AccessException
 	{
 		Logger.info("OVERCAST: LOCALFOLDER: checking existence: " + path);
-
+		
 		// if the Java library says the folder doesn't exist, and at same time it says the folder doesn't 'not exist', then ...
 		// obviously a problem.
 		if ( !Files.exists(sourceObject) && !Files.notExists(sourceObject))
@@ -156,10 +156,10 @@ public class LocalFolder extends Folder<Path>
 			Logger.error("OVERCAST: LOCALFOLDER: failed to determine if folder exists or not: " + path);
 			throw new AccessException("Can't determine if folder exists or not!");
 		}
-
+		
 		return Files.exists(sourceObject);
 	}
-
+	
 	/**
 	 * @see com.yagasoft.overcast.base.container.Container#isLocal()
 	 */
@@ -168,7 +168,7 @@ public class LocalFolder extends Folder<Path>
 	{
 		return true;
 	}
-
+	
 	/**
 	 * @see com.yagasoft.overcast.base.container.Folder#buildTreeProcess(int, java.util.List)
 	 */
@@ -178,7 +178,7 @@ public class LocalFolder extends Folder<Path>
 	{
 		ArrayList<Path> paths = new ArrayList<Path>();		// will be used to store children read from disk.
 		ArrayList<String> pathsString = new ArrayList<String>();	// will be used to filter children.
-
+		
 		// read children of the folder from the disk.
 		try (DirectoryStream<Path> stream = Files.newDirectoryStream(sourceObject))
 		{
@@ -192,13 +192,13 @@ public class LocalFolder extends Folder<Path>
 		{
 			throw new OperationException(e.getMessage());
 		}
-
+		
 		// filter!
 		removeObsolete(pathsString, true);
-
+		
 //		HashMap<String, Folder<?>> newFolders = new HashMap<String, Folder<?>>();
 		// HashMap<String, File<?>> newFiles = new HashMap<String, File<?>>();
-
+		
 		// add new files and folders to this folder's list, and build recursively if required.
 		paths.stream()
 				.forEach(path ->
@@ -235,17 +235,17 @@ public class LocalFolder extends Folder<Path>
 						// newFolders.put(folder.id, folder);
 						// }
 					});
-
+		
 		//
 		// folders = newFolders;
 		// files = newFiles;
-
+		
 //		for (Container<?> container : getChildrenArray())
 		// {
 		// System.out.println(container.getPath());
 		// }
 	}
-
+	
 	/**
 	 * @see com.yagasoft.overcast.base.container.Folder#calculateSize()
 	 */
@@ -253,11 +253,11 @@ public class LocalFolder extends Folder<Path>
 	public synchronized long calculateSize() throws OperationException
 	{
 		Logger.info("OVERCAST: LOCALFOLDER: calculating size: " + path);
-
+		
 		try
 		{
 			size = FolderHelper.getSize(path);		// this will calculate the whole folder size, including sub-folders.
-
+			
 			Logger.info("OVERCAST: LOCALFOLDER: finished calc size: " + path);
 		}
 		catch (IOException e)
@@ -265,14 +265,14 @@ public class LocalFolder extends Folder<Path>
 			Logger.error("OVERCAST: LOCALFOLDER: failed to calc size: " + path);
 			Logger.except(e);
 			e.printStackTrace();
-
+			
 			size = 0;
 			throw new OperationException("Couldn't determine size! " + e.getMessage());
 		}
-
+		
 		return size;
 	}
-
+	
 	/**
 	 * @see com.yagasoft.overcast.base.container.Folder#updateInfo()
 	 */
@@ -288,7 +288,7 @@ public class LocalFolder extends Folder<Path>
 			e.printStackTrace();
 		}
 	}
-
+	
 	/**
 	 * @see com.yagasoft.overcast.base.container.Folder#updateFromSource(boolean, boolean)
 	 */
@@ -296,14 +296,14 @@ public class LocalFolder extends Folder<Path>
 	public synchronized void updateFromSource(boolean folderContents, boolean recursively) throws OperationException
 	{
 		// TODO re-write this method
-
+		
 		if (folderContents)
 		{
 			buildTree(false);
 		}
-
+		
 		Path nameObject = sourceObject.getFileName();
-
+		
 		if (nameObject == null)
 		{
 			name = "root";
@@ -312,17 +312,17 @@ public class LocalFolder extends Folder<Path>
 		{
 			name = nameObject.toString();
 		}
-
+		
 		path = sourceObject.toAbsolutePath().toString();
 		localFreeSpace = calculateLocalFreeSpace();
-
+		
 		Path parentObject = sourceObject.getParent();
-
+		
 		if (parentObject != null)
 		{
 			parent = new LocalFolder(parentObject);
 		}
-
+		
 		try
 		{
 			date = Files.getLastModifiedTime(sourceObject).toMillis();
@@ -331,10 +331,10 @@ public class LocalFolder extends Folder<Path>
 		{
 			date = 0;
 		}
-
+		
 		generateId();
 	}
-
+	
 	/**
 	 * @see com.yagasoft.overcast.base.container.Container#updateFromSource()
 	 */
@@ -343,7 +343,7 @@ public class LocalFolder extends Folder<Path>
 	{
 		updateFromSource(true, false);
 	}
-
+	
 	/**
 	 * @see com.yagasoft.overcast.base.container.Container#copyProcess(com.yagasoft.overcast.base.container.Folder)
 	 */
@@ -363,7 +363,7 @@ public class LocalFolder extends Folder<Path>
 			throw new OperationException(e.getMessage());
 		}
 	}
-
+	
 	/**
 	 * @see com.yagasoft.overcast.base.container.Container#moveProcess(com.yagasoft.overcast.base.container.Folder)
 	 */
@@ -383,7 +383,7 @@ public class LocalFolder extends Folder<Path>
 			throw new OperationException(e.getMessage());
 		}
 	}
-
+	
 	/**
 	 * @see com.yagasoft.overcast.base.container.Container#renameProcess(java.lang.String)
 	 */
@@ -399,7 +399,7 @@ public class LocalFolder extends Folder<Path>
 			throw new OperationException(e.getMessage());
 		}
 	}
-
+	
 	/**
 	 * @see com.yagasoft.overcast.base.container.Container#deleteProcess()
 	 */
@@ -416,7 +416,7 @@ public class LocalFolder extends Folder<Path>
 			throw new OperationException(e.getMessage());
 		}
 	}
-
+	
 	/**
 	 * Upload the container to the server.<br />
 	 * This should just call the one in {@link CSP}.
@@ -438,7 +438,7 @@ public class LocalFolder extends Folder<Path>
 	{
 		return parent.getCsp().upload(this, parent, overwrite, listener);
 	}
-
+	
 	/**
 	 * Calculate local free space available on the local disk (the one the root resides on).
 	 *
@@ -456,15 +456,15 @@ public class LocalFolder extends Folder<Path>
 			Logger.error("OVERCAST: LOCALFOLDER: failed to calculate local free space");
 			Logger.except(e);
 			e.printStackTrace();
-
+			
 			throw new OperationException("Couldn't determine free space! " + e.getMessage());
 		}
 	}
-
+	
 	// //////////////////////////////////////////////////////////////////////////////////////
 	// #region Getters and setters.
 	// ======================================================================================
-
+	
 	/**
 	 * @return the remoteMapping
 	 */
@@ -472,7 +472,7 @@ public class LocalFolder extends Folder<Path>
 	{
 		return remoteMapping;
 	}
-
+	
 	/**
 	 * @param remoteMapping
 	 *            the remoteMapping to set
@@ -481,19 +481,19 @@ public class LocalFolder extends Folder<Path>
 	{
 		this.remoteMapping = remoteMapping;
 	}
-
+	
 	@Override
 	public CSP<Path, ?, ?> getCsp()
 	{
 		throw new UnsupportedOperationException("DO NOT USE!");
 	}
-
+	
 	@Override
 	public void setCsp(CSP<Path, ?, ?> csp)
 	{
 		throw new UnsupportedOperationException("DO NOT USE!");
 	}
-
+	
 	/**
 	 * @return the localFreeSpace
 	 * @throws OperationException
@@ -504,10 +504,10 @@ public class LocalFolder extends Folder<Path>
 		{
 			calculateLocalFreeSpace();
 		}
-
+		
 		return localFreeSpace;
 	}
-
+	
 	/**
 	 * @param localFreeSpace
 	 *            the localFreeSpace to set
@@ -516,24 +516,24 @@ public class LocalFolder extends Folder<Path>
 	{
 		this.localFreeSpace = localFreeSpace;
 	}
-
+	
 	// ======================================================================================
 	// #endregion Getters and setters.
 	// //////////////////////////////////////////////////////////////////////////////////////
-
+	
 	@Override
 	protected Path createProcess(Folder<?> parent) throws CreationException
 	{
 		return null;
 	}
-
+	
 	@Override
 	public void setName(String value)
 	{
 		name = value;
 		path = Paths.get(path).getParent().resolve(name).toAbsolutePath().toString();
 	}
-
+	
 	@Override
 	public void setPath(String value)
 	{

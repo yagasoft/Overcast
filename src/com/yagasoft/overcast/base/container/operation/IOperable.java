@@ -6,12 +6,14 @@
  *
  *		Project/File: Overcast/com.yagasoft.overcast.base.container.operation/IOperable.java
  *
- *			Modified: 28-May-2014 (00:03:43)
+ *			Modified: 28-Jun-2014 (22:09:31)
  *			   Using: Eclipse J-EE / JDK 8 / Windows 8.1 x64
  */
 
 package com.yagasoft.overcast.base.container.operation;
 
+
+import java.util.Arrays;
 
 import com.yagasoft.overcast.base.container.Container;
 
@@ -23,7 +25,7 @@ import com.yagasoft.overcast.base.container.Container;
  */
 public interface IOperable
 {
-	
+
 	/**
 	 * Adds a operation listener to the operations in this container.
 	 *
@@ -33,7 +35,42 @@ public interface IOperable
 	 *            the operation
 	 */
 	void addOperationListener(IOperationListener listener, Operation operation);
-	
+
+	/**
+	 * Adds the operation listener for all possible operations.
+	 *
+	 * @param listener
+	 *            Listener.
+	 */
+	default void addOperationListener(IOperationListener listener)
+	{
+		Arrays.stream(Operation.values()).forEach(operation -> addOperationListener(listener, operation));
+	}
+
+	/**
+	 * Adds the operation listeners for all possible operations.
+	 *
+	 * @param listeners
+	 *            Listeners.
+	 */
+	default void addOperationListeners(IOperationListener... listeners)
+	{
+		Arrays.stream(listeners).forEach(this::addOperationListener);
+	}
+
+	/**
+	 * Adds the operation listeners for this operation.
+	 *
+	 * @param operation
+	 *            Operation.
+	 * @param listeners
+	 *            Listeners.
+	 */
+	default void addOperationListeners(Operation operation, IOperationListener... listeners)
+	{
+		Arrays.stream(listeners).forEach(listener -> addOperationListener(listener, operation));
+	}
+
 	/**
 	 * Removes the operation listener.
 	 *
@@ -41,7 +78,7 @@ public interface IOperable
 	 *            Listener object to be removed.
 	 */
 	void removeOperationListener(IOperationListener listener);
-	
+
 	/**
 	 * Removes the operation from the listener list.
 	 *
@@ -51,35 +88,35 @@ public interface IOperable
 	 *            Operation.
 	 */
 	void removeOperationListener(IOperationListener listener, Operation operation);
-	
+
 	/**
 	 * Adds a temp operation listener to the operations in this container.
 	 *
-	 * @param listener
-	 *            Listener object.
 	 * @param operation
 	 *            the operation
+	 * @param listeners
+	 *            Listeners.
 	 */
-	void addTempOperationListener(IOperationListener listener, Operation operation);
-	
+	void addTempOperationListeners(Operation operation, IOperationListener... listeners);
+
 	/**
 	 * Removes the temp operation listener.
 	 *
-	 * @param listener
-	 *            Listener object to be removed.
+	 * @param listeners
+	 *            Listeners.
 	 */
-	void removeTempOperationListener(IOperationListener listener);
-	
+	void removeTempOperationListeners(IOperationListener... listeners);
+
 	/**
 	 * Removes the operation from the temp listener list.
 	 *
-	 * @param listener
-	 *            Listener object to be removed.
 	 * @param operation
 	 *            Operation.
+	 * @param listeners
+	 *            Listeners.
 	 */
-	void removeTempOperationListener(IOperationListener listener, Operation operation);
-	
+	void removeTempOperationListeners(Operation operation, IOperationListener... listeners);
+
 	/**
 	 * Notify operation listeners.
 	 */
@@ -87,7 +124,7 @@ public interface IOperable
 	{
 		notifyOperationListeners(Operation.UPDATE, null);
 	}
-	
+
 	/**
 	 * Notify operation listeners.
 	 *
@@ -100,7 +137,7 @@ public interface IOperable
 	{
 		notifyOperationListeners(operation, null, 1.0f, object);
 	}
-	
+
 	/**
 	 * Notify listeners of the state (stated, cancelled, ...etc.) of the operation, and the progress in the range from 0 to 1.
 	 *
@@ -115,7 +152,7 @@ public interface IOperable
 	{
 		notifyOperationListeners(operation, state, progress, null);
 	}
-	
+
 	/**
 	 * Notify operation listeners.
 	 *
@@ -129,7 +166,7 @@ public interface IOperable
 	 *            Object.
 	 */
 	void notifyOperationListeners(Operation operation, OperationState state, float progress, Container<?> object);
-	
+
 	/**
 	 * Clear all listeners to the operations.
 	 *
